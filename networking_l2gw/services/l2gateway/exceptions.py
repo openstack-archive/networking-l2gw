@@ -42,9 +42,9 @@ class L2GatewayPortInUse(exceptions.InUse):
                 "therefore cannot be deleted directly via the port API.")
 
 
-class L2GatewayConnectionInUse(exceptions.InUse):
-    message = _("The specified mapping '%(mapping)s' is already in use on "
-                "l2 gateway '%(gateway_id)s'.")
+class L2GatewayConnectionExists(exceptions.InUse):
+    message = _("The specified mapping '%(mapping)s' exists on "
+                "network gateway '%(gateway_id)s'.")
 
 
 class L2MultipleGatewayConnections(exceptions.NeutronException):
@@ -52,13 +52,16 @@ class L2MultipleGatewayConnections(exceptions.NeutronException):
                 "with provided criteria.")
 
 
+class L2GatewayInterfaceNotFound(exceptions.NeutronException):
+    message = _("L2 Gateway interface not found on '%(interface_id)s'")
+
+
 class L2GatewayConnectionNotFound(exceptions.NotFound):
-    message = _("The connection %(network_mapping_info)s was not found on the "
-                "l2 gateway '%(network_gateway_id)s'")
+    message = _("The connection %(id)s was not found on the l2 gateway")
 
 
 base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayPortInUse: web_exc.HTTPConflict,
-                       L2GatewayConnectionInUse: web_exc.HTTPConflict,
+                       L2GatewayConnectionExists: web_exc.HTTPConflict,
                        L2GatewayConnectionNotFound: web_exc.HTTPNotFound,
                        L2MultipleGatewayConnections: web_exc.HTTPConflict})
