@@ -12,8 +12,8 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from networking_l2gw.services.l2gateway.common import constants as n_const
 
-OVSDB_IDENTIFIER = 'ovsdb_identifier'
 OVSDB_IP = 'ovsdb_ip'
 OVSDB_PORT = 'ovsdb_port'
 PRIVATE_KEY = 'private_key'
@@ -31,7 +31,7 @@ class L2GatewayConfig(object):
             self.certificate = ovsdb_config[CERTIFICATE]
             self.ca_cert = ovsdb_config[CA_CERT]
 
-        self.ovsdb_identifier = ovsdb_config[OVSDB_IDENTIFIER]
+        self.ovsdb_identifier = ovsdb_config[n_const.OVSDB_IDENTIFIER]
         self.ovsdb_ip = ovsdb_config[OVSDB_IP]
         self.ovsdb_port = ovsdb_config[OVSDB_PORT]
         self.ovsdb_fd = None

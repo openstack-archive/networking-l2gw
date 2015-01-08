@@ -1,0 +1,97 @@
+# Copyright (c) 2015 OpenStack Foundation.
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+from neutron.agent import rpc as agent_rpc
+from neutron import context
+from neutron.i18n import _LE
+from neutron.i18n import _LI
+from neutron.openstack.common import log as logging
+from neutron.openstack.common import loopingcall
+from neutron.openstack.common import periodic_task
+
+from oslo.config import cfg
+
+from networking_l2gw.services.l2gateway.agent import agent_api
+from networking_l2gw.services.l2gateway.common import constants as n_const
+from networking_l2gw.services.l2gateway.common import topics
+
+LOG = logging.getLogger(__name__)
+
+VALID_L2GW_AGENT_TYPES = [n_const.MONITOR, n_const.TRANSACT,
+                          '+'.join([n_const.MONITOR, n_const.TRANSACT])]
+
+
+class BaseAgentManager(periodic_task.PeriodicTasks):
+    """Basic agent manager that handles basic RPCs and report states."""
+
+    def __init__(self, conf=None):
+        super(BaseAgentManager, self).__init__()
+        self.conf = conf or cfg.CONF
+        self.l2gw_agent_type = n_const.TRANSACT
+        self.use_call = True
+        self.gateways = {}
+        self.context = context.get_admin_context_without_session()
+        self.plugin_rpc = agent_api.L2GatewayAgentApi(
+            topics.L2GATEWAY_PLUGIN,
+            self.context,
+            self.conf.host
+        )
+        self._get_agent_state()
+        self.admin_state_up = True
+        self._setup_state_rpc()
+
+    def _get_agent_state(self):
+        self.agent_state = {
+            'binary': 'neutron-l2gateway-agent',
+            'host': self.conf.host,
+            'topic': topics.L2GATEWAY_AGENT,
+            'configurations': {
+                'report_interval': self.conf.AGENT.report_interval,
+                n_const.L2GW_AGENT_TYPE: self.l2gw_agent_type,
+            },
+            'start_flag': True,
+            'agent_type': n_const.AGENT_TYPE_L2GATEWAY}
+
+    def _setup_state_rpc(self):
+        self.state_rpc = agent_rpc.PluginReportStateAPI(
+            topics.L2GATEWAY_PLUGIN)
+        report_interval = self.conf.AGENT.report_interval
+        if report_interval:
+            heartbeat = loopingcall.FixedIntervalLoopingCall(
+                self._report_state)
+            heartbeat.start(interval=report_interval)
+
+    def _report_state(self):
+        try:
+            self.state_rpc.report_state(self.context, self.agent_state,
+                                        self.use_call)
+            self.use_call = False
+            self.agent_state['start_flag'] = False
+        except Exception:
+            LOG.exception(_LE("Failed reporting state!"))
+
+    def agent_updated(self, context, payload):
+        LOG.info(_LI("agent_updated by server side %s!"), payload)
+
+    def set_l2gateway_agent_type(self, context, l2gw_agent_type):
+        """Handle RPC call from plugin to update agent type.
+
+        RPC call from the plugin to accept that I am a monitoring
+        or a transact agent.
+        """
+        if l2gw_agent_type not in VALID_L2GW_AGENT_TYPES:
+            return n_const.L2GW_INVALID_RPC_MSG_FORMAT
+        self.l2gw_agent_type = l2gw_agent_type
+        self.agent_state.get('configurations')[n_const.L2GW_AGENT_TYPE
+                                               ] = self.l2gw_agent_type
