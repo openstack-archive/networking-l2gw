@@ -36,9 +36,8 @@ class TestBaseAgentManager(base.BaseTestCase):
         agent_config.register_agent_state_opts_helper(self.conf)
         cfg.CONF.set_override('report_interval', 1, 'AGENT')
         self.context = mock.Mock
-        mock_conf = mock.Mock()
         self.l2gw_agent_manager = l2gw_manager.BaseAgentManager(
-            mock_conf)
+            cfg.CONF)
 
     def test_init(self):
         with mock.patch.object(agent_api,
@@ -47,7 +46,7 @@ class TestBaseAgentManager(base.BaseTestCase):
                                    '_setup_state_rpc') as setup_state_rpc:
                 self.l2gw_agent_manager.__init__(mock.Mock())
                 self.assertEqual(self.l2gw_agent_manager.l2gw_agent_type,
-                                 n_const.TRANSACT)
+                                 '')
                 self.assertTrue(self.l2gw_agent_manager.admin_state_up)
                 self.assertTrue(setup_state_rpc.called)
                 self.assertTrue(l2_gw_agent_api.called)
@@ -92,38 +91,26 @@ class TestBaseAgentManager(base.BaseTestCase):
             self.l2gw_agent_manager.agent_updated(mock.Mock(), fake_payload)
             self.assertEqual(1, logger_call.call_count)
 
-    def test_set_l2gateway_agent_type_monitor(self):
-        l2_gw_agent_type = n_const.MONITOR
-        self.l2gw_agent_manager.set_l2gateway_agent_type(
-            self.context, l2_gw_agent_type)
-        self.assertEqual(self.l2gw_agent_manager.l2gw_agent_type,
-                         l2_gw_agent_type)
-        self.assertEqual(
-            self.l2gw_agent_manager.agent_state.get(
-                'configurations')[n_const.L2GW_AGENT_TYPE], l2_gw_agent_type)
+    def test_set_monitor_agent_type_monitor(self):
+        self.l2gw_agent_manager.l2gw_agent_type = ''
+        self.l2gw_agent_manager.conf.host = 'fake_host'
+        self.l2gw_agent_manager.set_monitor_agent(self.context, 'fake_host')
+        self.assertEqual(n_const.MONITOR,
+                         self.l2gw_agent_manager.agent_state.
+                         get('configurations')[n_const.L2GW_AGENT_TYPE])
+        self.assertEqual(n_const.MONITOR,
+                         self.l2gw_agent_manager.l2gw_agent_type)
 
-    def test_set_l2gateway_agent_type_transact(self):
-        l2_gw_agent_type = n_const.TRANSACT
-        self.l2gw_agent_manager.set_l2gateway_agent_type(
-            self.context, l2_gw_agent_type)
-        self.assertEqual(self.l2gw_agent_manager.l2gw_agent_type,
-                         l2_gw_agent_type)
-        self.assertEqual(
-            self.l2gw_agent_manager.agent_state.get(
-                'configurations')[n_const.L2GW_AGENT_TYPE], l2_gw_agent_type)
-
-    def test_set_l2gateway_agent_type_transactmonitor(self):
-        l2_gw_agent_type = '+'.join([n_const.MONITOR, n_const.TRANSACT])
-        self.l2gw_agent_manager.set_l2gateway_agent_type(
-            self.context, l2_gw_agent_type)
-        self.assertEqual(self.l2gw_agent_manager.l2gw_agent_type,
-                         l2_gw_agent_type)
-        self.assertEqual(
-            self.l2gw_agent_manager.agent_state.get(
-                'configurations')[n_const.L2GW_AGENT_TYPE], l2_gw_agent_type)
-
-    def test_set_l2gateway_agent_type_invalid(self):
-        l2_gw_agent_type = 'fake_type'
-        result = self.l2gw_agent_manager.set_l2gateway_agent_type(
-            self.context, l2_gw_agent_type)
-        self.assertTrue(result, n_const.L2GW_INVALID_RPC_MSG_FORMAT)
+    def test_set_monitor_agent_type_transact(self):
+        self.l2gw_agent_manager.l2gw_agent_type = ''
+        self.conf.host = 'fake_host'
+        self.l2gw_agent_manager.set_monitor_agent(
+            self.context, 'fake_host1')
+        self.assertNotEqual(n_const.MONITOR,
+                            self.l2gw_agent_manager.agent_state.
+                            get('configurations')[n_const.L2GW_AGENT_TYPE])
+        self.assertEqual('',
+                         self.l2gw_agent_manager.agent_state.
+                         get('configurations')[n_const.L2GW_AGENT_TYPE])
+        self.assertEqual('',
+                         self.l2gw_agent_manager.l2gw_agent_type)

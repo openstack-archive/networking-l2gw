@@ -88,7 +88,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
     @periodic_task.periodic_task(run_immediately=True)
     def _connect_to_ovsdb_server(self, context):
         """Initializes the connection to the OVSDB servers."""
-        if self.gateways and n_const.MONITOR in self.l2gw_agent_type:
+        if self.gateways and self.l2gw_agent_type == n_const.MONITOR:
             for key in self.gateways.keys():
                 gateway = self.gateways.get(key)
                 ovsdb_fd = gateway.ovsdb_fd

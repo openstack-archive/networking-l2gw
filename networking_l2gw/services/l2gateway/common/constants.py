@@ -25,7 +25,6 @@ ERROR_DICT = {L2GW_INVALID_RPC_MSG_FORMAT: "Invalid RPC message format",
               "request"}
 
 MONITOR = 'monitor'
-TRANSACT = 'transact'
 OVSDB_SCHEMA_NAME = 'hardware_vtep'
 OVSDB_IDENTIFIER = 'ovsdb_identifier'
 L2GW_AGENT_TYPE = 'l2gw_agent_type'

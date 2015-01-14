@@ -28,9 +28,6 @@ from networking_l2gw.services.l2gateway.common import topics
 
 LOG = logging.getLogger(__name__)
 
-VALID_L2GW_AGENT_TYPES = [n_const.MONITOR, n_const.TRANSACT,
-                          '+'.join([n_const.MONITOR, n_const.TRANSACT])]
-
 
 class BaseAgentManager(periodic_task.PeriodicTasks):
     """Basic agent manager that handles basic RPCs and report states."""
@@ -38,7 +35,7 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
     def __init__(self, conf=None):
         super(BaseAgentManager, self).__init__()
         self.conf = conf or cfg.CONF
-        self.l2gw_agent_type = n_const.TRANSACT
+        self.l2gw_agent_type = ''
         self.use_call = True
         self.gateways = {}
         self.context = context.get_admin_context_without_session()
@@ -84,14 +81,16 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
     def agent_updated(self, context, payload):
         LOG.info(_LI("agent_updated by server side %s!"), payload)
 
-    def set_l2gateway_agent_type(self, context, l2gw_agent_type):
+    def set_monitor_agent(self, context, hostname):
         """Handle RPC call from plugin to update agent type.
 
         RPC call from the plugin to accept that I am a monitoring
-        or a transact agent.
+        or a transact agent. This is a fanout cast message
         """
-        if l2gw_agent_type not in VALID_L2GW_AGENT_TYPES:
-            return n_const.L2GW_INVALID_RPC_MSG_FORMAT
-        self.l2gw_agent_type = l2gw_agent_type
+        if hostname == self.conf.host:
+            self.l2gw_agent_type = n_const.MONITOR
+        else:
+            self.l2gw_agent_type = ''
+
         self.agent_state.get('configurations')[n_const.L2GW_AGENT_TYPE
                                                ] = self.l2gw_agent_type

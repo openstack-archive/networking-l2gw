@@ -52,7 +52,11 @@ L2GW_OPTS = [
     cfg.IntOpt('quota_l2_gateway',
                default=5,
                help=_('Number of l2 gateways allowed per tenant, '
-                      '-1 for unlimited'))
+                      '-1 for unlimited')),
+    cfg.IntOpt('periodic_monitoring_interval',
+               default=5,
+               help=_('Periodic interval at which the plugin '
+                      'checks for the monitoring L2 gateway agent'))
 ]
 
 

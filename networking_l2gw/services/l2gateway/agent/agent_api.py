@@ -31,6 +31,6 @@ class L2GatewayAgentApi(object):
 
     def update_ovsdb_changes(self, ovsdb_data):
         cctxt = self.client.prepare()
-        return cctxt.call(self.context,
+        return cctxt.cast(self.context,
                           'update_ovsdb_changes',
                           ovsdb_data=ovsdb_data)

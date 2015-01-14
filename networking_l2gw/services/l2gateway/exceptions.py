@@ -60,6 +60,10 @@ class L2GatewayConnectionNotFound(exceptions.NotFound):
     message = _("The connection %(id)s was not found on the l2 gateway")
 
 
+class L2GatewayPluginNotFound(exceptions.NotFound):
+    message = _("Plugin or agent extension not found")
+
+
 base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayPortInUse: web_exc.HTTPConflict,
                        L2GatewayConnectionExists: web_exc.HTTPConflict,
