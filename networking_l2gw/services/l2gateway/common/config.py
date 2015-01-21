@@ -56,7 +56,12 @@ L2GW_OPTS = [
     cfg.IntOpt('periodic_monitoring_interval',
                default=5,
                help=_('Periodic interval at which the plugin '
-                      'checks for the monitoring L2 gateway agent'))
+                      'checks for the monitoring L2 gateway agent')),
+    cfg.StrOpt('l2gw_callback_class',
+               default='networking_l2gw.services.l2gateway.ovsdb.'
+                       'data.L2GatewayOVSDBCallbacks',
+               help=_('L2 gateway plugin callback class where the'
+                      'RPCs from the agent are going to get invoked'))
 ]
 
 
