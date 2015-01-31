@@ -4,13 +4,12 @@
 
     "create_l2_gateway": "rule:admin_only",
     "update_l2_gateway": "rule:admin_only",
-    "get_l2_gateway": "rule:admin_or_owner",
-    "delete_l2_gateway": "rule:admin_or_owner",
-    "get_l2_gateways": "rule:admin_or_owner",
+    "get_l2_gateway": "rule:admin_only",
+    "delete_l2_gateway": "rule:admin_only",
+    "get_l2_gateways": "rule:admin_only",
 
     "create_l2_gateway_connection": "rule:admin_only",
-    "update_l2_gateway_connection": "rule:admin_only",
-    "get_l2_gateway_connections": "rule:admin_or_owner",
-    "get_l2_gateway_connection": "rule:admin_or_owner",
-    "delete_l2_gateway_connection": "rule:admin_or_owner"
+    "get_l2_gateway_connections": "rule:admin_only",
+    "get_l2_gateway_connection": "rule:admin_only",
+    "delete_l2_gateway_connection": "rule:admin_only"
  }
