@@ -12,7 +12,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
 # service type constants:
 L2GW = "L2GW"
 
@@ -27,3 +26,16 @@ ALLOWED_SERVICES = [L2GW]
 COMMON_PREFIXES = {
     L2GW: "",
 }
+
+L2GW_INVALID_RPC_MSG_FORMAT = 100
+L2GW_INVALID_OVSDB_IDENTIFIER = 101
+
+ERROR_DICT = {L2GW_INVALID_RPC_MSG_FORMAT: "Invalid RPC message format",
+              L2GW_INVALID_OVSDB_IDENTIFIER: "Invalid ovsdb_identifier in the "
+              "request"}
+
+MONITOR = 'monitor'
+TRANSACT = 'transact'
+OVSDB_SCHEMA_NAME = 'hardware_vtep'
+OVSDB_IDENTIFIER = 'ovsdb_identifier'
+L2GW_AGENT_TYPE = 'l2gw_agent_type'

@@ -42,7 +42,11 @@ OVSDB_OPTS = [
                help=_('Trusted issuer CA cert')),
     cfg.IntOpt('periodic_interval',
                default=20,
-               help=_('Seconds between periodic task runs'))
+               help=_('Seconds between periodic task runs')),
+    cfg.IntOpt('max_connection_retries',
+               default=10,
+               help=_('Maximum number of retries to open a socket '
+                      'with the OVSDB server'))
 ]
 
 L2GW_OPTS = [
