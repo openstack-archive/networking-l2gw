@@ -17,6 +17,7 @@ import contextlib
 import eventlet
 import mock
 
+from neutron.agent.common import config as agent_config
 from neutron.common import rpc
 from neutron import context
 from neutron.tests import base
@@ -38,7 +39,7 @@ class TestManager(base.BaseTestCase):
         super(TestManager, self).setUp()
         self.conf = cfg.CONF
         config.register_ovsdb_opts_helper(self.conf)
-        config.register_agent_state_opts_helper(self.conf)
+        agent_config.register_agent_state_opts_helper(self.conf)
         self.driver_mock = mock.Mock()
         self.fake_record_dict = {n_const.OVSDB_IDENTIFIER: 'fake_ovsdb_id'}
         cfg.CONF.set_override('report_interval', 1, 'AGENT')

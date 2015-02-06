@@ -20,13 +20,6 @@ from oslo.config import cfg
 
 LOG = logging.getLogger(__name__)
 
-AGENT_STATE_OPTS = [
-    cfg.FloatOpt('report_interval', default=30,
-                 help=_('Seconds between nodes reporting state to server; '
-                        'should be less than agent_down_time, best if it '
-                        'is half or less than agent_down_time.'))
-]
-
 OVSDB_OPTS = [
     cfg.StrOpt('ovsdb_hosts',
                default='host1:127.0.0.1:6632',
@@ -69,10 +62,6 @@ def register_l2gw_opts_helper():
 
 def register_ovsdb_opts_helper(conf):
     conf.register_opts(OVSDB_OPTS, 'ovsdb')
-
-
-def register_agent_state_opts_helper(conf):
-    conf.register_opts(AGENT_STATE_OPTS, 'AGENT')
 
 
 # add a logging setup method here for convenience

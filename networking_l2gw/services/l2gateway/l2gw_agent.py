@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from neutron.agent.common import config as agent_config
 from neutron.common import config as common_config
 from neutron.common import rpc as n_rpc
 from neutron.openstack.common import log as logging
@@ -40,7 +41,7 @@ class L2gatewayAgentService(n_rpc.Service):
 
 def main():
     config.register_ovsdb_opts_helper(cfg.CONF)
-    config.register_agent_state_opts_helper(cfg.CONF)
+    agent_config.register_agent_state_opts_helper(cfg.CONF)
     common_config.init(sys.argv[1:])
     config.setup_logging()
 

@@ -15,6 +15,7 @@
 
 import mock
 
+from neutron.agent.common import config as agent_config
 from neutron.agent import rpc as agent_rpc
 from neutron.openstack.common import loopingcall
 from neutron.tests import base
@@ -24,7 +25,6 @@ from oslo.config import cfg
 from networking_l2gw.services.l2gateway.agent import (base_agent_manager
                                                       as l2gw_manager)
 from networking_l2gw.services.l2gateway.agent import agent_api
-from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 
@@ -33,7 +33,7 @@ class TestBaseAgentManager(base.BaseTestCase):
     def setUp(self):
         super(TestBaseAgentManager, self).setUp()
         self.conf = cfg.CONF
-        config.register_agent_state_opts_helper(self.conf)
+        agent_config.register_agent_state_opts_helper(self.conf)
         cfg.CONF.set_override('report_interval', 1, 'AGENT')
         self.context = mock.Mock
         mock_conf = mock.Mock()
