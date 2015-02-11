@@ -27,6 +27,7 @@ from networking_l2gw.services.l2gateway.agent.ovsdb import connection
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 from oslo.config import cfg
+from oslo_utils import excutils
 
 LOG = logging.getLogger(__name__)
 
@@ -100,10 +101,12 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                                                               True,
                                                               self.plugin_rpc)
                     except Exception:
-                        # Log a warning and continue so that it can retried
-                        # in the next iteration
-                        LOG.warning(_LW("OVSDB server %s is not reachable"),
-                                    gateway.ovsdb_ip)
+                        with excutils.save_and_reraise_exception(reraise=False
+                                                                 ):
+                            # Log a warning and continue so that it can retried
+                            # in the next iteration
+                            LOG.warning(_LW("OVSDB server %s is not "
+                                            "reachable"), gateway.ovsdb_ip)
                     gateway.ovsdb_fd = ovsdb_fd
                     eventlet.greenthread.spawn_n(ovsdb_fd.
                                                  set_monitor_response_handler)
