@@ -33,7 +33,7 @@ from networking_l2gw.l2gatewayclient.l2gateway.v2_0 import l2gateway_connection
 VERSION = '2.0'
 NEUTRON_API_VERSION = '2.0'
 clientmanager.neutron_client.API_VERSIONS = {
-    '2.0': 'l2gatewayclient.v2_0.client.Client',
+    '2.0': 'networking_l2gw.l2gatewayclient.v2_0.client.Client',
 }
 
 COMMAND_V2 = {
