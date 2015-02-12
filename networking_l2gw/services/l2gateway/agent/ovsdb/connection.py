@@ -24,6 +24,7 @@ import ssl
 import time
 
 from oslo.serialization import jsonutils
+from oslo_utils import excutils
 
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
@@ -63,13 +64,15 @@ class OVSDBConnection(object):
                 self.socket.connect((str(gw_config.ovsdb_ip),
                                      int(gw_config.ovsdb_port)))
                 break
-            except Exception as ex:
+            except socket.error:
                 LOG.warning(OVSDB_UNREACHABLE_MSG, gw_config.ovsdb_ip)
                 if retryCount == conf.max_connection_retries:
                     # Retried for max_connection_retries times.
                     # Give up and return so that it can be tried in
                     # the next periodic interval.
-                    raise ex
+                    with excutils.save_and_reraise_exception(reraise=True):
+                        LOG.exception(_LE("Socket error in connecting to "
+                                          "the OVSDB server"))
                 else:
                     time.sleep(1)
                     retryCount += 1
