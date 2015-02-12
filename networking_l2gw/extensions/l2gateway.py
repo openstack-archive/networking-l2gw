@@ -17,12 +17,20 @@ import abc
 from neutron.api import extensions
 from neutron.api.v2 import attributes
 from neutron.api.v2 import resource_helper
+from neutron.plugins.common import constants
 
-from networking_l2gw.services.l2gateway.common import constants
+import networking_l2gw.extensions
+from networking_l2gw.services.l2gateway.common import constants as l2gw_const
 from networking_l2gw.services.l2gateway.common import l2gw_validators
 
+extensions.append_api_extensions_path(networking_l2gw.extensions.__path__)
+constants.L2GW = l2gw_const.L2GW
+constants.COMMON_PREFIXES["L2GW"] = ""
+constants.EXT_TO_SERVICE_MAPPING['l2gateway'] = constants.L2GW
+constants.ALLOWED_SERVICES.append(constants.L2GW)
+
 RESOURCE_ATTRIBUTE_MAP = {
-    constants.L2_GATEWAYS: {
+    l2gw_const.L2_GATEWAYS: {
         'id': {'allow_post': False, 'allow_put': False,
                'is_visible': True},
         'name': {'allow_post': True, 'allow_put': True,
@@ -70,16 +78,12 @@ class L2gateway(extensions.ExtensionDescriptor):
     @classmethod
     def get_resources(cls):
         """Returns Ext Resources."""
-        mem_actions = {}
         plural_mappings = resource_helper.build_plural_mappings(
             {}, RESOURCE_ATTRIBUTE_MAP)
         attributes.PLURALS.update(plural_mappings)
         resources = resource_helper.build_resource_info(plural_mappings,
                                                         RESOURCE_ATTRIBUTE_MAP,
-                                                        constants.L2GW,
-                                                        action_map=mem_actions,
-                                                        register_quota=True,
-                                                        translate_name=True)
+                                                        constants.L2GW)
 
         return resources
 
