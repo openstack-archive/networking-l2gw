@@ -35,9 +35,8 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
     This maintains active and inactive agents and
     select monitor and transact agents.
     """
-    context = None
-    plugin = None
-    l2gwplugin = None
+    _plugin = None
+    _l2gwplugin = None
 
     def __init__(self, notifier=None):
         super(L2GatewayAgentScheduler, self).__init__()
@@ -45,13 +44,23 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
         config.register_l2gw_opts_helper()
         self.monitor_interval = cfg.CONF.periodic_monitoring_interval
 
+    @property
+    def l2gwplugin(self):
+        if self._l2gwplugin is None:
+            self._l2gwplugin = (
+                manager.NeutronManager.
+                get_service_plugins().get(srv_const.L2GW))
+        return self._l2gwplugin
+
+    @property
+    def plugin(self):
+        if self._plugin is None:
+            self._plugin = manager.NeutronManager.get_plugin()
+        return self._plugin
+
     def initialize_thread(self):
         """Initialization of L2gateway agent scheduler thread."""
         try:
-            self.context = neutron_context.get_admin_context()
-            self.l2gwplugin = manager.NeutronManager.get_service_plugins().get(
-                srv_const.L2GW)
-            self.plugin = manager.NeutronManager.get_plugin()
             monitor_thread = loopingcall.FixedIntervalLoopingCall(
                 self.monitor_agent_state)
             monitor_thread.start(
@@ -109,7 +118,7 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
         """
         try:
             all_agents = self.plugin.get_agents(
-                self.context,
+                neutron_context.get_admin_context(),
                 filters={'agent_type': [srv_const.AGENT_TYPE_L2GATEWAY]})
         except Exception:
             LOG.exception(_LE("Unable to get the agent list. Continuing..."))
