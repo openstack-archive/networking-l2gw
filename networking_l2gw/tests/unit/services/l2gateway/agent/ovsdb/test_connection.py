@@ -18,16 +18,28 @@ import contextlib
 import eventlet
 import mock
 
+import socket
 import ssl
+import time
 
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
 from networking_l2gw.services.l2gateway.agent.ovsdb import connection
+from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 from neutron.openstack.common import log as logging
 from neutron.tests import base
 
+from oslo.config import cfg
+
 LOG = logging.getLogger(__name__)
+
+
+class FakeConf(object):
+    def __init__(self):
+        self.use_ssl = False
+        self.ovsdb_ip = '1.1.1.1'
+        self.ovsdb_port = 6632
 
 
 class TestOVSDBConnection(base.BaseTestCase):
@@ -35,6 +47,9 @@ class TestOVSDBConnection(base.BaseTestCase):
         super(TestOVSDBConnection, self).setUp()
 
         self.conf = mock.patch.object(conf, 'L2GatewayConfig').start()
+        config.register_ovsdb_opts_helper(cfg.CONF)
+        cfg.CONF.set_override('max_connection_retries', 0, 'ovsdb')
+
         self.sock = mock.patch('socket.socket').start()
         self.ssl_sock = mock.patch.object(ssl, 'wrap_socket').start()
         self.plugin_rpc = mock.Mock()
@@ -43,7 +58,6 @@ class TestOVSDBConnection(base.BaseTestCase):
         self.l2gw_ovsdb = connection.OVSDBConnection(mock.Mock(),
                                                      self.conf, True,
                                                      self.plugin_rpc)
-        self.l2gw_ovsdb.socket = self.sock
         self.op_id = 'abcd'
         props = {'select': {'initial': True,
                             'insert': True,
@@ -83,11 +97,68 @@ class TestOVSDBConnection(base.BaseTestCase):
             mock.patch.object(connection.LOG, 'debug'),
             mock.patch.object(eventlet.greenthread, 'spawn_n')
             ) as(logger_call, gt):
-            self.l2gw_ovsdb.__init__(mock.Mock(), self.conf, self.plugin_rpc)
+            self.l2gw_ovsdb.__init__(mock.Mock(), self.conf, True,
+                                     self.plugin_rpc)
             self.assertTrue(self.l2gw_ovsdb.connected)
             self.assertTrue(logger_call.called)
             self.assertTrue(gt.called)
             self.assertTrue(self.sock.called)
+
+    def test_init_with_socket_error(self):
+        """Test case to test __init__ with socket error exception."""
+
+        class FakeSocketClass(object):
+            def __init__(self):
+                pass
+
+            def connect(ip, port):
+                raise socket.error
+
+        fakesocket = FakeSocketClass()
+        with contextlib.nested(
+            mock.patch.object(connection.OVSDBConnection,
+                              '_reset_variables'),
+            mock.patch.object(connection.LOG, 'exception'),
+            mock.patch.object(connection.LOG, 'warning'),
+            mock.patch.object(socket, 'socket', return_value=fakesocket),
+            mock.patch.object(time, 'sleep')
+            ) as(reset_vars, logger_exc, logger_warn,
+                 sock_connect, mock_sleep):
+            ovsdb_conf = FakeConf()
+            self.assertRaises(socket.error, connection.OVSDBConnection,
+                              cfg.CONF.ovsdb, ovsdb_conf, True,
+                              self.plugin_rpc)
+            self.assertTrue(logger_warn.called)
+            self.assertTrue(logger_exc.called)
+            sock_connect.assert_called()
+
+    def test_init_with_timeout(self):
+        """Test case to test __init__ with socket timeout exception."""
+
+        class FakeSocketClass(object):
+            def __init__(self):
+                pass
+
+            def connect(ip, port):
+                raise socket.timeout
+
+        fakesocket = FakeSocketClass()
+        with contextlib.nested(
+            mock.patch.object(connection.OVSDBConnection,
+                              '_reset_variables'),
+            mock.patch.object(connection.LOG, 'exception'),
+            mock.patch.object(connection.LOG, 'warning'),
+            mock.patch.object(socket, 'socket', return_value=fakesocket),
+            mock.patch.object(time, 'sleep')
+            ) as(reset_vars, logger_exc, logger_warn,
+                 sock_connect, mock_sleep):
+            ovsdb_conf = FakeConf()
+            self.assertRaises(socket.timeout, connection.OVSDBConnection,
+                              cfg.CONF.ovsdb, ovsdb_conf, True,
+                              self.plugin_rpc)
+            self.assertTrue(logger_warn.called)
+            self.assertTrue(logger_exc.called)
+            sock_connect.assert_called()
 
     def test_set_monitor_response_handler(self):
         """Test case to test _set_monitor_response_handler with error_msg."""

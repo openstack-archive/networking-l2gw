@@ -32,10 +32,10 @@ class TestBaseAgentManager(base.BaseTestCase):
 
     def setUp(self):
         super(TestBaseAgentManager, self).setUp()
-        self.conf = cfg.CONF
-        agent_config.register_agent_state_opts_helper(self.conf)
+        agent_config.register_agent_state_opts_helper(cfg.CONF)
         cfg.CONF.set_override('report_interval', 1, 'AGENT')
         self.context = mock.Mock
+        mock.patch('neutron.agent.rpc.PluginReportStateAPI').start()
         self.l2gw_agent_manager = l2gw_manager.BaseAgentManager(
             cfg.CONF)
 
@@ -62,27 +62,26 @@ class TestBaseAgentManager(base.BaseTestCase):
                 self.l2gw_agent_manager._setup_state_rpc()
                 self.assertTrue(agent_report_state_rpc.called)
                 self.assertTrue(looping_call.called)
+                looping_call.return_value.start.assert_called_with(
+                    interval=mock.ANY)
 
     def test_report_state(self):
         with mock.patch('neutron.agent.rpc.PluginReportStateAPI') as state_api:
-            l2_gw = l2gw_manager.BaseAgentManager(mock.Mock())
-            self.assertTrue(l2_gw.agent_state['start_flag'])
-            original_state = l2_gw.agent_state
-            original_use_call = l2_gw.use_call
-            self.assertTrue(l2_gw.use_call)
-            l2_gw._report_state()
-            self.assertFalse(l2_gw.agent_state['start_flag'])
-            self.assertFalse(l2_gw.use_call)
+            self.assertTrue(self.l2gw_agent_manager.agent_state['start_flag'])
+            self.assertTrue(self.l2gw_agent_manager.use_call)
+            self.l2gw_agent_manager._report_state()
+            self.assertFalse(self.l2gw_agent_manager.agent_state['start_flag'])
+            self.assertFalse(self.l2gw_agent_manager.use_call)
             state_api_inst = state_api.return_value
-            state_api_inst.report_state.assert_called_once_with(
-                l2_gw.context, original_state, original_use_call)
+            state_api_inst.report_state.assert_called_once()
 
-    def test_report_state_Exception(self):
-        with mock.patch('neutron.agent.rpc.PluginReportStateAPI') as state_api:
+    def test_report_state_exception(self):
+        cfg.CONF.set_override('report_interval', 1, 'AGENT')
+        with mock.patch.object(agent_rpc.PluginReportStateAPI,
+                               'report_state',
+                               side_effect=Exception):
             with mock.patch.object(l2gw_manager.LOG, 'exception') as exc:
-                state_api_inst = state_api.return_value
                 self.l2gw_agent_manager._report_state()
-                state_api_inst.report_state.side_effect = Exception
                 exc.assertCalled()
 
     def test_agent_updated(self):
@@ -103,7 +102,7 @@ class TestBaseAgentManager(base.BaseTestCase):
 
     def test_set_monitor_agent_type_transact(self):
         self.l2gw_agent_manager.l2gw_agent_type = ''
-        self.conf.host = 'fake_host'
+        cfg.CONF.host = 'fake_host'
         self.l2gw_agent_manager.set_monitor_agent(
             self.context, 'fake_host1')
         self.assertNotEqual(n_const.MONITOR,

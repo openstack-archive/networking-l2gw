@@ -64,7 +64,7 @@ class OVSDBConnection(object):
                 self.socket.connect((str(gw_config.ovsdb_ip),
                                      int(gw_config.ovsdb_port)))
                 break
-            except socket.error:
+            except (socket.error, socket.timeout):
                 LOG.warning(OVSDB_UNREACHABLE_MSG, gw_config.ovsdb_ip)
                 if retryCount == conf.max_connection_retries:
                     # Retried for max_connection_retries times.
