@@ -73,7 +73,7 @@ class TestAgentScheduler(base.BaseTestCase):
         cfg.CONF.set_override('agent_down_time', 10)
         cfg.CONF.set_override('periodic_monitoring_interval', 5)
         self.agentsch = agent_scheduler.L2GatewayAgentScheduler(cfg.CONF)
-        self.agentsch.plugin = self.plugin
+        self.agentsch._plugin = self.plugin
         self.agentsch.context = self.context
         self.agentsch.agent_ext_support = True
         self.LOG = agent_scheduler.LOG
@@ -89,60 +89,22 @@ class TestAgentScheduler(base.BaseTestCase):
 
     def test_initialize_thread(self):
         with contextlib.nested(
-            mock.patch.object(manager.NeutronManager, 'get_service_plugins'),
-            mock.patch.object(neutron_context,
-                              'get_admin_context',
-                              return_value=self.context),
-            mock.patch.object(manager.NeutronManager,
-                              'get_plugin',
-                              return_value=self.plugin),
             mock.patch.object(loopingcall, 'FixedIntervalLoopingCall'),
             mock.patch.object(self.LOG, 'debug'),
             mock.patch.object(self.LOG, 'error')
-        ) as (get_srv_plugin, get_context, get_plugin, loop_call, debug, err):
+        ) as (loop_call, debug, err):
             self.agentsch.initialize_thread()
-            self.assertTrue(get_srv_plugin.called)
-            self.assertTrue(get_context.called)
-            self.assertTrue(get_plugin.called)
             self.assertTrue(loop_call.called)
             self.assertTrue(debug.called)
             self.assertFalse(err.called)
 
-    def test_initialize_thread_get_plugin_exception(self):
-        with contextlib.nested(
-            mock.patch.object(manager.NeutronManager, 'get_service_plugins'),
-            mock.patch.object(neutron_context,
-                              'get_admin_context',
-                              return_value=self.context),
-            mock.patch.object(manager.NeutronManager,
-                              'get_plugin',
-                              side_effect=RuntimeError),
-            mock.patch.object(loopingcall, 'FixedIntervalLoopingCall'),
-            mock.patch.object(self.LOG, 'error')
-        ) as (get_srv_plugin, get_context, get_plugin, loop_call, log_err):
-            self.agentsch.initialize_thread()
-            self.assertTrue(get_srv_plugin.called)
-            self.assertTrue(get_context.called)
-            self.assertTrue(get_plugin.called)
-            self.assertFalse(loop_call.called)
-            self.assertTrue(log_err.called)
-
     def test_initialize_thread_loop_call_exception(self):
         with contextlib.nested(
-            mock.patch.object(manager.NeutronManager, 'get_service_plugins'),
-            mock.patch.object(neutron_context,
-                              'get_admin_context',
-                              return_value=self.context),
-            mock.patch.object(manager.NeutronManager,
-                              'get_plugin',
-                              return_value=self.plugin),
             mock.patch.object(loopingcall, 'FixedIntervalLoopingCall',
                               side_effect=RuntimeError),
             mock.patch.object(self.LOG, 'error')
-        ) as (get_srv_plugin, get_context, get_plugin, loop_call, log_err):
+        ) as (loop_call, log_err):
             self.agentsch.initialize_thread()
-            self.assertTrue(get_context.called)
-            self.assertTrue(get_plugin.called)
             self.assertTrue(loop_call.called)
             self.assertTrue(log_err.called)
 
@@ -156,7 +118,7 @@ class TestAgentScheduler(base.BaseTestCase):
             mock.patch.object(manager, 'NeutronManager'),
             mock.patch.object(self.LOG, 'exception')
         ) as (mock_sorted, mgr, logger_call):
-            self.agentsch.l2gwplugin = mock.Mock()
+            self.agentsch._l2gwplugin = mock.Mock()
             self.agentsch._select_agent_type(self.fake_a_agent_list)
             self.agentsch.l2gwplugin.agent_rpc.set_monitor_agent_called_with(
                 self.fake_a_agent_list[0]['host'])
@@ -167,7 +129,7 @@ class TestAgentScheduler(base.BaseTestCase):
         self.populate_agent_lists(config)
         self.fake_a_agent_list.append(make_active_agent(
             '1001', srv_const.AGENT_TYPE_L2GATEWAY, config))
-        self.agentsch.l2gwplugin = mock.Mock()
+        self.agentsch._l2gwplugin = mock.Mock()
 
         with contextlib.nested(
             mock.patch.object(manager, 'NeutronManager'),
