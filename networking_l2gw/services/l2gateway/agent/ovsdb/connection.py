@@ -15,6 +15,7 @@
 
 import eventlet
 
+from neutron import context as ctx
 from neutron.i18n import _LE
 from neutron.i18n import _LW
 from neutron.openstack.common import log as logging
@@ -234,7 +235,9 @@ class OVSDBConnection(object):
                                                         uuid_dict, port_map)
         except Exception as e:
             LOG.exception(_LE("_process_monitor_msg:ERROR %s "), e)
-        self.plugin_rpc.update_ovsdb_changes(self._form_ovsdb_data())
+        context = ctx.get_admin_context()
+        self.plugin_rpc.update_ovsdb_changes(context,
+                                             self._form_ovsdb_data())
 
     def _get_list(self, resource_list):
         return [element.__dict__ for element in resource_list]
