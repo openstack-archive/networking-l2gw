@@ -43,8 +43,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         self._extract_ovsdb_config(conf)
 
     def _extract_ovsdb_config(self, conf):
-        self.conf = conf.ovsdb or cfg.CONF.ovsdb
-        ovsdb_hosts = self.conf.ovsdb_hosts
+        self.conf = conf or cfg.CONF
+        ovsdb_hosts = self.conf.ovsdb.ovsdb_hosts
         if ovsdb_hosts != '':
             ovsdb_hosts = ovsdb_hosts.split(',')
             for host in ovsdb_hosts:
@@ -57,9 +57,9 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             ovsdb_conf = {n_const.OVSDB_IDENTIFIER: ovsdb_identifier,
                           'ovsdb_ip': str(host_splits[1]).strip(),
                           'ovsdb_port': str(host_splits[2]).strip()}
-            priv_key_path = self.conf.l2_gw_agent_priv_key_base_path
-            cert_path = self.conf.l2_gw_agent_cert_base_path
-            ca_cert_path = self.conf.l2_gw_agent_ca_cert_base_path
+            priv_key_path = self.conf.ovsdb.l2_gw_agent_priv_key_base_path
+            cert_path = self.conf.ovsdb.l2_gw_agent_cert_base_path
+            ca_cert_path = self.conf.ovsdb.l2_gw_agent_ca_cert_base_path
             use_ssl = priv_key_path and cert_path and ca_cert_path
             if use_ssl:
                 ssl_ovsdb = {'use_ssl': True,
@@ -96,12 +96,12 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                     LOG.debug("OVSDB server %s is disconnected",
                               str(gateway.ovsdb_ip))
                     try:
-                        ovsdb_fd = connection.OVSDBConnection(self.conf,
+                        ovsdb_fd = connection.OVSDBConnection(self.conf.ovsdb,
                                                               gateway,
                                                               True,
                                                               self.plugin_rpc)
                     except Exception:
-                        with excutils.save_and_reraise_exception(reraise=False
+                        with excutils.save_and_reraise_exception(reraise=True
                                                                  ):
                             # Log a warning and continue so that it can retried
                             # in the next iteration
@@ -116,7 +116,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         ovsdb_fd = None
         gateway = self.gateways.get(ovsdb_identifier)
         try:
-            ovsdb_fd = connection.OVSDBConnection(self.conf,
+            ovsdb_fd = connection.OVSDBConnection(self.conf.ovsdb,
                                                   gateway,
                                                   False,
                                                   self.plugin_rpc)
