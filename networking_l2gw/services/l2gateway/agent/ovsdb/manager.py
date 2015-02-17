@@ -16,13 +16,15 @@ from contextlib import contextmanager
 
 import eventlet
 
+from neutron import context as ctx
 from neutron.i18n import _LE
 from neutron.openstack.common import log as logging
 from neutron.openstack.common import loopingcall
 
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
-from networking_l2gw.services.l2gateway.agent.ovsdb import connection
+from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_monitor
+from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_writer
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 from oslo.config import cfg
@@ -101,10 +103,10 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                     LOG.debug("OVSDB server %s is disconnected",
                               str(gateway.ovsdb_ip))
                     try:
-                        ovsdb_fd = connection.OVSDBConnection(self.conf.ovsdb,
-                                                              gateway,
-                                                              True,
-                                                              self.plugin_rpc)
+                        ovsdb_fd = ovsdb_monitor.OVSDBMonitor(
+                            self.conf.ovsdb,
+                            gateway,
+                            self.agent_to_plugin_rpc)
                     except Exception:
                         # Log a warning and continue so that it can be retried
                         # in the next iteration.
@@ -113,8 +115,11 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                         # Continue processing the next element in the list.
                         continue
                     gateway.ovsdb_fd = ovsdb_fd
-                    eventlet.greenthread.spawn_n(ovsdb_fd.
-                                                 set_monitor_response_handler)
+                    try:
+                        eventlet.greenthread.spawn_n(
+                            ovsdb_fd.set_monitor_response_handler)
+                    except Exception:
+                        raise SystemExit(Exception.message)
 
     def set_monitor_agent(self, context, hostname):
         """Handle RPC call from plugin to update agent type.
@@ -145,10 +150,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         ovsdb_fd = None
         gateway = self.gateways.get(ovsdb_identifier)
         try:
-            ovsdb_fd = connection.OVSDBConnection(self.conf.ovsdb,
-                                                  gateway,
-                                                  False,
-                                                  self.plugin_rpc)
+            ovsdb_fd = ovsdb_writer.OVSDBWriter(self.conf.ovsdb,
+                                                gateway)
             yield ovsdb_fd
         finally:
             if ovsdb_fd:
@@ -161,34 +164,44 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                         [n_const.L2GW_INVALID_OVSDB_IDENTIFIER])
         return val_req
 
-    def delete_network(self, context, record_dict):
+    def delete_network(self, context, ovsdb_identifier, logical_switch_uuid):
         """Handle RPC cast from plugin to delete a network."""
-        ovsdb_identifier = record_dict.get(n_const.OVSDB_IDENTIFIER, None)
         if self._is_valid_request(ovsdb_identifier):
             with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.delete_logical_switch(record_dict)
+                ovsdb_fd.delete_logical_switch(logical_switch_uuid)
 
-    def add_vif_to_gateway(self, context, record_dict):
+    def add_vif_to_gateway(self, context, ovsdb_identifier,
+                           logical_switch_dict, locator_dict,
+                           mac_dict):
         """Handle RPC cast from plugin to insert neutron port MACs."""
-        ovsdb_identifier = record_dict.get(n_const.OVSDB_IDENTIFIER, None)
         if self._is_valid_request(ovsdb_identifier):
             with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.insert_ucast_macs_remote(record_dict)
+                ovsdb_fd.insert_ucast_macs_remote(logical_switch_dict,
+                                                  locator_dict,
+                                                  mac_dict)
 
-    def delete_vif_from_gateway(self, context, record_dict):
+    def delete_vif_from_gateway(self, context, ovsdb_identifier,
+                                logical_switch_uuid, mac):
         """Handle RPC cast from plugin to delete neutron port MACs."""
-        ovsdb_identifier = record_dict.get(n_const.OVSDB_IDENTIFIER, None)
         if self._is_valid_request(ovsdb_identifier):
             with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.delete_ucast_macs_remote(record_dict)
+                ovsdb_fd.delete_ucast_macs_remote(logical_switch_uuid, mac)
 
-    def update_connection_to_gateway(self, context, record_dict):
+    def update_connection_to_gateway(self, context, ovsdb_identifier,
+                                     logical_switch_dict, locator_dicts,
+                                     mac_dicts, port_dicts):
         """Handle RPC cast from plugin.
 
         Handle RPC cast from plugin to connect/disconnect a network
         to/from an L2 gateway.
         """
-        ovsdb_identifier = record_dict.get(n_const.OVSDB_IDENTIFIER, None)
         if self._is_valid_request(ovsdb_identifier):
             with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.update_connection_to_gateway(record_dict)
+                ovsdb_fd.update_connection_to_gateway(logical_switch_dict,
+                                                      locator_dicts,
+                                                      mac_dicts,
+                                                      port_dicts)
+
+    def agent_to_plugin_rpc(self, ovsdb_data):
+        self.plugin_rpc.update_ovsdb_changes(ctx.get_admin_context(),
+                                             ovsdb_data)

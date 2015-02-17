@@ -28,22 +28,27 @@ class PhysicalSwitch(object):
 
 
 class PhysicalPort(object):
-    def __init__(self, uuid, name, phys_switch_id):
+    def __init__(self, uuid, name, phys_switch_id, vlan_binding_dicts):
         self.uuid = uuid
         self.name = name
         self.physical_switch_id = phys_switch_id
-        self.vlan_bindings = None
+        self.vlan_bindings = []
+        if vlan_binding_dicts:
+            for vlan_binding in vlan_binding_dicts:
+                v_binding = VlanBinding(vlan_binding['vlan'],
+                                        vlan_binding['logical_switch_uuid'])
+                self.vlan_bindings.append(v_binding)
 
 
 class LogicalSwitch(object):
-    def __init__(self, uuid, name, key):
+    def __init__(self, uuid, name, key, description):
         self.uuid = uuid
         self.name = name
         self.key = key
+        self.description = description
 
 
 class UcastMacsLocal(object):
-
     def __init__(self, uuid, mac, logical_switch_id, physical_locator_id,
                  ip_address):
         self.uuid = uuid
@@ -82,4 +87,4 @@ class McastMacsLocal(object):
 class PhysicalLocatorSet(object):
     def __init__(self, uuid, locators):
         self.uuid = uuid
-        self.locators = self.locators
+        self.locators = locators

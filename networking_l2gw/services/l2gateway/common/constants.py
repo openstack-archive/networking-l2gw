@@ -17,11 +17,9 @@ L2GW = "L2GW"
 
 AGENT_TYPE_L2GATEWAY = 'L2 Gateway agent'
 
-L2GW_INVALID_RPC_MSG_FORMAT = 100
 L2GW_INVALID_OVSDB_IDENTIFIER = 101
 
-ERROR_DICT = {L2GW_INVALID_RPC_MSG_FORMAT: "Invalid RPC message format",
-              L2GW_INVALID_OVSDB_IDENTIFIER: "Invalid ovsdb_identifier in the "
+ERROR_DICT = {L2GW_INVALID_OVSDB_IDENTIFIER: "Invalid ovsdb_identifier in the "
               "request"}
 
 MONITOR = 'monitor'
@@ -39,3 +37,5 @@ IFACE_NAME_ATTR = 'interfaces'
 CONNECTION_RESOURCE_NAME = 'l2_gateway_connection'
 EXT_ALIAS = 'l2-gateway-connection'
 L2_GATEWAYS_CONNECTION = "%ss" % EXT_ALIAS
+BUFFER_SIZE = 4096
+MAX_RETRIES = 500

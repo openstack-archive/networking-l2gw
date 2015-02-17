@@ -86,6 +86,10 @@ class L2GatewaySegmentationRequired(exceptions.NeutronException):
     message = _("L2 gateway segmentation id must be consistent for all "
                 "the interfaces")
 
+
+class OVSDBError(exceptions.NeutronException):
+    message = _("%(message)s")
+
 base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayPortInUse: web_exc.HTTPConflict,
                        L2GatewayConnectionExists: web_exc.HTTPConflict,
