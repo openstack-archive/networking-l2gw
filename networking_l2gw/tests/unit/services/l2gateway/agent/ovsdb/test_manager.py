@@ -111,6 +111,27 @@ class TestManager(base.BaseTestCase):
                 ovsdb_connection.assert_called_with(
                     self.conf.ovsdb, gateway, True, self.plugin_rpc)
 
+    def test_connect_to_ovsdb_server_with_exc(self):
+        self.l2gw_agent_manager.gateways = {}
+        self.l2gw_agent_manager.l2gw_agent_type = n_const.MONITOR
+        gateway = l2gateway_config.L2GatewayConfig(self.fake_config_json)
+        ovsdb_ident = self.fake_config_json.get(n_const.OVSDB_IDENTIFIER)
+        self.l2gw_agent_manager.gateways[ovsdb_ident] = gateway
+        with contextlib.nested(
+            mock.patch.object(connection.OVSDBConnection,
+                              '__init__',
+                              side_effect=socket.error
+                              ),
+            mock.patch.object(eventlet.greenthread,
+                              'spawn_n'),
+            mock.patch.object(manager.LOG, 'warning')
+            ) as (ovsdb_connection, event_spawn, mock_warn):
+                self.assertRaises(socket.error,
+                                  self.l2gw_agent_manager.
+                                  _connect_to_ovsdb_server,
+                                  self.context)
+                event_spawn.assert_not_called()
+
     def test_is_valid_request_fails(self):
         self.l2gw_agent_manager.gateways = {}
         fake_ovsdb_identifier = 'fake_ovsdb_identifier_2'
