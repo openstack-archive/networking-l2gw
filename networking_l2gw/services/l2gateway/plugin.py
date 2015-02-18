@@ -92,7 +92,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
     def __init__(self):
         """Do the initialization for the l2 gateway service plugin here."""
         config.register_l2gw_opts_helper()
-        l2gatewaycallback = cfg.CONF.default_callback_class
+        l2gatewaycallback = cfg.CONF.l2gw_callback_class
         self.endpoints = [importutils.import_object(l2gatewaycallback, self),
                           agents_db.AgentExtRpcCallback()]
         self.conn = n_rpc.create_connection(new=True)
