@@ -128,13 +128,6 @@ class Client(V2_Client.Client):
 
         return self.delete(self.l2_gateway_connection_path % (con_id))
 
-    @APIParamsCall
-    def update_l2_gateway_connection(self, l2gateway_conn, body):
-        """Updates the specified l2gateway-connection."""
-
-        return self.put(self.l2_gateway_connection_path % (l2gateway_conn),
-                        body=body)
-
     def __init__(self, **kwargs):
         """Initialize a new client for the L2gateway v2.0 API."""
 

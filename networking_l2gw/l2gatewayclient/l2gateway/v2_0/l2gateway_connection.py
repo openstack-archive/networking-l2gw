@@ -33,12 +33,14 @@ class Showl2gatewayConnection(l2gatewayV20.ShowCommand):
     """Show information of a given l2gateway-connection."""
 
     resource = L2_GW_CONNECTION
+    allow_names = False
 
 
 class Deletel2gatewayConnection(l2gatewayV20.DeleteCommand):
     """Delete a given l2gateway-connection."""
 
     resource = L2_GW_CONNECTION
+    allow_names = False
 
 
 class Createl2gatewayConnection(l2gatewayV20.CreateCommand):
@@ -46,7 +48,16 @@ class Createl2gatewayConnection(l2gatewayV20.CreateCommand):
 
     resource = L2_GW_CONNECTION
 
-    def add_known_arguments(self, parser):
+    def retrieve_ids(self, client, args):
+        gateway_id = l2gatewayV20.find_resourceid_by_name_or_id(
+            client, 'l2_gateway', args.gateway_name)
+        network_id = l2gatewayV20.find_resourceid_by_name_or_id(
+            client, 'network', args.network)
+        return (gateway_id, network_id)
+
+    def get_parser(self, parser):
+        parser = super(l2gatewayV20.CreateCommand,
+                       self).get_parser(parser)
         parser.add_argument(
             'gateway_name', metavar='<GATEWAY-NAME/UUID>',
             help=_('Descriptive name for logical gateway.'))
@@ -56,21 +67,22 @@ class Createl2gatewayConnection(l2gatewayV20.CreateCommand):
         parser.add_argument(
             '--default-segmentation-id',
             dest='seg_id',
-            help=_('default segmentation-id that will '
-                   'be applied to the interfaces for which '
-                   'segmentation id was not specified '
+            help=_('default segmentation-id that will'
+                   'be applied to the interfaces for which'
+                   'segmentation id was not specified'
                    'in l2-gateway-create command.'))
+        return parser
 
-    def args2body(self, parsed_args):
+    def args2body(self, args):
+
+        neutron_client = self.get_client()
+        (gateway_id, network_id) = self.retrieve_ids(neutron_client,
+                                                     args)
 
         body = {'l2_gateway_connection':
-                {'l2_gateway_id': parsed_args.gateway_name,
-                 'network_id': parsed_args.network,
-                 'segmentation_id': parsed_args.seg_id}}
+                {'l2_gateway_id': gateway_id,
+                 'network_id': network_id}}
+        if args.seg_id:
+            body['l2_gateway_connection']['segmentation_id'] = args.seg_id
+
         return body
-
-
-class Updatel2gatewayConnection(l2gatewayV20.UpdateCommand):
-    """Update a given l2gateway-connection."""
-
-    resource = L2_GW_CONNECTION

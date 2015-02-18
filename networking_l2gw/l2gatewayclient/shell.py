@@ -50,8 +50,6 @@ COMMAND_V2 = {
                                    Showl2gatewayConnection),
     'l2-gateway-connection-delete': (l2gateway_connection.
                                      Deletel2gatewayConnection),
-    'l2-gateway-connection-update': (l2gateway_connection.
-                                     Updatel2gatewayConnection),
 }
 
 COMMANDS = {'2.0': COMMAND_V2}

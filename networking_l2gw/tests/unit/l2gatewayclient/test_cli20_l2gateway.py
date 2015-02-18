@@ -30,8 +30,8 @@ class CLITestV20L2gatewayJSON(test_cli20.CLITestV20Base):
         resource = 'l2_gateway'
         cmd = l2gateway.Createl2gateway(test_cli20.MyApp(sys.stdout), None)
         name = 'l2gw'
-        args = [name, '--device', 'name=d1,interface_name=i1']
-        device = [{'name': 'd1', 'interface_name': 'i1'}]
+        args = [name, '--device', 'name=d1,interface_names=i1']
+        device = [{'device_name': 'd1', 'interfaces': [{'name': 'i1'}]}]
         position_names = ['name', 'devices']
         position_values = [name, device]
         self._test_create_resource(resource, cmd, name, 'myid', args,
@@ -66,8 +66,11 @@ class CLITestV20L2gatewayJSON(test_cli20.CLITestV20Base):
         """Test Update l2gateway."""
 
         resource = 'l2_gateway'
+        args = ['myid', '--name', 'myname', '--device',
+                'name=d1,interface_names=i1']
+        values = {'name': 'myname',
+                  'devices': [{'device_name': 'd1',
+                               'interfaces': [{'name': 'i1'}]}]}
         cmd = l2gateway.Updatel2gateway(test_cli20.MyApp(sys.stdout), None)
         self._test_update_resource(resource, cmd, 'myid',
-                                   ['myid', '--name', 'myname', ],
-                                   {'name': 'myname', }
-                                   )
+                                   args, values)

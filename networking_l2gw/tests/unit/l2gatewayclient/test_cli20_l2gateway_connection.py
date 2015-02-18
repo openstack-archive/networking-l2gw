@@ -66,14 +66,3 @@ class CLITestV20L2gatewayConnectionJSON(test_cli20.CLITestV20Base):
         args = ['--fields', 'id', '--fields', 'name', self.test_id]
         self._test_show_resource(resource, cmd, self.test_id, args,
                                  ['id', 'name'])
-
-    def test_update_l2gateway_connection(self):
-        """Test Update l2gateway-connection."""
-
-        resource = 'l2_gateway_connection'
-        cmd = l2gateway_connection.Updatel2gatewayConnection(test_cli20.MyApp(
-                                                             sys.stdout), None)
-        self._test_update_resource(resource, cmd, 'myid',
-                                   ['myid', '--segmentation_id', 'seg-id', ],
-                                   {'segmentation_id': 'seg-id', }
-                                   )
