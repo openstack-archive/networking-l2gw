@@ -38,10 +38,8 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
         self.l2gw_agent_type = ''
         self.use_call = True
         self.gateways = {}
-        self.context = context.get_admin_context_without_session()
         self.plugin_rpc = agent_api.L2GatewayAgentApi(
             topics.L2GATEWAY_PLUGIN,
-            self.context,
             self.conf.host
         )
         self._get_agent_state()
@@ -71,7 +69,8 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
 
     def _report_state(self):
         try:
-            self.state_rpc.report_state(self.context, self.agent_state,
+            ctx = context.get_admin_context_without_session()
+            self.state_rpc.report_state(ctx, self.agent_state,
                                         self.use_call)
             self.use_call = False
             self.agent_state['start_flag'] = False

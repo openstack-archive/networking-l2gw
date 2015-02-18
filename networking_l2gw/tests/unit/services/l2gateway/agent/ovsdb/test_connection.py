@@ -255,5 +255,5 @@ class TestOVSDBConnection(base.BaseTestCase):
             proc_ucast_mac_remote.assert_called()
             proc_mcast_mac_local.assert_called()
             proc_physical_locator_set.assert_called()
-            self.plugin_rpc.update_ovsdb_changes.assert_called_with(
-                mock.ANY)
+            self.plugin_rpc.update_ovsdb_changes.assert_called_with(mock.ANY,
+                                                                    mock.ANY)

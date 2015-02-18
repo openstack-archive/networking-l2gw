@@ -25,17 +25,17 @@ class L2GatewayAgentApiTestCase(base.BaseTestCase):
     def setUp(self):
         self.client_mock_p = mock.patch.object(agent_api.n_rpc, 'get_client')
         self.client_mock = self.client_mock_p.start()
-        self.ctxt = mock.ANY
         self.topic = 'foo_topic'
         self.host = 'foo_host'
 
         self.agent_rpc = agent_api.L2GatewayAgentApi(
-            self.topic, self.ctxt, self.host)
+            self.topic, self.host)
         super(L2GatewayAgentApiTestCase, self).setUp()
 
     def test_update_ovsdb_changes(self):
         cctxt = mock.Mock()
+        context = mock.Mock()
         self.agent_rpc.client.prepare.return_value = cctxt
-        self.agent_rpc.update_ovsdb_changes(mock.ANY)
+        self.agent_rpc.update_ovsdb_changes(context, mock.ANY)
         cctxt.cast.assert_called_with(
-            self.ctxt, 'update_ovsdb_changes', ovsdb_data=mock.ANY)
+            context, 'update_ovsdb_changes', ovsdb_data=mock.ANY)
