@@ -19,8 +19,9 @@ from neutronclient.i18n import _
 from neutronclient.neutron import v2_0 as l2gatewayV20
 from oslo.serialization import jsonutils
 
-
 L2_GW = 'l2_gateway'
+meta = ('name=name,interface_names=<interface_name1>;'
+        '<interface_name2>[:<seg-id1>[#<seg-id3>]')
 
 
 def _format_devices(l2_gateway):
@@ -31,8 +32,64 @@ def _format_devices(l2_gateway):
         return ''
 
 
+def get_interface(interfaces):
+    interface_dict = []
+    for interface in interfaces:
+        if ":" in interface:
+            int_name = interface.split(":")[0]
+            segid = interface.split(":")[1]
+            if "#" in segid:
+                segid = segid.split("#")
+            else:
+                segid = [segid]
+            interface_detail = {'name': int_name, 'segmentation_id': segid}
+        else:
+            interface_detail = {'name': interface}
+        interface_dict.append(interface_detail)
+    return interface_dict
+
+
+def add_known_arguments(self, parser):
+        parser.add_argument(
+            '--device',
+            metavar=meta,
+            action='append', dest='devices', type=utils.str2dict,
+            help=_('names or identifiers of the L2 gateways.'
+                   '(This option can be repeated)'))
+
+
+def args2body(self, parsed_args):
+        if parsed_args.devices:
+            devices = parsed_args.devices
+            interfaces = []
+        else:
+            devices = []
+        device_dict = []
+        for device in devices:
+            if 'interface_names' in device.keys():
+                interface = device['interface_names']
+                if ";" in interface:
+                    interface_dict = interface.split(";")
+                    interfaces = get_interface(interface_dict)
+                else:
+                    interfaces = get_interface([interface])
+            if 'name' in device.keys():
+                device = {'device_name': device['name'],
+                          'interfaces': interfaces}
+            else:
+                device = {'interfaces': interfaces}
+            device_dict.append(device)
+        if parsed_args.name:
+            l2gw_name = parsed_args.name
+            body = {'l2_gateway': {'name': l2gw_name,
+                                   'devices': device_dict}, }
+        else:
+            body = {'l2_gateway': {'devices': device_dict}, }
+        return body
+
+
 class Listl2gateway(l2gatewayV20.ListCommand):
-    """List l2gateways that belongs to a given tenant."""
+    """List l2gateway that belongs to a given tenant."""
 
     resource = L2_GW
     _formatters = {'devices': _format_devices, }
@@ -62,16 +119,12 @@ class Createl2gateway(l2gatewayV20.CreateCommand):
         parser.add_argument(
             'name', metavar='<GATEWAY-NAME>',
             help=_('Descriptive name for logical gateway.'))
-        parser.add_argument(
-            '--device', metavar='name=name,interface_name=interface_name',
-            action='append', dest='devices', type=utils.str2dict,
-            help=_('names or identifiers of the	L2 gateways.'
-                   '(This option can be repeated)'))
+        add_known_arguments(self, parser)
 
     def args2body(self, parsed_args):
-
-        body = {'l2_gateway': {'name': parsed_args.name,
-                               'devices': parsed_args.devices}, }
+        body = args2body(self, parsed_args)
+        if parsed_args.tenant_id:
+            body['l2_gateway']['tenant_id'] = parsed_args.tenant_id
         return body
 
 
@@ -79,3 +132,16 @@ class Updatel2gateway(l2gatewayV20.UpdateCommand):
     """Update a given l2gateway."""
 
     resource = L2_GW
+
+    def add_known_arguments(self, parser):
+        parser.add_argument(
+            '--name', metavar='name',
+            help=_('Descriptive name for logical gateway.'))
+        add_known_arguments(self, parser)
+
+    def args2body(self, parsed_args):
+        if parsed_args.devices:
+            body = args2body(self, parsed_args)
+        else:
+            body = {'l2_gateway': {'name': parsed_args.name}}
+        return body
