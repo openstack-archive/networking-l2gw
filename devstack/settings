@@ -1,0 +1,15 @@
+# Devstack settings
+L2GW_DIR=$DEST/networking-l2gw
+L2GW_AGENT_BINARY="$NEUTRON_BIN_DIR/neutron-l2gateway-agent"
+L2GW_PLUGIN=${L2GW_PLUGIN:-"networking_l2gw.services.l2gateway.plugin.L2GatewayPlugin"}
+L2GW_CONF_FILE=/etc/neutron/l2gateway_agent.ini
+#
+# Each service you enable has the following meaning:
+# l2gw-plugin - Add this config flag to  enable l2gw service plugin
+# l2gw-agent  - Add this config flag to enable l2gw agent
+#
+# An example of enabling all-in-one l2gw is below.
+# enable_service l2gw-plugin l2gw-agent
+#
+# This can be overridden in the localrc file
+OVSDB_HOSTS=${OVSDB_HOSTS:-"ovsdb1:127.0.0.1:6632"}
