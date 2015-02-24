@@ -17,9 +17,8 @@ from contextlib import contextmanager
 import eventlet
 
 from neutron.i18n import _LE
-from neutron.i18n import _LW
 from neutron.openstack.common import log as logging
-from neutron.openstack.common import periodic_task
+from neutron.openstack.common import loopingcall
 
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
@@ -27,7 +26,6 @@ from networking_l2gw.services.l2gateway.agent.ovsdb import connection
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 from oslo.config import cfg
-from oslo_utils import excutils
 
 LOG = logging.getLogger(__name__)
 
@@ -41,6 +39,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
     def __init__(self, conf=None):
         super(OVSDBManager, self).__init__(conf)
         self._extract_ovsdb_config(conf)
+        self.looping_task = loopingcall.FixedIntervalLoopingCall(
+            self._connect_to_ovsdb_server)
 
     def _extract_ovsdb_config(self, conf):
         self.conf = conf or cfg.CONF
@@ -49,6 +49,12 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             ovsdb_hosts = ovsdb_hosts.split(',')
             for host in ovsdb_hosts:
                 self._process_ovsdb_host(host)
+            # Ensure that max_connection_retries is less than
+            # the periodic interval.
+            if (self.conf.ovsdb.max_connection_retries >=
+                    self.conf.ovsdb.periodic_interval):
+                raise SystemExit("max_connection_retries should be "
+                                 "less than periodic interval")
 
     def _process_ovsdb_host(self, host):
         try:
@@ -85,8 +91,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             LOG.exception(_LE("Exception %(ex)s occurred while processing "
                               "host %(host)s"), {'ex': ex, 'host': host})
 
-    @periodic_task.periodic_task(run_immediately=True)
-    def _connect_to_ovsdb_server(self, context):
+    def _connect_to_ovsdb_server(self):
         """Initializes the connection to the OVSDB servers."""
         if self.gateways and self.l2gw_agent_type == n_const.MONITOR:
             for key in self.gateways.keys():
@@ -101,15 +106,39 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                                                               True,
                                                               self.plugin_rpc)
                     except Exception:
-                        with excutils.save_and_reraise_exception(reraise=True
-                                                                 ):
-                            # Log a warning and continue so that it can retried
-                            # in the next iteration
-                            LOG.warning(_LW("OVSDB server %s is not "
-                                            "reachable"), gateway.ovsdb_ip)
+                        # Log a warning and continue so that it can be retried
+                        # in the next iteration.
+                        LOG.error(_LE("OVSDB server %s is not "
+                                      "reachable"), gateway.ovsdb_ip)
+                        # Continue processing the next element in the list.
+                        continue
                     gateway.ovsdb_fd = ovsdb_fd
                     eventlet.greenthread.spawn_n(ovsdb_fd.
                                                  set_monitor_response_handler)
+
+    def set_monitor_agent(self, context, hostname):
+        """Handle RPC call from plugin to update agent type.
+
+        RPC call from the plugin to accept that I am a monitoring
+        or a transact agent. This is a fanout cast message
+        """
+        super(OVSDBManager, self).set_monitor_agent(context, hostname)
+
+        # If set to Monitor, then let us start monitoring the OVSDB
+        # servers without any further delay.
+        if (self.l2gw_agent_type == n_const.MONITOR and
+                not self.looping_task._running):
+            self.looping_task.start(interval=self.conf.ovsdb.periodic_interval)
+        else:
+            # Otherwise, stop monitoring the OVSDB servers
+            # and close the open connections if any.
+            if self.looping_task._running:
+                self.looping_task.stop()
+            if self.gateways:
+                for key in self.gateways.keys():
+                    gateway = self.gateways.get(key)
+                    if gateway.ovsdb_fd:
+                        gateway.ovsdb_fd.disconnect()
 
     @contextmanager
     def _open_connection(self, ovsdb_identifier):

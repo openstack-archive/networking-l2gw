@@ -20,6 +20,7 @@ import mock
 from neutron.agent.common import config as agent_config
 from neutron.common import rpc
 from neutron import context
+from neutron.openstack.common import loopingcall
 from neutron.tests import base
 import socket
 
@@ -50,6 +51,9 @@ class TestManager(base.BaseTestCase):
                                        'get_admin_context_without_session'
                                        ).start()
         self.test_rpc = mock.patch.object(rpc, 'get_client').start()
+        self.mock_looping_call = mock.patch.object(loopingcall,
+                                                   'FixedIntervalLoopingCall'
+                                                   ).start()
         self.l2gw_agent_manager = manager.OVSDBManager(
             self.conf)
         self.l2gw_agent_manager.plugin_rpc = self.plugin_rpc
@@ -94,6 +98,13 @@ class TestManager(base.BaseTestCase):
         self.assertEqual(l2gwconfig.private_key, gw.private_key)
         self.assertEqual(l2gwconfig.certificate, gw.certificate)
         self.assertEqual(l2gwconfig.ca_cert, gw.ca_cert)
+        cfg.CONF.set_override('max_connection_retries',
+                              25,
+                              'ovsdb')
+        self.assertRaises(SystemExit,
+                          self.l2gw_agent_manager.
+                          _extract_ovsdb_config,
+                          cfg.CONF)
 
     def test_connect_to_ovsdb_server(self):
         self.l2gw_agent_manager.gateways = {}
@@ -105,7 +116,7 @@ class TestManager(base.BaseTestCase):
                                'OVSDBConnection') as ovsdb_connection:
             with mock.patch.object(eventlet.greenthread,
                                    'spawn_n') as event_spawn:
-                self.l2gw_agent_manager._connect_to_ovsdb_server(self.context)
+                self.l2gw_agent_manager._connect_to_ovsdb_server()
                 self.assertTrue(event_spawn.called)
                 self.assertTrue(ovsdb_connection.called)
                 ovsdb_connection.assert_called_with(
@@ -124,13 +135,26 @@ class TestManager(base.BaseTestCase):
                               ),
             mock.patch.object(eventlet.greenthread,
                               'spawn_n'),
-            mock.patch.object(manager.LOG, 'warning')
+            mock.patch.object(manager.LOG, 'error')
             ) as (ovsdb_connection, event_spawn, mock_warn):
-                self.assertRaises(socket.error,
-                                  self.l2gw_agent_manager.
-                                  _connect_to_ovsdb_server,
-                                  self.context)
+                self.l2gw_agent_manager._connect_to_ovsdb_server()
                 event_spawn.assert_not_called()
+
+    def test_set_monitor_agent_type_monitor(self):
+        self.l2gw_agent_manager.l2gw_agent_type = ''
+        self.l2gw_agent_manager.conf.host = 'fake_host'
+        with mock.patch.object(manager.OVSDBManager,
+                               '_connect_to_ovsdb_server'
+                               ) as mock_conn:
+            self.l2gw_agent_manager.set_monitor_agent(self.context,
+                                                      'fake_host')
+            self.assertEqual(n_const.MONITOR,
+                             self.l2gw_agent_manager.agent_state.
+                             get('configurations')[n_const.L2GW_AGENT_TYPE])
+            self.assertEqual(n_const.MONITOR,
+                             self.l2gw_agent_manager.l2gw_agent_type)
+            mock_conn.assert_called()
+            self.mock_looping_call.start().assert_called()
 
     def test_is_valid_request_fails(self):
         self.l2gw_agent_manager.gateways = {}
