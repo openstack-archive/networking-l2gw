@@ -17,6 +17,7 @@ import mock
 
 import contextlib
 from neutron import context
+from neutron import manager
 from neutron.tests import base
 
 from networking_l2gw.db.l2gateway.ovsdb import lib
@@ -244,22 +245,25 @@ class TestOVSDBData(base.BaseTestCase):
                 add_pl.assert_called_with(self.context, fake_dict)
 
     def test_process_new_local_macs(self):
-        fake_dict = {}
+        fake_dict = {'uuid': '123456',
+                     'mac': 'mac123',
+                     'ovsdb_identifier': 'host1',
+                     'logical_switch_id': 'ls123'}
         fake_new_local_macs = [fake_dict]
-        with mock.patch.object(lib, 'get_ucast_mac_local',
-                               return_value=None) as get_lm:
-            with mock.patch.object(lib,
-                                   'add_ucast_mac_local') as add_lm:
-                self.ovsdb_data._process_new_local_macs(
-                    self.context, fake_new_local_macs)
-                self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-                self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                                 'fake_ovsdb_id')
-                get_lm.assert_called_with(self.context, fake_dict)
-                add_lm.assert_called_with(self.context, fake_dict)
+        with contextlib.nested(
+            mock.patch.object(lib, 'get_ucast_mac_local', return_value=None),
+            mock.patch.object(lib, 'add_ucast_mac_local')) as (
+                get_lm, add_lm):
+            self.ovsdb_data._process_new_local_macs(
+                self.context, fake_new_local_macs)
+            self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
+            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
+                             'fake_ovsdb_id')
+            get_lm.assert_called_with(self.context, fake_dict)
+            add_lm.assert_called_with(self.context, fake_dict)
 
     def test_process_new_remote_macs(self):
-        fake_dict = {}
+        fake_dict = {'logical_switch_id': 'ls123'}
         fake_new_remote_macs = [fake_dict]
         with mock.patch.object(lib, 'get_ucast_mac_remote',
                                return_value=None) as get_mr:
@@ -309,6 +313,7 @@ class TestOVSDBData(base.BaseTestCase):
     def test_process_deleted_physical_locators(self):
         fake_dict = {}
         fake_deleted_physical_locators = [fake_dict]
+        mock.patch.object(manager, 'NeutronManager').start()
         with mock.patch.object(lib, 'delete_physical_locator') as delete_pl:
             self.ovsdb_data._process_deleted_physical_locators(
                 self.context, fake_deleted_physical_locators)
@@ -318,15 +323,21 @@ class TestOVSDBData(base.BaseTestCase):
             delete_pl.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_local_macs(self):
-        fake_dict = {}
+        fake_dict = {'uuid': '123456',
+                     'mac': 'mac123',
+                     'ovsdb_identifier': 'host1',
+                     'logical_switch_id': 'ls123'}
         fake_deleted_local_macs = [fake_dict]
         with mock.patch.object(lib, 'delete_ucast_mac_local') as delete_ml:
-            self.ovsdb_data._process_deleted_local_macs(
-                self.context, fake_deleted_local_macs)
-            self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
-            delete_ml.assert_called_with(self.context, fake_dict)
+            with mock.patch.object(lib,
+                                   'get_ucast_mac_remote_by_mac_and_ls',
+                                   return_value=True):
+                self.ovsdb_data._process_deleted_local_macs(
+                    self.context, fake_deleted_local_macs)
+                self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
+                self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
+                                 'fake_ovsdb_id')
+                delete_ml.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_remote_macs(self):
         fake_dict = {}

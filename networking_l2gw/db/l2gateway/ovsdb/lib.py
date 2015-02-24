@@ -210,7 +210,7 @@ def get_logical_switch(context, record_dict):
     return logical_switch
 
 
-def get_all_logical_switch_by_name(context, name):
+def get_all_logical_switches_by_name(context, name):
     """Get logical switch that matches the supplied name."""
     query = context.session.query(models.LogicalSwitches)
     return query.filter_by(name=name).all()
@@ -366,3 +366,25 @@ def get_physical_port_by_name_and_ps(context, record_dict):
                   record_dict['name'])
         return
     return physical_port
+
+
+def get_all_physical_switches_by_ovsdb_id(context, ovsdb_identifier):
+    """Get Physical Switches that match the supplied ovsdb identifier."""
+    query = context.session.query(models.PhysicalSwitches)
+    return query.filter_by(
+        ovsdb_identifier=ovsdb_identifier).all()
+
+
+def get_all_logical_switches_by_ovsdb_id(context, ovsdb_identifier):
+    """Get logical Switches that match the supplied ovsdb identifier."""
+    query = context.session.query(models.LogicalSwitches)
+    return query.filter_by(
+        ovsdb_identifier=ovsdb_identifier).all()
+
+
+def get_all_vlan_bindings_by_logical_switch(context, record_dict):
+    """Get Vlan bindings that match the supplied logical switch."""
+    query = context.session.query(models.VlanBindings)
+    return query.filter_by(
+        logical_switch_uuid=record_dict['logical_switch_id'],
+        ovsdb_identifier=record_dict['ovsdb_identifier']).all()

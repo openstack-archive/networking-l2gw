@@ -395,8 +395,8 @@ class OvsdbLibTestCase(testlib_api.SqlTestCase):
         self._create_logical_switch(record_dict1, 'logical_switch2')
         record_dict2 = self._get_logical_switch_dict()
         self._create_logical_switch(record_dict2, 'logical_switch2')
-        ls_list = lib.get_all_logical_switch_by_name(self.ctx,
-                                                     'logical_switch2')
+        ls_list = lib.get_all_logical_switches_by_name(self.ctx,
+                                                       'logical_switch2')
         self.assertEqual(2, len(ls_list))
 
     def test_get_physical_locator_by_dst_ip(self):

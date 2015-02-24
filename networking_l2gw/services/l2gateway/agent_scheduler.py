@@ -71,7 +71,7 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
         except Exception:
             LOG.error(_LE("Cannot initialize agent scheduler thread"))
 
-    def _select_agent_type(self, agents_to_process):
+    def _select_agent_type(self, context, agents_to_process):
         """Select the Monitor agent."""
         # Various cases to be handled:
         # 1. Check if there is a single active L2 gateway agent.
@@ -107,7 +107,8 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
             sorted_active_agents = sorted(agents_to_process,
                                           key=lambda k: k['started_at'])
             chosen_agent = sorted_active_agents[0]
-        self.l2gwplugin.agent_rpc.set_monitor_agent(chosen_agent['host'])
+        self.l2gwplugin.agent_rpc.set_monitor_agent(context,
+                                                    chosen_agent['host'])
 
     def monitor_agent_state(self):
         """Represents L2gateway agent scheduler thread.
@@ -115,9 +116,10 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
         Maintains list of active and inactive agents based on
         the heartbeat recorded.
         """
+        context = neutron_context.get_admin_context()
         try:
             all_agents = self.plugin.get_agents(
-                neutron_context.get_admin_context(),
+                context,
                 filters={'agent_type': [srv_const.AGENT_TYPE_L2GATEWAY]})
         except Exception:
             LOG.exception(_LE("Unable to get the agent list. Continuing..."))
@@ -130,5 +132,5 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
             if not self.is_agent_down(agent['heartbeat_timestamp']):
                 agents_to_process.append(agent)
         if agents_to_process:
-            self._select_agent_type(agents_to_process)
+            self._select_agent_type(context, agents_to_process)
         return

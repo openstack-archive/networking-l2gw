@@ -39,3 +39,4 @@ EXT_ALIAS = 'l2-gateway-connection'
 L2_GATEWAYS_CONNECTION = "%ss" % EXT_ALIAS
 BUFFER_SIZE = 4096
 MAX_RETRIES = 500
+L2_GATEWAY_SERVICE_PLUGIN = "Neutron L2 gateway Service Plugin"

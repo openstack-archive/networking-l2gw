@@ -118,9 +118,10 @@ class TestAgentScheduler(base.BaseTestCase):
             mock.patch.object(self.LOG, 'exception')
         ) as (mock_sorted, mgr, logger_call):
             self.agentsch._l2gwplugin = mock.Mock()
-            self.agentsch._select_agent_type(self.fake_a_agent_list)
+            self.agentsch._select_agent_type(self.context,
+                                             self.fake_a_agent_list)
             self.agentsch.l2gwplugin.agent_rpc.set_monitor_agent_called_with(
-                self.fake_a_agent_list[0]['host'])
+                self.context, self.fake_a_agent_list[0]['host'])
 
     def test_select_agent_type_multiple_active(self):
         config = {srv_const.L2GW_AGENT_TYPE: ''}
@@ -133,9 +134,10 @@ class TestAgentScheduler(base.BaseTestCase):
             mock.patch.object(manager, 'NeutronManager'),
             mock.patch.object(self.LOG, 'exception')
         ) as (mgr, logger_call):
-            self.agentsch._select_agent_type(self.fake_a_agent_list)
+            self.agentsch._select_agent_type(self.context,
+                                             self.fake_a_agent_list)
             self.agentsch.l2gwplugin.agent_rpc.set_monitor_agent_called_with(
-                self.fake_a_agent_list[0]['host'])
+                self.context, self.fake_a_agent_list[0]['host'])
 
     def test_monitor_agent_state(self):
         config = {srv_const.L2GW_AGENT_TYPE: ''}
