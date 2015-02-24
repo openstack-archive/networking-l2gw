@@ -31,12 +31,6 @@ LOG = logging.getLogger(__name__)
 class L2gatewayAgentService(n_rpc.Service):
     def start(self):
         super(L2gatewayAgentService, self).start()
-        self.tg.add_timer(
-            cfg.CONF.ovsdb.periodic_interval,
-            self.manager.run_periodic_tasks,
-            None,
-            None
-        )
 
 
 def main():
