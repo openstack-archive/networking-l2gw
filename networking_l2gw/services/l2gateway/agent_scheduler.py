@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.from oslo.config import cfg
 from oslo.config import cfg
-from oslo.utils import timeutils
 
 from neutron import context as neutron_context
 from neutron.db import agents_db
@@ -128,10 +127,7 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
         # Monitor agent
         agents_to_process = []
         for agent in all_agents:
-            agent_time_stamp = agent['heartbeat_timestamp']
-            active = not timeutils.is_older_than(agent_time_stamp,
-                                                 cfg.CONF.agent_down_time * 2)
-            if active:
+            if not self.is_agent_down(agent['heartbeat_timestamp']):
                 agents_to_process.append(agent)
         if agents_to_process:
             self._select_agent_type(agents_to_process)

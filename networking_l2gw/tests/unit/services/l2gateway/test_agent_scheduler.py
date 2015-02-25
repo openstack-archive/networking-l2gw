@@ -109,8 +109,7 @@ class TestAgentScheduler(base.BaseTestCase):
             self.assertTrue(log_err.called)
 
     def test_select_agent_type_one_active(self):
-        config = {'cluster_id': 'foo',
-                  srv_const.L2GW_AGENT_TYPE: ''}
+        config = {srv_const.L2GW_AGENT_TYPE: ''}
         self.populate_agent_lists(config)
 
         with contextlib.nested(
@@ -124,8 +123,7 @@ class TestAgentScheduler(base.BaseTestCase):
                 self.fake_a_agent_list[0]['host'])
 
     def test_select_agent_type_multiple_active(self):
-        config = {'cluster_id': 'foo',
-                  srv_const.L2GW_AGENT_TYPE: ''}
+        config = {srv_const.L2GW_AGENT_TYPE: ''}
         self.populate_agent_lists(config)
         self.fake_a_agent_list.append(make_active_agent(
             '1001', srv_const.AGENT_TYPE_L2GATEWAY, config))
@@ -140,8 +138,7 @@ class TestAgentScheduler(base.BaseTestCase):
                 self.fake_a_agent_list[0]['host'])
 
     def test_monitor_agent_state(self):
-        config = {'cluster_id': 'foo',
-                  srv_const.L2GW_AGENT_TYPE: ''}
+        config = {srv_const.L2GW_AGENT_TYPE: ''}
         self.populate_agent_lists(config)
         fake_all_agent_list = copy.deepcopy(self.fake_i_agent_list)
         fake_all_agent_list.extend(self.fake_a_agent_list)
@@ -151,11 +148,14 @@ class TestAgentScheduler(base.BaseTestCase):
         with contextlib.nested(
             mock.patch.object(self.agentsch, '_select_agent_type'),
             mock.patch.object(self.plugin, 'get_agents',
-                              return_value=fake_all_agent_list)
-        ) as (select_agent, get_agent_list):
+                              return_value=fake_all_agent_list),
+            mock.patch.object(self.agentsch, 'is_agent_down',
+                              return_value=False)
+        ) as (select_agent, get_agent_list, is_agt):
             self.agentsch.monitor_agent_state()
             self.assertTrue(get_agent_list.called)
             self.assertTrue(select_agent.called)
+            self.assertTrue(is_agt.called)
 
     def test_monitor_agent_state_exception_get_agents(self):
         with contextlib.nested(
