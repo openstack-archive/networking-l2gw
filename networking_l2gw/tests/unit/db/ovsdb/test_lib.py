@@ -19,8 +19,8 @@ from neutron import context
 from neutron.openstack.common import uuidutils
 from neutron.tests.unit import testlib_api
 
-from networking_l2gw.services.l2gateway.ovsdb import lib
-from networking_l2gw.services.l2gateway.ovsdb import models
+from networking_l2gw.db.l2gateway.ovsdb import lib
+from networking_l2gw.db.l2gateway.ovsdb import models
 
 _uuid = uuidutils.generate_uuid
 

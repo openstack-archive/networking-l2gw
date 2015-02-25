@@ -17,7 +17,7 @@ from sqlalchemy.orm import exc
 
 from neutron.openstack.common import log as logging
 
-from networking_l2gw.services.l2gateway.ovsdb import models
+from networking_l2gw.db.l2gateway.ovsdb import models
 
 LOG = logging.getLogger(__name__)
 
