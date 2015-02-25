@@ -47,19 +47,11 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         return gw
 
     def _get_l2_gateways(self, context):
-        try:
-            gw = context.session.query(models.L2Gateway).all()
-        except sa_orm_exc.NoResultFound:
-            raise l2gw_exc.L2GatewayNotFound(gateway_id="")
-        return gw
+        return context.session.query(models.L2Gateway).all()
 
     def _get_l2_gateway_interface(self, context, id):
-        try:
-            gw = context.session.query(models.L2GatewayInterface).filter_by(
-                device_id=id).all()
-        except sa_orm_exc.NoResultFound:
-            raise l2gw_exc.L2GatewayInterfaceNotFound(interface_id=id)
-        return gw
+        return context.session.query(models.L2GatewayInterface).filter_by(
+            device_id=id).all()
 
     def _check_vlan_on_interface(self, context, l2gw_id):
         device_db = self._get_l2_gateway_device(context, l2gw_id)
@@ -75,12 +67,8 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         return False
 
     def _get_l2_gateway_device(self, context, l2gw_id):
-        try:
-            gw = context.session.query(models.L2GatewayDevice).filter_by(
-                l2_gateway_id=l2gw_id).all()
-        except sa_orm_exc.NoResultFound:
-            raise l2gw_exc.L2GatewayDeviceNotFound(device_id=l2gw_id)
-        return gw
+        return context.session.query(models.L2GatewayDevice).filter_by(
+            l2_gateway_id=l2gw_id).all()
 
     def _get_l2_gateway_connection(self, context, cn_id):
         try:
