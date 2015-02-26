@@ -25,6 +25,10 @@ function start_l2gw_agent {
    run_process l2gw-agent "python $L2GW_AGENT_BINARY --config-file $NEUTRON_CONF --config-file=$L2GW_CONF_FILE"
 }
 
+function run_l2gw_alembic_migration {
+   $NEUTRON_BIN_DIR/neutron-l2gw-db-manage --config-file $NEUTRON_CONF --config-file /$Q_PLUGIN_CONF_FILE  upgrade head
+}
+
 function configure_l2gw_plugin {
    _neutron_service_plugin_class_add $L2GW_PLUGIN
 }
@@ -38,8 +42,7 @@ if is_service_enabled l2gw-plugin; then
         install_l2gw
         configure_l2gw_plugin
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
-        #no-op
-        :
+    	run_l2gw_alembic_migration
     elif [[ "$1" == "stack" && "$2" == "post-extra" ]]; then
         # no-op
         :
