@@ -19,9 +19,9 @@ import contextlib
 from neutron import context
 from neutron.tests import base
 
+from networking_l2gw.db.l2gateway.ovsdb import lib
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.ovsdb import data
-from networking_l2gw.services.l2gateway.ovsdb import lib
 
 
 class TestL2GatewayOVSDBCallbacks():

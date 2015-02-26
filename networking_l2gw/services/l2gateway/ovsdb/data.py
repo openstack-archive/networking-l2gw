@@ -16,9 +16,9 @@
 from neutron import context as ctx
 from neutron.openstack.common import log as logging
 
+from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import topics
-from networking_l2gw.services.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
 from oslo.config import cfg
