@@ -37,6 +37,10 @@ class L2GatewayDeviceNotFound(exceptions.NotFound):
     message = _("L2 Gateway Device %(device_id)s could not be found.")
 
 
+class L2GatewayDeviceNameNotFound(exceptions.NotFound):
+    message = _("L2 Gateway Device %(device_name)s could not be found.")
+
+
 class L2GatewayPortInUse(exceptions.InUse):
     message = _("Port '%(port_id)s' is owned by '%(device_owner)s' and "
                 "therefore cannot be deleted directly via the port API.")
@@ -57,15 +61,35 @@ class L2GatewayInterfaceNotFound(exceptions.NeutronException):
 
 
 class L2GatewayConnectionNotFound(exceptions.NotFound):
-    message = _("The connection %(id)s was not found on the l2 gateway")
+    message = _("The connection %(id)s not found on the l2 gateway")
 
 
-class L2GatewayPluginNotFound(exceptions.NotFound):
-    message = _("Plugin or agent extension not found")
+class L2gatewaySegmentationIDNotFound(exceptions.NotFound):
+    message = _("The segmentation id not found on gateway "
+                "'%(gateway_id)s'")
 
+
+class MultipleSegmentsFound(exceptions.NeutronException):
+    message = _("Multiple segments found for the network  '%(network_id)s'")
+
+
+class L2GatewayInterfaceRequired(exceptions.NeutronException):
+    message = _("L2 Gateway Interface required")
+
+
+class L2GatewaySegmentationIDExists(exceptions.InUse):
+    message = _("The segmentation id is already specified in "
+                "gateway interface '%(interface_id)s'.")
+
+
+class L2GatewaySegmentationRequired(exceptions.NeutronException):
+    message = _("L2 gateway segmentation id must be consistent for all "
+                "the interfaces")
 
 base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayPortInUse: web_exc.HTTPConflict,
                        L2GatewayConnectionExists: web_exc.HTTPConflict,
                        L2GatewayConnectionNotFound: web_exc.HTTPNotFound,
+                       MultipleSegmentsFound: web_exc.HTTPConflict,
+                       L2GatewaySegmentationRequired: web_exc.HTTPConflict,
                        L2MultipleGatewayConnections: web_exc.HTTPConflict})

@@ -49,16 +49,18 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
     def _get_l2_gateways(self, context):
         return context.session.query(models.L2Gateway).all()
 
-    def _get_l2_gateway_interface(self, context, id):
+    def _get_l2_gw_interfaces(self, context, id):
         return context.session.query(models.L2GatewayInterface).filter_by(
             device_id=id).all()
 
-    def _check_vlan_on_interface(self, context, l2gw_id):
-        device_db = self._get_l2_gateway_device(context, l2gw_id)
-        for device_model in device_db:
-            interface_db = self._get_l2_gateway_interface(context,
-                                                          device_model.id)
-            for int_model in interface_db:
+    def _is_vlan_configured_on_any_interface_for_l2gw(self,
+                                                      context,
+                                                      l2gw_id):
+        devices_db = self._get_l2_gateway_devices(context, l2gw_id)
+        for device_model in devices_db:
+            interfaces_db = self._get_l2_gw_interfaces(context,
+                                                       device_model.id)
+            for int_model in interfaces_db:
                 query = context.session.query(models.L2GatewayInterface)
                 int_db = query.filter_by(id=int_model.id).first()
                 seg_id = int_db[constants.SEG_ID]
@@ -66,9 +68,14 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                     return True
         return False
 
-    def _get_l2_gateway_device(self, context, l2gw_id):
+    def _get_l2_gateway_devices(self, context, l2gw_id):
         return context.session.query(models.L2GatewayDevice).filter_by(
             l2_gateway_id=l2gw_id).all()
+
+    def _get_l2gw_devices_by_name_andl2gwid(self, context, device_name,
+                                            l2gw_id):
+        return context.session.query(models.L2GatewayDevice).filter_by(
+            device_name=device_name, l2_gateway_id=l2gw_id).all()
 
     def _get_l2_gateway_connection(self, context, cn_id):
         try:
@@ -80,22 +87,29 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
     def _make_l2gw_connections_dict(self, gw_conn, fields=None):
         if gw_conn is None:
             raise l2gw_exc.L2GatewayConnectionNotFound(id="")
+        segmentation_id = gw_conn['segmentation_id']
+        if segmentation_id == 0:
+            segmentation_id = ""
         res = {'id': gw_conn['id'],
                'network_id': gw_conn['network_id'],
-               'l2_gateway_id': gw_conn['l2_gateway_id']
+               'l2_gateway_id': gw_conn['l2_gateway_id'],
+               'tenant_id': gw_conn['tenant_id'],
+               'segmentation_id': segmentation_id
                }
         return self._fields(res, fields)
 
-    def _make_l2_gateway_dict(self, l2_gateway, interface_db, fields=None):
+    def _make_l2_gateway_dict(self, l2_gateway, fields=None):
         device_list = []
-        interface_list = []
-        for d in l2_gateway['devices']:
-            if not interface_list:
-                for interfaces_db in d['interfaces']:
-                    interface_list.append({'name':
-                                           interfaces_db['interface_name'],
-                                           constants.SEG_ID:
-                                           interfaces_db[constants.SEG_ID]})
+        for d in l2_gateway.devices:
+            interface_list = []
+            for interfaces_db in d.interfaces:
+                seg_id = interfaces_db[constants.SEG_ID]
+                if seg_id == 0:
+                    seg_id = ""
+                interface_list.append({'name':
+                                       interfaces_db['interface_name'],
+                                       constants.SEG_ID:
+                                       seg_id})
             device_list.append({'device_name': d['device_name'],
                                 'id': d['id'],
                                 'interfaces': interface_list})
@@ -113,7 +127,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                                       mapping_info={}, only_one=False):
         filters = {'l2_gateway_id': [gateway_id]}
         for k, v in mapping_info.iteritems():
-            if v:
+            if v and k != constants.SEG_ID:
                 filters[k] = [v]
         query = self._get_collection_query(context,
                                            models.L2GatewayConnection,
@@ -126,6 +140,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         gw = l2_gateway[self.gateway_resource]
         tenant_id = self._get_tenant_id_for_create(context, gw)
         devices = gw['devices']
+        self._validate_any_seg_id_empty_in_interface_dict(devices)
         with context.session.begin(subtransactions=True):
                 gw_db = models.L2Gateway(
                     id=gw.get('id', uuidutils.generate_uuid()),
@@ -133,84 +148,97 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                     name=gw.get('name'))
                 context.session.add(gw_db)
                 l2gw_device_dict = {}
-                interface_db_list = []
                 for device in devices:
                     l2gw_device_dict['l2_gateway_id'] = id
                     device_name = device['device_name']
                     l2gw_device_dict['device_name'] = device_name
                     l2gw_device_dict['id'] = uuidutils.generate_uuid()
                     uuid = self._generate_uuid()
-                    d_db = models.L2GatewayDevice(id=uuid,
-                                                  l2_gateway_id=gw_db.id,
-                                                  device_name=device_name)
-                    context.session.add(d_db)
+                    dev_db = models.L2GatewayDevice(id=uuid,
+                                                    l2_gateway_id=gw_db.id,
+                                                    device_name=device_name)
+                    context.session.add(dev_db)
                     for interface_list in device['interfaces']:
-                        name = interface_list.get('name')
-                        seg_list = interface_list.get(constants.SEG_ID, None)
-                        if seg_list:
-                            for segs in seg_list:
+                        int_name = interface_list.get('name')
+                        if constants.SEG_ID in interface_list:
+                            seg_id_list = interface_list.get(constants.SEG_ID)
+                            for seg_ids in seg_id_list:
                                 uuid = self._generate_uuid()
                                 interface_db = self._get_int_model(uuid,
-                                                                   name,
-                                                                   d_db.id,
-                                                                   segs)
+                                                                   int_name,
+                                                                   dev_db.id,
+                                                                   seg_ids)
                                 context.session.add(interface_db)
-                                interface_db_list.append(interface_db)
                         else:
                             uuid = self._generate_uuid()
-                            default_seg_id = constants.SEG_ID
                             interface_db = self._get_int_model(uuid,
-                                                               name,
-                                                               d_db.id,
-                                                               default_seg_id)
+                                                               int_name,
+                                                               dev_db.id,
+                                                               0)
                             context.session.add(interface_db)
-                            interface_db_list.append(interface_db)
                         context.session.query(models.L2GatewayDevice).all()
-        return self._make_l2_gateway_dict(gw_db, interface_db_list)
+        return self._make_l2_gateway_dict(gw_db)
 
     def update_l2_gateway(self, context, id, l2_gateway):
         """Update l2 gateway."""
         self._admin_check(context, 'UPDATE')
         gw = l2_gateway[self.gateway_resource]
-        devices = gw['devices']
+        if 'devices' in gw:
+            devices = gw['devices']
         with context.session.begin(subtransactions=True):
                 l2gw_db = self._get_l2_gateway(context, id)
                 if l2gw_db.network_connections:
                     raise l2gw_exc.L2GatewayInUse(gateway_id=id)
-                l2gw_db.name = gw.get('name')
-                interface_db_list = []
-                device_db = self._get_l2_gateway_device(context, id)
-                interface_dict_list = []
+                dev_db = self._get_l2_gateway_devices(context, id)
+                if not gw.get('devices'):
+                    l2gw_db.name = gw.get('name')
+                    return self._make_l2_gateway_dict(l2gw_db)
                 for device in devices:
-                        for interfaces in device['interfaces']:
-                            interface_dict_list.append(interfaces)
-                for d_val in device_db:
-                    interface_db = self._get_l2_gateway_interface(context,
-                                                                  d_val.id)
+                    dev_name = device['device_name']
+                    dev_db = self._get_l2gw_devices_by_name_andl2gwid(context,
+                                                                      dev_name,
+                                                                      id)
+                    if not dev_db:
+                        raise l2gw_exc.L2GatewayDeviceNotFound(device_id="")
+                    interface_db = self._get_l2_gw_interfaces(context,
+                                                              dev_db[0].id)
                     self._delete_l2_gateway_interfaces(context, interface_db)
-                    for interfaces in interface_dict_list:
-                        int_name = interfaces.get('name')
-                        seg_id_list = interfaces.get(constants.SEG_ID, None)
-                        uuid = self._generate_uuid()
-                        for seg_ids in seg_id_list:
-                            interface_db = self._get_int_model(uuid,
-                                                               int_name,
-                                                               d_val.id,
-                                                               seg_ids)
-                            context.session.add(interface_db)
-                            interface_db_list.append(interface_db)
-        return self._make_l2_gateway_dict(l2gw_db, interface_db_list)
+                    interface_dict_list = []
+                    self.validate_device_name(context, dev_name, id)
+                    for interfaces in device['interfaces']:
+                        interface_dict_list.append(interfaces)
+                    self._update_interfaces_db(context, interface_dict_list,
+                                               dev_db)
+        if gw.get('name'):
+            l2gw_db.name = gw.get('name')
+        return self._make_l2_gateway_dict(l2gw_db)
+
+    def _update_interfaces_db(self, context, interface_dict_list, device_db):
+        for interfaces in interface_dict_list:
+            int_name = interfaces.get('name')
+            if constants.SEG_ID in interfaces:
+                seg_id_list = interfaces.get(constants.SEG_ID)
+                for seg_ids in seg_id_list:
+                    uuid = self._generate_uuid()
+                    int_db = self._get_int_model(uuid,
+                                                 int_name,
+                                                 device_db[0].id,
+                                                 seg_ids)
+                    context.session.add(int_db)
+            else:
+                uuid = self._generate_uuid()
+                interface_db = self._get_int_model(uuid,
+                                                   int_name,
+                                                   device_db[0].id,
+                                                   0)
+                context.session.add(interface_db)
 
     def get_l2_gateway(self, context, id, fields=None):
         """get the l2 gateway by id."""
         self._admin_check(context, 'GET')
         gw_db = self._get_l2_gateway(context, id)
         if gw_db:
-            device_db = self._get_l2_gateway_device(context, gw_db.id)
-            for devices in device_db:
-                interface_db = self._get_l2_gateway_interface(context,
-                                                              devices.id)
-                return self._make_l2_gateway_dict(gw_db, interface_db, fields)
+            return self._make_l2_gateway_dict(gw_db, fields)
         else:
             return []
 
@@ -244,10 +272,10 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
 
     def _update_segmentation_id(self, context, l2gw_id, segmentation_id):
         """Update segmentation id for interfaces."""
-        device_db = self._get_l2_gateway_device(context, l2gw_id)
+        device_db = self._get_l2_gateway_devices(context, l2gw_id)
         for device_model in device_db:
-            interface_db = self._get_l2_gateway_interface(context,
-                                                          device_model.id)
+            interface_db = self._get_l2_gw_interfaces(context,
+                                                      device_model.id)
             for interface_model in interface_db:
                 interface_model.segmentation_id = segmentation_id
 
@@ -264,17 +292,17 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         gw_connection = l2_gateway_connection[self.connection_resource]
         l2_gw_id = gw_connection.get('l2_gateway_id')
         network_id = gw_connection.get('network_id')
-        segmentation_id = gw_connection.get(constants.SEG_ID)
         nw_map = {}
         nw_map['network_id'] = network_id
         nw_map['l2_gateway_id'] = l2_gw_id
-        if segmentation_id in gw_connection:
+        segmentation_id = ""
+        if constants.SEG_ID in gw_connection:
+            segmentation_id = gw_connection.get(constants.SEG_ID)
             nw_map[constants.SEG_ID] = segmentation_id
-        check_vlan = self._check_vlan_on_interface(context, l2_gw_id)
+        is_vlan = self._is_vlan_configured_on_any_interface_for_l2gw(context,
+                                                                     l2_gw_id)
         network_id = l2gw_validators.validate_network_mapping_list(nw_map,
-                                                                   check_vlan)
-        if segmentation_id:
-            self._update_segmentation_id(context, l2_gw_id, segmentation_id)
+                                                                   is_vlan)
         with context.session.begin(subtransactions=True):
             gw_db = self._get_l2_gateway(context, l2_gw_id)
             tenant_id = self._get_tenant_id_for_create(context, gw_db)
@@ -286,13 +314,15 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
             nw_map['tenant_id'] = tenant_id
             connection_id = uuidutils.generate_uuid()
             nw_map['id'] = connection_id
-            nw_map.pop(constants.SEG_ID, None)
+            if not segmentation_id:
+                nw_map['segmentation_id'] = "0"
             gw_db.network_connections.append(
                 models.L2GatewayConnection(**nw_map))
             gw_db = models.L2GatewayConnection(id=connection_id,
                                                tenant_id=tenant_id,
                                                network_id=network_id,
-                                               l2_gateway_id=l2_gw_id)
+                                               l2_gateway_id=l2_gw_id,
+                                               segmentation_id=segmentation_id)
         return self._make_l2gw_connections_dict(gw_db)
 
     def get_l2_gateway_connections(self, context, filters=None,
@@ -331,7 +361,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         # specified inthe request, otherwise the policy.json do a trick
         # this need further revision.
         if not context.is_admin:
-            reason = _('Cannot %(action)s resource for non admin tenant')
+            reason = _('Cannot %s resource for non admin tenant') % action
             raise exceptions.AdminRequired(reason=reason)
 
     def _generate_uuid(self):
@@ -344,3 +374,40 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                                          interface_name=interface_name,
                                          device_id=dev_id,
                                          segmentation_id=seg_id)
+
+    def get_l2gateway_devices_by_gateway_id(self, context, l2_gateway_id):
+        """Get l2gateway_devices_by id."""
+        session = context.session
+        with session.begin():
+            return session.query(models.L2GatewayDevice).filter_by(
+                l2_gateway_id=l2_gateway_id).all()
+
+    def get_l2gateway_interfaces_by_device_id(self, context, device_id):
+        """Get all l2gateway_interfaces_by device_id."""
+        session = context.session
+        with session.begin():
+            return session.query(models.L2GatewayInterface).filter_by(
+                device_id=device_id).all()
+
+    def validate_device_name(self, context, device_name, l2gw_id):
+        if device_name:
+            devices_db = self._get_l2gw_devices_by_name_andl2gwid(context,
+                                                                  device_name,
+                                                                  l2gw_id)
+        if not devices_db:
+            raise l2gw_exc.L2GatewayDeviceNameNotFound(device_name=device_name)
+
+    def _validate_any_seg_id_empty_in_interface_dict(self, devices):
+        """Validate segmentation_id for consistency."""
+        for device in devices:
+            interface_list = device['interfaces']
+            if not interface_list:
+                raise l2gw_exc.L2GatewayInterfaceRequired()
+            if constants.SEG_ID in interface_list[0]:
+                for interfaces in interface_list[1:len(interface_list)]:
+                    if constants.SEG_ID not in interfaces:
+                        raise l2gw_exc.L2GatewaySegmentationRequired()
+            if constants.SEG_ID not in interface_list[0]:
+                for interfaces in interface_list[1:len(interface_list)]:
+                    if constants.SEG_ID in interfaces:
+                        raise l2gw_exc.L2GatewaySegmentationRequired()

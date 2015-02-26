@@ -53,6 +53,38 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                  "device_name": device_name}]}}
         return data
 
+    def _get_l2_gateway_data_with_multiple_segid(self, name, device_name):
+        """Get l2 gateway data helper method for multiple seg id."""
+        data = {"l2_gateway": {"name": name,
+                               "devices":
+                               [{"interfaces": [{"name": "port1",
+                                                 "segmentation_id": ["111",
+                                                                     "123"]}],
+                                 "device_name": device_name}]}}
+        return data
+
+    def _get_l2_gateway_multiple_interface_data(self, name, device_name):
+        """Get l2 gateway data helper method with multiple interface data."""
+        data = {"l2_gateway": {"name": name,
+                               "devices":
+                               [{"interfaces": [{"name": "port1",
+                                                 "segmentation_id": ["4076"]},
+                                                {"name": "port1",
+                                                 "segmentation_id": ["4074"]}],
+                                 "device_name": device_name}]}}
+        return data
+
+    def _get_l2_gw_multiple_interface_partial_seg_id_data(self, name,
+                                                          device_name):
+        """Get l2 gateway data helper method with partial seg id."""
+        data = {"l2_gateway": {"name": name,
+                               "devices":
+                               [{"interfaces": [{"name": "port1",
+                                                 "segmentation_id": ["4076"]},
+                                                {"name": "port1"}],
+                                 "device_name": device_name}]}}
+        return data
+
     def _get_nw_data(self):
         return {'network': {'id': 'fake-id',
                             'name': 'net1',
@@ -109,6 +141,20 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         result = self._update_l2_gateway(l2gw_id, l2_gw_update_dict)
         self.assertNotEqual(result['name'], name_create)
 
+    def test_l2_gateway_update_without_devices(self):
+        """Test l2 gateway update without devices."""
+        name_create = "l2gw_1"
+        name_update = "l2gw_updated"
+        device_name = "device1"
+        data_l2gw_create = self._get_l2_gateway_data(name_create,
+                                                     device_name)
+        gw_org = self._create_l2gateway(data_l2gw_create)
+        l2gw_id = gw_org['id']
+        l2_gw_update_dict = {"l2_gateway": {"name": name_update}}
+        result = self._update_l2_gateway(l2gw_id, l2_gw_update_dict)
+        self.assertNotEqual(result['name'], name_create)
+        self.assertEqual(result['name'], name_update)
+
     def _create_l2gateway_connection(self, l2gateway_con):
         """Create L2 gateway connection resource helper method."""
         with self.ctx.session.begin(subtransactions=True):
@@ -130,8 +176,7 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         net = self.plugin.create_network(self.ctx, net_data)
         l2gw_id = gw['id']
         data_con = {self.con_resource: {'l2_gateway_id': l2gw_id,
-                                        'network_id': net['id'],
-                                        'segmentation_id': "199"}}
+                                        'network_id': net['id']}}
         gw_con = self._create_l2gateway_connection(data_con)
         exp_net_id = gw_con['network_id']
         self.assertEqual(net['id'], exp_net_id)
@@ -176,3 +221,42 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         """Delete l2 gateway connection."""
         with self.ctx.session.begin(subtransactions=True):
             return self.mixin.delete_l2_gateway_connection(self.ctx, con_id)
+
+    def test_l2_gateway_create_with_mul_interfaces(self):
+        """Test l2 gateway create with multiple interfaces all seg id."""
+        name = "l2gw_1"
+        device_name = "device1"
+        data = self._get_l2_gateway_multiple_interface_data(name, device_name)
+        result = self._create_l2gateway(data)
+        self.assertEqual(result['name'], name)
+
+    def test_l2_gateway_create_with_mul_interfaces_inconsitent_seg_id(self):
+        """Test l2 gateway create with multiple interfaces."""
+        name = "l2gw_1"
+        dev_name = "device1"
+        data = self._get_l2_gw_multiple_interface_partial_seg_id_data(name,
+                                                                      dev_name)
+        self.assertRaises(exceptions.L2GatewaySegmentationRequired,
+                          self._create_l2gateway, data)
+
+    def test_l2_gateway_create_with_multiple_segid(self):
+        """Test l2 gateway create with multiple seg id."""
+        name = "l2gw_1"
+        device_name = "device1"
+        data = self._get_l2_gateway_data_with_multiple_segid(name, device_name)
+        result = self._create_l2gateway(data)
+        self.assertEqual(result['name'], name)
+
+    def test_l2_gateway_update_invalid_device_name(self):
+        """Test l2 gateway update with invalid device name."""
+        name_create = "l2gw_1"
+        device_name = "device1"
+        invalid_device_name = "invalid_device"
+        data_l2gw_create = self._get_l2_gateway_data(name_create,
+                                                     device_name)
+        data_l2gw_update = self._get_l2_gateway_data(name_create,
+                                                     invalid_device_name)
+        gw_org = self._create_l2gateway(data_l2gw_create)
+        l2gw_id = gw_org['id']
+        self.assertRaises(exceptions.L2GatewayDeviceNotFound,
+                          self._update_l2_gateway, l2gw_id, data_l2gw_update)

@@ -46,15 +46,18 @@ def validate_gwdevice_list(data, valid_values=None):
                     msg = _("Cannot create a gateway with an empty"
                             "interface name")
                     return msg
-                segmentation_id_list = int_dict.get(constants.SEG_ID)
-                if type(segmentation_id_list) is not list:
-                    msg = _("segmentation_id type should be of list type ")
-                    return msg
-                if not segmentation_id_list:
-                    msg = _("segmentation_id_list should not be empty")
-                    return msg
-                if err_msg:
-                    return err_msg
+                if constants.SEG_ID in int_dict:
+                    seg_id_list = int_dict.get(constants.SEG_ID)
+                    if seg_id_list and type(seg_id_list) is not list:
+                        msg = _("segmentation_id type should be of list type ")
+                        return msg
+                    if not seg_id_list:
+                        msg = _("segmentation_id_list should not be empty")
+                        return msg
+                    for seg_id in seg_id_list:
+                        is_valid_vlan_id(seg_id)
+                    if err_msg:
+                        return err_msg
     except TypeError:
         return (_("%s: provided data are not iterable") %
                 validate_gwdevice_list.__name__)
@@ -62,6 +65,15 @@ def validate_gwdevice_list(data, valid_values=None):
 
 def validate_network_mapping_list(network_mapping, check_vlan):
     """Validate network mapping list in connection."""
+    if network_mapping.get('segmentation_id'):
+        if check_vlan:
+            raise exceptions.InvalidInput(
+                error_message=_("default segmentation_id should not be"
+                                " provided when segmentation_id is assigned"
+                                " during l2gateway creation"))
+        seg_id = network_mapping.get(constants.SEG_ID)
+        is_valid_vlan_id(seg_id)
+
     if not network_mapping.get('segmentation_id'):
         if check_vlan is False:
             raise exceptions.InvalidInput(
@@ -79,9 +91,16 @@ def validate_network_mapping_list(network_mapping, check_vlan):
             error_message=(_("Invalid keys found among the ones provided "
                              "in request : %(connection_attrs)s."),
                            connection_attrs))
-    seg_id = network_mapping.get(constants.SEG_ID)
-    if seg_id:
-        if int(seg_id) < 0 or int(seg_id) > 4095:
-            msg = _("Segmentation id is invalid")
-            raise exceptions.InvalidInput(error_message=msg)
     return network_id
+
+
+def is_valid_vlan_id(seg_id):
+    msg = None
+    try:
+        int_seg_id = int(seg_id)
+    except ValueError:
+        msg = _("segmentation_id must be a valid integer")
+    if int_seg_id <= 0 or int_seg_id >= 4095:
+        msg = _("Segmentation id is out of range")
+    if msg:
+        raise exceptions.InvalidInput(error_message=msg)
