@@ -68,7 +68,7 @@ def upgrade():
                     sa.Column('l2_gateway_id', sa.String(length=36),
                               nullable=True),
                     sa.Column('network_id', sa.String(length=36),
-                              nullable=True),
+                              nullable=False),
                     sa.Column('segmentation_id', sa.Integer(),
                               nullable=True),
                     sa.ForeignKeyConstraint(['l2_gateway_id'],
