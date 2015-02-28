@@ -12,8 +12,12 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import mock
 
+from neutron.callbacks import events
+from neutron.callbacks import resources
 from neutron import context
+from neutron import manager
 from neutron.openstack.common import log as logging
 from neutron.tests.unit import testlib_api
 
@@ -260,3 +264,51 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         l2gw_id = gw_org['id']
         self.assertRaises(exceptions.L2GatewayDeviceNotFound,
                           self._update_l2_gateway, l2gw_id, data_l2gw_update)
+
+    def test_l2gw_callback_add_port(self):
+        service_plugins = mock.MagicMock()
+        fake_context = mock.Mock()
+        fake_port = mock.Mock()
+        fake_kwargs = {'context': fake_context,
+                       'port': fake_port}
+        with mock.patch.object(manager.NeutronManager,
+                               'get_service_plugins',
+                               return_value=service_plugins):
+            l2gateway_db.l2gw_callback(resources.PORT,
+                                       events.AFTER_CREATE,
+                                       mock.Mock(),
+                                       **fake_kwargs)
+            service_plugins.return_value[constants.L2GW
+                                         ].add_port_mac.assert_called()
+
+    def test_l2gw_callback_update_port(self):
+        service_plugins = mock.MagicMock()
+        fake_context = mock.Mock()
+        fake_port = mock.Mock()
+        fake_kwargs = {'context': fake_context,
+                       'port': fake_port}
+        with mock.patch.object(manager.NeutronManager,
+                               'get_service_plugins',
+                               return_value=service_plugins):
+            l2gateway_db.l2gw_callback(resources.PORT,
+                                       events.AFTER_UPDATE,
+                                       mock.Mock(),
+                                       **fake_kwargs)
+            service_plugins.return_value[constants.L2GW
+                                         ].add_port_mac.assert_called()
+
+    def test_l2gw_callback_delete_port(self):
+        service_plugins = mock.MagicMock()
+        fake_context = mock.Mock()
+        fake_port = mock.Mock()
+        fake_kwargs = {'context': fake_context,
+                       'port': fake_port}
+        with mock.patch.object(manager.NeutronManager,
+                               'get_service_plugins',
+                               return_value=service_plugins):
+            l2gateway_db.l2gw_callback(resources.PORT,
+                                       events.AFTER_DELETE,
+                                       mock.Mock(),
+                                       **fake_kwargs)
+            service_plugins.return_value[constants.L2GW
+                                         ].delete_port_mac.assert_called()
