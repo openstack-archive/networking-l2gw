@@ -96,7 +96,7 @@ class TestOVSDBConnection(base.BaseTestCase):
         with contextlib.nested(
             mock.patch.object(connection.LOG, 'debug'),
             mock.patch.object(eventlet.greenthread, 'spawn_n')
-            ) as(logger_call, gt):
+        ) as(logger_call, gt):
             self.l2gw_ovsdb.__init__(mock.Mock(), self.conf, True,
                                      self.plugin_rpc)
             self.assertTrue(self.l2gw_ovsdb.connected)
@@ -215,7 +215,7 @@ class TestOVSDBConnection(base.BaseTestCase):
                               'close'),
             mock.patch.object(connection.LOG,
                               'exception')
-            ) as (sock_recv, sock_close, logger_call):
+        ) as (sock_recv, sock_close, logger_call):
                 self.l2gw_ovsdb._rcv_thread()
                 logger_call.assertCalled()
                 self.assertTrue(sock_recv.called)

@@ -136,7 +136,7 @@ class TestManager(base.BaseTestCase):
             mock.patch.object(eventlet.greenthread,
                               'spawn_n'),
             mock.patch.object(manager.LOG, 'error')
-            ) as (ovsdb_connection, event_spawn, mock_warn):
+        ) as (ovsdb_connection, event_spawn, mock_warn):
                 self.l2gw_agent_manager._connect_to_ovsdb_server()
                 event_spawn.assert_not_called()
 
@@ -179,7 +179,7 @@ class TestManager(base.BaseTestCase):
                 is_valid_request = self.l2gw_agent_manager._is_valid_request(
                     fake_ovsdb_identifier)
                 with self.l2gw_agent_manager._open_connection(
-                    fake_ovsdb_identifier):
+                        fake_ovsdb_identifier):
                     self.assertTrue(is_valid_request)
                     self.assertEqual(0, logger_call.call_count)
                     self.assertTrue(ovsdb_connection.called)
@@ -211,7 +211,7 @@ class TestManager(base.BaseTestCase):
             with mock.patch.object(connection.OVSDBConnection,
                                    'disconnect') as mock_dis:
                 with self.l2gw_agent_manager._open_connection(
-                    fake_ovsdb_identifier):
+                        fake_ovsdb_identifier):
                     self.assertTrue(ovsdb_connection.called)
                     mock_dis.assert_called_once()
 
