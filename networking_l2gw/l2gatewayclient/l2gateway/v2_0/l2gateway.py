@@ -20,8 +20,9 @@ from neutronclient.neutron import v2_0 as l2gatewayV20
 from oslo.serialization import jsonutils
 
 L2_GW = 'l2_gateway'
-meta = ('name=name,interface_names=<interface_name1>;'
-        '<interface_name2>[:<seg-id1>[#<seg-id3>]')
+INTERFACE_DELIMITER = ";"
+SEGMENTATION_ID_DELIMITER = "#"
+INTERFACE_SEG_ID_DELIMITER = "|"
 
 
 def _format_devices(l2_gateway):
@@ -35,11 +36,11 @@ def _format_devices(l2_gateway):
 def get_interface(interfaces):
     interface_dict = []
     for interface in interfaces:
-        if ":" in interface:
-            int_name = interface.split(":")[0]
-            segid = interface.split(":")[1]
-            if "#" in segid:
-                segid = segid.split("#")
+        if INTERFACE_SEG_ID_DELIMITER in interface:
+            int_name = interface.split(INTERFACE_SEG_ID_DELIMITER)[0]
+            segid = interface.split(INTERFACE_SEG_ID_DELIMITER)[1]
+            if SEGMENTATION_ID_DELIMITER in segid:
+                segid = segid.split(SEGMENTATION_ID_DELIMITER)
             else:
                 segid = [segid]
             interface_detail = {'name': int_name, 'segmentation_id': segid}
@@ -50,42 +51,45 @@ def get_interface(interfaces):
 
 
 def add_known_arguments(self, parser):
-        parser.add_argument(
-            '--device',
-            metavar=meta,
-            action='append', dest='devices', type=utils.str2dict,
-            help=_('names or identifiers of the L2 gateways.'
-                   '(This option can be repeated)'))
+    parser.add_argument(
+        '--device',
+        metavar='name=name,interface_names=INTERFACE-DETAILS',
+        action='append', dest='devices', type=utils.str2dict,
+        help=_('Device name and Interface-names of l2gateway. '
+               'INTERFACE-DETAILS is of form '
+               '\"<interface_name1>;[<interface_name2>]'
+               '[|<seg_id1>[#<seg_id2>]]\" '
+               '(--device option can be repeated)'))
 
 
 def args2body(self, parsed_args):
-        if parsed_args.devices:
-            devices = parsed_args.devices
-            interfaces = []
-        else:
-            devices = []
-        device_dict = []
-        for device in devices:
-            if 'interface_names' in device.keys():
-                interface = device['interface_names']
-                if ";" in interface:
-                    interface_dict = interface.split(";")
-                    interfaces = get_interface(interface_dict)
-                else:
-                    interfaces = get_interface([interface])
-            if 'name' in device.keys():
-                device = {'device_name': device['name'],
-                          'interfaces': interfaces}
+    if parsed_args.devices:
+        devices = parsed_args.devices
+        interfaces = []
+    else:
+        devices = []
+    device_dict = []
+    for device in devices:
+        if 'interface_names' in device.keys():
+            interface = device['interface_names']
+            if INTERFACE_DELIMITER in interface:
+                interface_dict = interface.split(INTERFACE_DELIMITER)
+                interfaces = get_interface(interface_dict)
             else:
-                device = {'interfaces': interfaces}
-            device_dict.append(device)
-        if parsed_args.name:
-            l2gw_name = parsed_args.name
-            body = {'l2_gateway': {'name': l2gw_name,
-                                   'devices': device_dict}, }
+                interfaces = get_interface([interface])
+        if 'name' in device.keys():
+            device = {'device_name': device['name'],
+                      'interfaces': interfaces}
         else:
-            body = {'l2_gateway': {'devices': device_dict}, }
-        return body
+            device = {'interfaces': interfaces}
+        device_dict.append(device)
+    if parsed_args.name:
+        l2gw_name = parsed_args.name
+        body = {'l2_gateway': {'name': l2gw_name,
+                               'devices': device_dict}, }
+    else:
+        body = {'l2_gateway': {'devices': device_dict}, }
+    return body
 
 
 class Listl2gateway(l2gatewayV20.ListCommand):
