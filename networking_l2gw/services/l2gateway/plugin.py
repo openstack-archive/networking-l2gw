@@ -106,6 +106,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                                            cfg.CONF.host)
         super(L2GatewayPlugin, self).__init__()
         LOG.debug("starting l2gateway agent scheduler")
+        l2gateway_db.subscribe()
         self.start_l2gateway_agent_scheduler()
 
     def start_l2gateway_agent_scheduler(self):

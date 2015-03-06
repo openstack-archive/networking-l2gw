@@ -12,8 +12,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
+from neutron.callbacks import events
+from neutron.callbacks import registry
+from neutron.callbacks import resources
 from neutron.common import exceptions
+from neutron import manager
 from neutron.openstack.common import log as logging
 from neutron.openstack.common import uuidutils
 
@@ -411,3 +414,24 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                 for interfaces in interface_list[1:len(interface_list)]:
                     if constants.SEG_ID in interfaces:
                         raise l2gw_exc.L2GatewaySegmentationRequired()
+
+
+def l2gw_callback(resource, event, trigger, **kwargs):
+    l2gwservice = manager.NeutronManager.get_service_plugins().get(
+        constants.L2GW)
+    context = kwargs.get('context')
+    port_dict = kwargs.get('port')
+    if l2gwservice:
+        if event in [events.AFTER_CREATE, events.AFTER_UPDATE]:
+            l2gwservice.add_port_mac(context, port_dict)
+        elif event == events.AFTER_DELETE:
+            l2gwservice.delete_port_mac(context, port_dict)
+
+
+def subscribe():
+    interested_events = (events.AFTER_CREATE,
+                         events.AFTER_UPDATE,
+                         events.AFTER_DELETE)
+    for x in interested_events:
+        registry.subscribe(
+            l2gw_callback, resources.PORT, x)
