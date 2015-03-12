@@ -1,0 +1,8 @@
+Source: source
+Version: version
+Maintainer: maintainer
+
+Package: package
+Architecture: arch
+Description: desc
+ desc_details
