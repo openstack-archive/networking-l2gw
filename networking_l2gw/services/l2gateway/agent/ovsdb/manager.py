@@ -18,7 +18,6 @@ import eventlet
 
 from neutron import context as ctx
 from neutron.i18n import _LE
-from neutron.openstack.common import log as logging
 from neutron.openstack.common import loopingcall
 
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
@@ -28,6 +27,8 @@ from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_writer
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 from oslo.config import cfg
+from oslo_log import log as logging
+
 
 LOG = logging.getLogger(__name__)
 

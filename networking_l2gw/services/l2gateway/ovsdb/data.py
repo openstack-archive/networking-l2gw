@@ -15,7 +15,6 @@
 
 from neutron.common import constants
 from neutron import manager
-from neutron.openstack.common import log as logging
 from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
@@ -25,6 +24,7 @@ from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
 from oslo.config import cfg
 from oslo import messaging
+from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

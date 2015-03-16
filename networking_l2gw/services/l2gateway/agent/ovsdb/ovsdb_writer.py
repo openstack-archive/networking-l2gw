@@ -16,11 +16,11 @@ import random
 import socket
 
 from oslo.serialization import jsonutils
+from oslo_log import log as logging
 from oslo_utils import excutils
 
 from neutron.i18n import _LE
 from neutron.i18n import _LW
-from neutron.openstack.common import log as logging
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.common import constants as n_const

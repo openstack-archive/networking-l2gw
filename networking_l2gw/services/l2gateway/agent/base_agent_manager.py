@@ -16,11 +16,11 @@ from neutron.agent import rpc as agent_rpc
 from neutron import context
 from neutron.i18n import _LE
 from neutron.i18n import _LI
-from neutron.openstack.common import log as logging
 from neutron.openstack.common import loopingcall
 from neutron.openstack.common import periodic_task
 
 from oslo.config import cfg
+from oslo_log import log as logging
 
 from networking_l2gw.services.l2gateway.agent import agent_api
 from networking_l2gw.services.l2gateway.common import constants as n_const

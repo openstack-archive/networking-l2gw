@@ -19,7 +19,6 @@ import ssl
 import eventlet
 import mock
 
-from neutron.openstack.common import log as logging
 from neutron.tests import base
 
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
@@ -34,6 +33,7 @@ from networking_l2gw.tests.unit.services.l2gateway.agent.ovsdb import (
 
 from oslo.config import cfg
 from oslo.serialization import jsonutils
+from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

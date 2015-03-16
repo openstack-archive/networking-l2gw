@@ -15,11 +15,11 @@
 from neutron.agent.common import config as agent_config
 from neutron.common import config as common_config
 from neutron.common import rpc as n_rpc
-from neutron.openstack.common import log as logging
 from neutron.openstack.common import service
 import sys
 
 from oslo.config import cfg
+from oslo_log import log as logging
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import manager
 from networking_l2gw.services.l2gateway.common import config

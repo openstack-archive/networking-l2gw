@@ -18,7 +18,6 @@ from neutron.callbacks import events
 from neutron.callbacks import resources
 from neutron import context
 from neutron import manager
-from neutron.openstack.common import log as logging
 from neutron.tests.unit import testlib_api
 
 from networking_l2gw.db.l2gateway import l2gateway_db
@@ -26,6 +25,7 @@ from networking_l2gw.services.l2gateway.common import constants
 from networking_l2gw.services.l2gateway import exceptions
 
 from oslo.utils import importutils
+from oslo_log import log as logging
 
 DB_PLUGIN_KLASS = 'neutron.db.db_base_plugin_v2.NeutronDbPluginV2'
 LOG = logging.getLogger(__name__)

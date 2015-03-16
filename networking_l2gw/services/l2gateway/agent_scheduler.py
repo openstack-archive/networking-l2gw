@@ -13,12 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.from oslo.config import cfg
 from oslo.config import cfg
+from oslo_log import log as logging
 
 from neutron import context as neutron_context
 from neutron.db import agents_db
 from neutron.i18n import _LE
 from neutron import manager
-from neutron.openstack.common import log as logging
 from neutron.openstack.common import loopingcall
 import random
 

@@ -17,9 +17,9 @@ import random
 import eventlet
 
 from neutron.i18n import _LE
-from neutron.openstack.common import log as logging
 
 from oslo.serialization import jsonutils
+from oslo_log import log as logging
 from oslo_utils import excutils
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection

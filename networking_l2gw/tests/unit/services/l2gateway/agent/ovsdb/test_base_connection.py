@@ -19,7 +19,6 @@ import time
 
 import mock
 
-from neutron.openstack.common import log as logging
 from neutron.tests import base
 
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
@@ -27,6 +26,7 @@ from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.common import config
 
 from oslo.config import cfg
+from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

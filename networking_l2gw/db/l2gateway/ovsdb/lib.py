@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from oslo_log import log as logging
 from sqlalchemy.orm import exc
-
-from neutron.openstack.common import log as logging
 
 from networking_l2gw.db.l2gateway.ovsdb import models
 

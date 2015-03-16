@@ -19,7 +19,6 @@ from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
 from neutron.extensions import portbindings
 from neutron import manager
-from neutron.openstack.common import log as logging
 
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
@@ -33,6 +32,7 @@ from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 
 from oslo.config import cfg
 from oslo import messaging
+from oslo_log import log as logging
 from oslo_utils import importutils
 
 LOG = logging.getLogger(__name__)
