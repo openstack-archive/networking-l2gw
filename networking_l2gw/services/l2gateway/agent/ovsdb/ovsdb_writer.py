@@ -132,21 +132,25 @@ class OVSDBWriter(base_connection.BaseConnection):
         LOG.debug("insert_ucast_macs_remote: query: %s", query)
         self._send_and_receive(query, op_id)
 
-    def delete_ucast_macs_remote(self, logical_switch_uuid, mac):
-        """Delete an entry from Ucast_Macs_Remote OVSDB table."""
+    def delete_ucast_macs_remote(self, logical_switch_uuid, macs):
+        """Delete entries from Ucast_Macs_Remote OVSDB table."""
         commit_dict = {"op": "commit", "durable": True}
         op_id = str(random.getrandbits(128))
+        params = [n_const.OVSDB_SCHEMA_NAME]
+        for mac in macs:
+            sub_query = {"op": "delete",
+                         "table": "Ucast_Macs_Remote",
+                         "where": [["MAC",
+                                    "==",
+                                    mac],
+                                   ["logical_switch",
+                                    "==",
+                                    ["uuid",
+                                     logical_switch_uuid]]]}
+            params.append(sub_query)
+        params.append(commit_dict)
         query = {"method": "transact",
-                 "params": [n_const.OVSDB_SCHEMA_NAME,
-                            {"op": "delete",
-                             "table": "Ucast_Macs_Remote",
-                             "where": [["MAC",
-                                        "==",
-                                        mac],
-                                       ["logical_switch",
-                                        "==",
-                                        ["uuid", logical_switch_uuid]]]},
-                            commit_dict],
+                 "params": params,
                  "id": op_id}
         LOG.debug("delete_ucast_macs_remote: query: %s", query)
         self._send_and_receive(query, op_id)
