@@ -66,6 +66,7 @@ class TestOVSDBData(base.BaseTestCase):
         fake_new_local_macs = [fake_dict]
         fake_new_remote_macs = [fake_dict]
         fake_modified_physical_ports = [fake_dict]
+        fake_modified_local_macs = [fake_dict]
         fake_deleted_logical_switches = [fake_dict]
         fake_deleted_physical_ports = [fake_dict]
         fake_deleted_physical_switches = [fake_dict]
@@ -82,6 +83,7 @@ class TestOVSDBData(base.BaseTestCase):
             'new_local_macs': fake_new_local_macs,
             'new_remote_macs': fake_new_remote_macs,
             'modified_physical_ports': fake_modified_physical_ports,
+            'modified_local_macs': fake_modified_local_macs,
             'deleted_logical_switches': fake_deleted_logical_switches,
             'deleted_physical_switches': fake_deleted_physical_switches,
             'deleted_physical_ports': fake_deleted_physical_ports,

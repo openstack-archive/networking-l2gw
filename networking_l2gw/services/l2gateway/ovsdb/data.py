@@ -58,8 +58,9 @@ class OVSDBData(object):
         """RPC to update the changes from OVSDB in the database."""
 
         for item, value in ovsdb_data.items():
-            if item != n_const.OVSDB_IDENTIFIER:
-                self.entry_table.get(item)(context, value)
+            lookup = self.entry_table.get(item, None)
+            if lookup:
+                lookup(context, value)
 
     def _setup_entry_table(self):
         self.entry_table = {'new_logical_switches':
