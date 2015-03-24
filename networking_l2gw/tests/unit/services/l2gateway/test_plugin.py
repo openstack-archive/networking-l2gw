@@ -209,8 +209,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             is_vlan.assert_called_with(self.context, 'fake_l2gw_id')
             val_ntwk.assert_called_with(fake_connection, False)
             get_net_seg.assert_called_with(self.context,
-                                           'fake_network_id',
-                                           False)
+                                           'fake_network_id')
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw.assert_called_with(self.context, 'fake_l2gw_id')
             ret_gw_conn.assert_called_with(self.context,

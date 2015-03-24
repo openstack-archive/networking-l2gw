@@ -261,8 +261,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             nw_map[constants.SEG_ID] = gw_connection.get('segmentation_id')
         network_id = l2gw_validators.validate_network_mapping_list(nw_map,
                                                                    check_vlan)
-        net_segments_list = self._get_network_segments(context, network_id,
-                                                       False)
+        net_segments_list = self._get_network_segments(context, network_id)
         if len(net_segments_list) > 1:
             raise l2gw_exc.MultipleSegmentsFound(network_id=network_id)
         if not self._get_network(context, network_id):
