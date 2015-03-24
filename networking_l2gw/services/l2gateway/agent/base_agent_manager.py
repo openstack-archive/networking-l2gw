@@ -36,7 +36,6 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
         super(BaseAgentManager, self).__init__()
         self.conf = conf or cfg.CONF
         self.l2gw_agent_type = ''
-        self.use_call = True
         self.gateways = {}
         self.plugin_rpc = agent_api.L2GatewayAgentApi(
             topics.L2GATEWAY_PLUGIN,
@@ -71,11 +70,14 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
         try:
             ctx = context.get_admin_context_without_session()
             self.state_rpc.report_state(ctx, self.agent_state,
-                                        self.use_call)
-            self.use_call = False
+                                        True)
             self.agent_state['start_flag'] = False
         except Exception:
             LOG.exception(_LE("Failed reporting state!"))
+            self.handle_report_state_failure()
+
+    def handle_report_state_failure(self):
+        pass
 
     def agent_updated(self, context, payload):
         LOG.info(_LI("agent_updated by server side %s!"), payload)

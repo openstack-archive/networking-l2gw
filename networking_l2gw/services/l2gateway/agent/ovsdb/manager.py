@@ -122,6 +122,27 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                     except Exception:
                         raise SystemExit(Exception.message)
 
+    def handle_report_state_failure(self):
+        # Not able to deliver the heart beats to the Neutron server.
+        # Let us change the mode to Transact so that when the
+        # Neutron server is connected back, it will make an agent
+        # Monitor agent and OVSDB data will be read entirely. This way,
+        # the OVSDB data in Neutron database will be the latest and in
+        # sync with that in the OVSDB server tables.
+        if self.l2gw_agent_type == n_const.MONITOR:
+            self.l2gw_agent_type = ''
+            self.agent_state.get('configurations')[n_const.L2GW_AGENT_TYPE
+                                                   ] = self.l2gw_agent_type
+            self._stop_looping_task()
+            self._disconnect_all_ovsdb_servers()
+
+    def _disconnect_all_ovsdb_servers(self):
+        if self.gateways:
+            for key, gateway in self.gateways.items():
+                ovsdb_fd = gateway.ovsdb_fd
+                if ovsdb_fd and ovsdb_fd.connected:
+                    gateway.ovsdb_fd.disconnect()
+
     def set_monitor_agent(self, context, hostname):
         """Handle RPC call from plugin to update agent type.
 
@@ -132,19 +153,22 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
 
         # If set to Monitor, then let us start monitoring the OVSDB
         # servers without any further delay.
-        if (self.l2gw_agent_type == n_const.MONITOR and
-                not self.looping_task._running):
-            self.looping_task.start(interval=self.conf.ovsdb.periodic_interval)
+        if self.l2gw_agent_type == n_const.MONITOR:
+            self._start_looping_task()
         else:
             # Otherwise, stop monitoring the OVSDB servers
             # and close the open connections if any.
-            if self.looping_task._running:
-                self.looping_task.stop()
-            if self.gateways:
-                for key in self.gateways.keys():
-                    gateway = self.gateways.get(key)
-                    if gateway.ovsdb_fd:
-                        gateway.ovsdb_fd.disconnect()
+            self._stop_looping_task()
+            self._disconnect_all_ovsdb_servers()
+
+    def _stop_looping_task(self):
+        if self.looping_task._running:
+            self.looping_task.stop()
+
+    def _start_looping_task(self):
+        if not self.looping_task._running:
+            self.looping_task.start(interval=self.conf.ovsdb.
+                                    periodic_interval)
 
     @contextmanager
     def _open_connection(self, ovsdb_identifier):

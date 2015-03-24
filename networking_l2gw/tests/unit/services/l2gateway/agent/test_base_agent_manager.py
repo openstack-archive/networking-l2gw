@@ -68,10 +68,8 @@ class TestBaseAgentManager(base.BaseTestCase):
     def test_report_state(self):
         with mock.patch('neutron.agent.rpc.PluginReportStateAPI') as state_api:
             self.assertTrue(self.l2gw_agent_manager.agent_state['start_flag'])
-            self.assertTrue(self.l2gw_agent_manager.use_call)
             self.l2gw_agent_manager._report_state()
             self.assertFalse(self.l2gw_agent_manager.agent_state['start_flag'])
-            self.assertFalse(self.l2gw_agent_manager.use_call)
             state_api_inst = state_api.return_value
             state_api_inst.report_state.assert_called_once()
 
@@ -81,8 +79,12 @@ class TestBaseAgentManager(base.BaseTestCase):
                                'report_state',
                                side_effect=Exception):
             with mock.patch.object(l2gw_manager.LOG, 'exception') as exc:
-                self.l2gw_agent_manager._report_state()
-                exc.assertCalled()
+                with mock.patch.object(self.l2gw_agent_manager,
+                                       'handle_report_state_failure'
+                                       ) as mock_handle_report_state_failure:
+                    self.l2gw_agent_manager._report_state()
+                    exc.assertCalled()
+                    mock_handle_report_state_failure.assert_called()
 
     def test_agent_updated(self):
         fake_payload = {'fake_key': 'fake_value'}
