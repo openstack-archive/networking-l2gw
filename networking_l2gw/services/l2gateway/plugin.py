@@ -90,7 +90,7 @@ class L2gatewayAgentApi(object):
                                      port_dict):
         """RPC to update the connection to gateway."""
         cctxt = self.client.prepare()
-        return cctxt.cast(context,
+        return cctxt.call(context,
                           'update_connection_to_gateway',
                           ovsdb_identifier=ovsdb_identifier,
                           ls_dict=ls_dict,

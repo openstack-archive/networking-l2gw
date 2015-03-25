@@ -68,12 +68,40 @@ class TestOVSDBWriter(base.BaseTestCase):
             resp.assert_called_with(self.op_id)
 
     def test_process_response_with_error(self):
-        """Test case to test _process_response."""
+        """Test case to test _process_response with error."""
         foo_dict = {'fake_key': 'fake_value',
                     'error': 'fake_error'}
         with mock.patch.object(base_connection.BaseConnection,
                                '_response',
                                return_value=foo_dict) as resp:
+            self.assertRaises(exceptions.OVSDBError,
+                              self.l2gw_ovsdb._process_response,
+                              self.op_id)
+            resp.assert_called_with(self.op_id)
+
+    def test_process_response_with_error1(self):
+        """Test case to test _process_response with errors in the
+
+           subqueries.
+        """
+        fake_dict = {"id": "295366252499790541931626006259650283530",
+                     "result":
+                     [{"uuid":
+                       ["uuid", "be236bbf-8f83-4bf0-816b-629c7e5b5609"
+                        ]},
+                      {},
+                      {"error": "referential integrity violation",
+                       "details": "Table Ucast_Macs_Remote column "
+                                  "locator row "
+                                  "be236bbf-8f83-4bf0-816b-629c7e5b5609 "
+                                  "references nonexistent row "
+                                  "1b143819-45a6-44ec-826a-ac75243a07ce in "
+                                  "table Physical_Locator."
+                       }],
+                     "error": None}
+        with mock.patch.object(base_connection.BaseConnection,
+                               '_response',
+                               return_value=fake_dict) as resp:
             self.assertRaises(exceptions.OVSDBError,
                               self.l2gw_ovsdb._process_response,
                               self.op_id)
