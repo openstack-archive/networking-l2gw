@@ -374,6 +374,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
         add = {'new': {'uuid': 'fake_id',
                        'name': 'fake_name',
                        'physical_switch_id': 'fake_switch_id',
+                       'port_fault_status': 'fake_status',
                        'vlan_bindings': [["some"], []]}}
         delete = {'old': {'uuid': 'fake_id_old',
                           'name': 'fake_name_old',
@@ -393,7 +394,8 @@ class TestOVSDBMonitor(base.BaseTestCase):
                                                        add,
                                                        port_map,
                                                        data_dict)
-                phy_port.assert_called_with(fake_id, 'fake_name', None, None)
+                phy_port.assert_called_with(fake_id, 'fake_name', None, None,
+                                            'fake_status')
                 self.assertIn(phy_port.return_value,
                               data_dict.get('new_physical_ports'))
 
@@ -422,6 +424,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
                 add = {'new': {'uuid': 'fake_id',
                                'name': 'fake_name',
                                'tunnel_ips': 'fake_tunnel_ip',
+                               'switch_fault_status': 'fake_status',
                                'ports': ['set', 'set',
                                          physical_port]}}
                 delete = {'old': {'uuid': 'fake_id_old',
@@ -441,6 +444,8 @@ class TestOVSDBMonitor(base.BaseTestCase):
                                                          data_dict)
                 self.assertIn(phy_switch.return_value,
                               data_dict['new_physical_switches'])
+                phy_switch.assert_called_with('fake_id', 'fake_name',
+                                              'fake_tunnel_ip', 'fake_status')
                 # test modify
                 self.l2gw_ovsdb._process_physical_switch(fake_id,
                                                          modify,

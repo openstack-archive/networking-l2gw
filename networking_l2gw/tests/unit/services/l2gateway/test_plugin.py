@@ -25,6 +25,7 @@ from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import l2gw_validators
+from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
 from oslo_utils import importutils
@@ -202,9 +203,12 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               return_value=fake_tenant_id),
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'get_l2_gateway_connections',
-                              return_value=False)) as (
-                is_vlan, val_ntwk, get_net_seg, get_network, get_l2gw,
-                ret_gw_conn, get_ten_id, get_l2_gw_conn):
+                              return_value=False),
+            mock.patch.object(
+                self.plugin,
+                '_check_port_fault_status_and_switch_fault_status')
+            ) as (is_vlan, val_ntwk, get_net_seg, get_network, get_l2gw,
+                  ret_gw_conn, get_ten_id, get_l2_gw_conn, check_pf_sf):
             self.plugin._validate_connection(self.context, fake_connection)
             is_vlan.assert_called_with(self.context, 'fake_l2gw_id')
             val_ntwk.assert_called_with(fake_connection, False)
@@ -212,6 +216,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                                            'fake_network_id')
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw.assert_called_with(self.context, 'fake_l2gw_id')
+            check_pf_sf.assert_called_with(self.context, 'fake_l2gw_id')
             ret_gw_conn.assert_called_with(self.context,
                                            'fake_l2gw_id',
                                            fake_connection)
@@ -631,6 +636,69 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                 fake_conn_dict, DELETE, fake_identifier_list)
             self.assertTrue(update_rpc.called)
             del_conn.assert_called_with(self.db_context, fake_conn_dict)
+
+    def test_create_l2gateway_connection_with_switch_fault_status_down(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_conn_dict = {'l2_gateway_connection': {
+            'id': 'fake_id', 'network_id': 'fake_network_id',
+            'l2_gateway_id': 'fake_l2gw_id'}}
+        fake_device = {'devices': [{'device_name': 'fake_device',
+                       'interfaces': [{'name': 'fake_interface'}]}]}
+        fake_physical_port = {'uuid': 'fake_id',
+                              'name': 'fake_name',
+                              'physical_switch_id': 'fake_switch1',
+                              'port_fault_status': 'UP'}
+        fake_physical_switch = {'uuid': 'fake_id',
+                                'name': 'fake_name',
+                                'tunnel_ip': 'fake_tunnel_ip',
+                                'ovsdb_identifier': 'fake_ovsdb_id',
+                                'switch_fault_status': 'DOWN'}
+        with contextlib.nested(
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_admin_check',
+                              return_value=True),
+            mock.patch.object(l2gateway_db.L2GatewayMixin, 'get_l2_gateway',
+                              return_value=fake_device),
+            mock.patch.object(db, 'get_physical_port_by_name_and_ps',
+                              return_value=fake_physical_port),
+            mock.patch.object(db, 'get_physical_switch_by_name',
+                              return_value=fake_physical_switch)
+        ) as (get_l2gw, admin_check, phy_port, phy_switch):
+            self.assertRaises(l2gw_exc.L2GatewayPhysicalSwitchFaultStatus,
+                              self.plugin.create_l2_gateway_connection,
+                              self.db_context,
+                              fake_l2gw_conn_dict)
+
+    def test_create_l2gateway_connection_with_port_fault_status_down(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_conn_dict = {'l2_gateway_connection': {
+            'id': 'fake_id', 'network_id': 'fake_network_id',
+            'l2_gateway_id': 'fake_l2gw_id'}}
+        fake_device = {'devices': [{'device_name': 'fake_device',
+                       'interfaces': [{'name': 'fake_interface'}]}]}
+        fake_physical_port = {'uuid': 'fake_id',
+                              'name': 'fake_name',
+                              'physical_switch_id': 'fake_switch1',
+                              'port_fault_status': 'DOWN'}
+        fake_physical_switch = {'uuid': 'fake_id',
+                                'name': 'fake_name',
+                                'tunnel_ip': 'fake_tunnel_ip',
+                                'ovsdb_identifier': 'fake_ovsdb_id',
+                                'switch_fault_status': 'UP'}
+        with contextlib.nested(
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_admin_check',
+                              return_value=True),
+            mock.patch.object(l2gateway_db.L2GatewayMixin, 'get_l2_gateway',
+                              return_value=fake_device),
+            mock.patch.object(db, 'get_physical_port_by_name_and_ps',
+                              return_value=fake_physical_port),
+            mock.patch.object(db, 'get_physical_switch_by_name',
+                              return_value=fake_physical_switch)
+        ) as (get_l2gw, admin_check, phy_port, phy_switch):
+            self.assertRaises(l2gw_exc.L2GatewayPhysicalPortFaultStatus,
+                              self.plugin.create_l2_gateway_connection,
+                              self.db_context, fake_l2gw_conn_dict)
 
     def test_create_l2_gateway_connection(self):
         self.db_context = ctx.get_admin_context()

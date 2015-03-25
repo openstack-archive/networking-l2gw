@@ -44,6 +44,8 @@ def upgrade():
                               nullable=True),
                     sa.Column('ovsdb_identifier', sa.String(length=64),
                               nullable=False),
+                    sa.Column('switch_fault_status', sa.String(length=16),
+                              nullable=True),
                     sa.PrimaryKeyConstraint('uuid', 'ovsdb_identifier'))
 
     op.create_table('physical_ports',
@@ -53,6 +55,8 @@ def upgrade():
                               nullable=True),
                     sa.Column('ovsdb_identifier', sa.String(length=64),
                               nullable=False),
+                    sa.Column('port_fault_status', sa.String(length=16),
+                              nullable=True),
                     sa.PrimaryKeyConstraint('uuid', 'ovsdb_identifier'))
 
     op.create_table('logical_switches',

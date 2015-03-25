@@ -298,7 +298,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
         old_row = uuid_dict.get('old', None)
         if new_row:
             port = ovsdb_schema.PhysicalPort(uuid, new_row.get('name'), None,
-                                             None)
+                                             None,
+                                             new_row.get('port_fault_status'))
             switch_id = port_map.get(uuid, None)
             if switch_id:
                 port.physical_switch_id = switch_id
@@ -328,7 +329,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
         elif old_row:
             # Port is deleted permanently from OVSDB server
             port = ovsdb_schema.PhysicalPort(uuid, old_row.get('name'), None,
-                                             None)
+                                             None,
+                                             old_row.get('port_fault_status'))
             deleted_physical_ports = data_dict.get('deleted_physical_ports')
             deleted_physical_ports.append(port)
 
@@ -356,10 +358,9 @@ class OVSDBMonitor(base_connection.BaseConnection):
                         for inner_port in port:
                             if inner_port != 'uuid':
                                 all_ports.append(inner_port)
-            phys_switch = ovsdb_schema.PhysicalSwitch(uuid,
-                                                      new_row.get('name'),
-                                                      new_row.get('tunnel_ips')
-                                                      )
+            phys_switch = ovsdb_schema.PhysicalSwitch(
+                uuid, new_row.get('name'), new_row.get('tunnel_ips'),
+                new_row.get('switch_fault_status'))
             # Now, store mapping of physical ports to
             # physical switch so that it is useful while
             # processing Physical_Switch record
@@ -379,10 +380,9 @@ class OVSDBMonitor(base_connection.BaseConnection):
         elif old_row:
             # Physical switch is deleted permanently from OVSDB
             # server
-            phys_switch = ovsdb_schema.PhysicalSwitch(uuid,
-                                                      old_row.get('name'),
-                                                      old_row.get('tunnel_ips')
-                                                      )
+            phys_switch = ovsdb_schema.PhysicalSwitch(
+                uuid, old_row.get('name'), old_row.get('tunnel_ips'),
+                old_row.get('switch_fault_status'))
             deleted_physical_switches = data_dict.get(
                 'deleted_physical_switches')
             deleted_physical_switches.append(phys_switch)

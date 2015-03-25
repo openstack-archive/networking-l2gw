@@ -21,18 +21,21 @@ class PhysicalLocator(object):
 
 
 class PhysicalSwitch(object):
-    def __init__(self, uuid, name, tunnel_ip):
+    def __init__(self, uuid, name, tunnel_ip, switch_fault_status):
         self.uuid = uuid
         self.name = name
         self.tunnel_ip = tunnel_ip
+        self.switch_fault_status = switch_fault_status
 
 
 class PhysicalPort(object):
-    def __init__(self, uuid, name, phys_switch_id, vlan_binding_dicts):
+    def __init__(self, uuid, name, phys_switch_id, vlan_binding_dicts,
+                 port_fault_status):
         self.uuid = uuid
         self.name = name
         self.physical_switch_id = phys_switch_id
         self.vlan_bindings = []
+        self.port_fault_status = port_fault_status
         if vlan_binding_dicts:
             for vlan_binding in vlan_binding_dicts:
                 v_binding = VlanBinding(vlan_binding['vlan'],

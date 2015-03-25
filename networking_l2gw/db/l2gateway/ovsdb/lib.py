@@ -73,7 +73,8 @@ def add_physical_switch(context, record_dict):
             uuid=record_dict['uuid'],
             name=record_dict['name'],
             tunnel_ip=record_dict['tunnel_ip'],
-            ovsdb_identifier=record_dict['ovsdb_identifier'])
+            ovsdb_identifier=record_dict['ovsdb_identifier'],
+            switch_fault_status=record_dict['switch_fault_status'])
         session.add(physical_switch)
 
 
@@ -117,8 +118,27 @@ def add_physical_port(context, record_dict):
             uuid=record_dict['uuid'],
             name=record_dict['name'],
             physical_switch_id=record_dict['physical_switch_id'],
-            ovsdb_identifier=record_dict['ovsdb_identifier'])
+            ovsdb_identifier=record_dict['ovsdb_identifier'],
+            port_fault_status=record_dict['port_fault_status'])
         session.add(physical_port)
+
+
+def update_physical_ports_status(context, record_dict):
+    """Update physical port fault status."""
+    with context.session.begin(subtransactions=True):
+        (context.session.query(models.PhysicalPorts).
+         filter(models.PhysicalPorts.uuid == record_dict['uuid']).
+         update({'port_fault_status': record_dict['port_fault_status']},
+         synchronize_session=False))
+
+
+def update_physical_switch_status(context, record_dict):
+    """Update physical switch fault status."""
+    with context.session.begin(subtransactions=True):
+        (context.session.query(models.PhysicalSwitches).
+         filter(models.PhysicalSwitches.uuid == record_dict['uuid']).
+         update({'switch_fault_status': record_dict['switch_fault_status']},
+         synchronize_session=False))
 
 
 def delete_physical_port(context, record_dict):
