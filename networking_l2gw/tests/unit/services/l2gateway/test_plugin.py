@@ -91,7 +91,7 @@ class TestL2GatewayAgentApi(base.BaseTestCase):
         self.plugin_rpc.update_connection_to_gateway(
             self.context, fake_ovsdb_identifier, fake_logical_switch,
             fake_physical_locator_list, fake_mac_dict, fake_port_dict)
-        cctxt.cast.assert_called_with(
+        cctxt.call.assert_called_with(
             self.context, 'update_connection_to_gateway',
             ovsdb_identifier=fake_ovsdb_identifier,
             ls_dict=fake_logical_switch,

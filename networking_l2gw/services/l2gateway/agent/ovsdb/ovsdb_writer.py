@@ -42,6 +42,14 @@ class OVSDBWriter(base_connection.BaseConnection):
             raise exceptions.OVSDBError(
                 message="Error from the OVSDB server: %s" % error
                 )
+        # Check errors in responses of all the subqueries
+        outcomes = result.get("result", None)
+        if outcomes:
+            for outcome in outcomes:
+                error = outcome.get("error", None)
+                if error:
+                    raise exceptions.OVSDBError(
+                        message="Error from the OVSDB server: %s" % error)
         return result
 
     def _get_reply(self, operation_id):
