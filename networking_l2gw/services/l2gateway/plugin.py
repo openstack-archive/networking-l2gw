@@ -68,14 +68,14 @@ class L2gatewayAgentApi(object):
                           mac_remote=mac_remote)
 
     def delete_vif_from_gateway(self, context, ovsdb_identifier,
-                                logical_switch_uuid, mac):
+                                logical_switch_uuid, macs):
         """RPC to delete the VM MAC details from gateway."""
         cctxt = self.client.prepare()
         return cctxt.cast(context,
                           'delete_vif_from_gateway',
                           ovsdb_identifier=ovsdb_identifier,
                           logical_switch_uuid=logical_switch_uuid,
-                          mac=mac)
+                          mac=macs)
 
     def delete_network(self, context, ovsdb_identifier, logical_switch_uuid):
         """RPC to delete the Network from gateway."""
@@ -219,35 +219,43 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
 
         to delete from the gateway.
         """
-        if port_dict['device_owner']:
-            logical_switches = db.get_all_logical_switches_by_name(
-                context, port_dict.get('network_id'))
-            if logical_switches:
-                for logical_switch in logical_switches:
-                    logical_switch_uuid = logical_switch.get('uuid')
-                    mac = port_dict.get("mac_address")
-                    if port_dict.get('ovsdb_identifier'):
-                        ovsdb_identifier = port_dict.get('ovsdb_identifier')
-                    else:
-                        ovsdb_identifier = logical_switch.get(
-                            'ovsdb_identifier')
-                    record_dict = {'mac': mac,
-                                   'logical_switch_uuid':
-                                   logical_switch_uuid,
-                                   'ovsdb_identifier': ovsdb_identifier}
-                    ucast_mac_remote = db.get_ucast_mac_remote_by_mac_and_ls(
-                        context, record_dict)
-                    if not ucast_mac_remote:
-                        LOG.debug("delete_port_mac: MAC %s does"
-                                  " not exist", port_dict.get("mac_address"))
-                        continue
-                    else:
-                        self.agent_rpc.delete_vif_from_gateway(
-                            context, ovsdb_identifier,
-                            logical_switch_uuid, mac)
-            else:
-                LOG.debug("delete_port_mac:Logical Switch %s "
-                          "does not exist ", port_dict.get('network_id'))
+        mac_list = []
+        if not isinstance(port_dict, list):
+            port_list = [port_dict]
+        for port_dict in port_list:
+            if port_dict['device_owner']:
+                logical_switches = db.get_all_logical_switches_by_name(
+                    context, port_dict.get('network_id'))
+                if logical_switches:
+                    for logical_switch in logical_switches:
+                        logical_switch_uuid = logical_switch.get('uuid')
+                        mac = port_dict.get("mac_address")
+                        if port_dict.get('ovsdb_identifier', None):
+                            ovsdb_identifier = port_dict.get(
+                                'ovsdb_identifier')
+                        else:
+                            ovsdb_identifier = logical_switch.get(
+                                'ovsdb_identifier')
+                        record_dict = {'mac': mac,
+                                       'logical_switch_uuid':
+                                       logical_switch_uuid,
+                                       'ovsdb_identifier': ovsdb_identifier}
+                        ucast_mac_remote = (
+                            db.get_ucast_mac_remote_by_mac_and_ls(
+                                context, record_dict))
+                        if ucast_mac_remote:
+                            mac_list.append(mac)
+                        else:
+                            LOG.debug("delete_port_mac: MAC %s does"
+                                      " not exist", mac)
+                            continue
+                else:
+                    LOG.debug("delete_port_mac:Logical Switch %s "
+                              "does not exist ", port_dict.get('network_id'))
+        self.agent_rpc.delete_vif_from_gateway(context,
+                                               ovsdb_identifier,
+                                               logical_switch_uuid,
+                                               mac_list)
 
     def _validate_connection(self, context, gw_connection):
         seg_id = gw_connection.get('segmentation_id', None)
@@ -487,7 +495,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         return set(identifier_list)
 
     def _get_set_of_ovsdb_ids(self, context, gw_connection,
-                              ovsdb_id_set, gw_connection_ovsdb_set):
+                              gw_connection_ovsdb_set):
+        ovsdb_id_set = set()
         network_id = gw_connection.get('network_id')
         l2gateway_connections = self.get_l2_gateway_connections(
             context, filters={'network_id': [network_id]})
@@ -502,10 +511,11 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
 
     def _remove_vm_macs(self, context, network_id, ovsdb_id_set):
         ports = self._get_port_details(context, network_id)
-        for port in ports:
+        if ports:
             for ovsdb_id in list(ovsdb_id_set):
-                port['ovsdb_identifier'] = ovsdb_id
-                self.delete_port_mac(context, port)
+                for port in ports:
+                    port['ovsdb_identifier'] = ovsdb_id
+                self.delete_port_mac(context, ports)
 
     def delete_l2_gateway_connection(self, context, l2_gateway_connection):
         """Process the call from the CLI and trigger the RPC,
@@ -515,7 +525,6 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         locator_list = []
         ls_dict = {}
         mac_dict = {}
-        ovsdb_id_set = set()
         self._admin_check(context, 'DELETE')
         gw_connection = self.get_l2_gateway_connection(context,
                                                        l2_gateway_connection)
@@ -528,7 +537,6 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         # get list of ovsdb_ids
         ovsdb_id_set = self._get_set_of_ovsdb_ids(context,
                                                   gw_connection,
-                                                  ovsdb_id_set,
                                                   gw_connection_ovsdb_set)
         # call delete vif_from_gateway for ovsdb_id_set
         self._remove_vm_macs(context, network_id, ovsdb_id_set)

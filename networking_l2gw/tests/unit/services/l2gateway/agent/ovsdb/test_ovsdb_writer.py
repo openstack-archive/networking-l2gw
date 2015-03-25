@@ -228,7 +228,7 @@ class TestOVSDBWriter(base.BaseTestCase):
               send_n_receive,
               mock_log):
                 self.l2gw_ovsdb.delete_ucast_macs_remote(mock.Mock(),
-                                                         mock.Mock())
+                                                         mock.MagicMock())
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
                                                   self.op_id)

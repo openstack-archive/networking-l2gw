@@ -427,7 +427,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                            'l2_gateway_id': 'fake_l2gw_id',
                            'network_id': 'fake_network_id',
                            'segmentation_id': 100L}
-        fake_ovsdb_id_set = set()
         fake_gw_conn_ovsdb_set = set(['fake_ovsdb_id'])
         fake_connection_list = [fake_connection]
         fake_filters = {'network_id': ['fake_network_id']}
@@ -436,7 +435,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                                return_value=fake_connection_list) as get_conn:
             ret_value = self.plugin._get_set_of_ovsdb_ids(
                 self.context, fake_connection,
-                fake_ovsdb_id_set, fake_gw_conn_ovsdb_set)
+                fake_gw_conn_ovsdb_set)
             get_conn.assert_called_with(self.context, filters=fake_filters)
             self.assertEqual(ret_value, fake_gw_conn_ovsdb_set)
 
@@ -458,7 +457,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                                         fake_network_id,
                                         fake_ovsdb_id_set)
             get_port.assert_called_with(self.context, fake_network_id)
-            delete_mac.assert_called_with(self.context, fake_port)
+            delete_mac.assert_called_with(self.context,
+                                          fake_port_list)
 
     def test_add_port_mac(self):
         fake_ip1 = "fake_ip1"
@@ -569,7 +569,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             get_ls.assert_called_with(self.context, network_id)
             get_mac.assert_called_with(self.context, fake_dict)
             delete_rpc.assert_called_with(
-                self.context, 'fake_ovsdb_id', 'fake_uuid', 'fake_mac')
+                self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
 
     def test_delete_l2_gateway_connection(self):
         self.db_context = ctx.get_admin_context()
@@ -582,7 +582,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_device_list = [fake_device_dict]
         fake_identifier_list = ['fake_ovsdb_id']
         fake_ovsdb_list = ['fake_ovsdb_id']
-        fake_ovsdb_set = set()
         fake_port_dict = {}
         DELETE = "DELETE"
         with contextlib.nested(
@@ -618,7 +617,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             get_id_list.assert_called_with(self.db_context, fake_conn_dict)
             get_ovsdb_id.assert_called_with(
                 self.db_context, fake_conn_dict,
-                fake_ovsdb_set, fake_identifier_list)
+                fake_identifier_list)
             rm_mac.assert_called_with(self.db_context, None, fake_ovsdb_list)
             get_devices.assert_called_with(self.db_context, 'fake_l2gw_id')
             port_list.assert_called_with(
