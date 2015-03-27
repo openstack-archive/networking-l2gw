@@ -351,6 +351,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
     def test_get_logical_switch_dict(self):
         fake_logical_switch = {'uuid': 'fake_uuid',
                                'name': 'fake_network_id'}
+        fake_ls = None
         fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
                            'network_id': 'fake_network_id',
                            'segmentation_id': 100L}
@@ -361,13 +362,20 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                         'name': 'fake_network_id',
                         'description': 'fake_network_name',
                         'key': 'fake_key'}
+        fake_ls_dict_without_ls = {'uuid': None,
+                                   'name': 'fake_network_id',
+                                   'description': 'fake_network_name',
+                                   'key': 'fake_key'}
         with mock.patch.object(self.plugin,
                                '_get_network_details',
                                return_value=fake_network) as get_network:
             ret_ls_dict = self.plugin._get_logical_switch_dict(
                 self.context, fake_logical_switch, fake_connection)
+            ret_ls_dict_without_ls = self.plugin._get_logical_switch_dict(
+                self.context, fake_ls, fake_connection)
             get_network.assert_called_with(self.context, 'fake_network_id')
             self.assertEqual(ret_ls_dict, fake_ls_dict)
+            self.assertEqual(ret_ls_dict_without_ls, fake_ls_dict_without_ls)
 
     def test_get_locator_list(self):
         fake_dst_ip = 'fake_tun_ip'

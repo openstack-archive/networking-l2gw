@@ -293,6 +293,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
     def _process_port_list(self, context, device, port_dict,
                            gw_connection, method,
                            gw_connection_ovsdb_set=None):
+        logical_switch_uuid = None
         seg_id = gw_connection.get('segmentation_id', None)
         interfaces = self.get_l2gateway_interfaces_by_device_id(
             context, device['id'])
@@ -391,7 +392,11 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         return agent
 
     def _get_logical_switch_dict(self, context, logical_switch, gw_connection):
-        ls_dict = {'uuid': logical_switch.get('uuid'),
+        if logical_switch:
+            uuid = logical_switch.get('uuid')
+        else:
+            uuid = None
+        ls_dict = {'uuid': uuid,
                    'name': gw_connection.get('network_id')}
         network = self._get_network_details(context,
                                             gw_connection.get('network_id'))
