@@ -165,7 +165,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                     send_n_receive.assert_called_with(query, self.op_id)
 
     def test_insert_ucast_macs_remote(self):
-        """Test case to insert ucast_macs_remote."""
+        """Test case to test insert ucast_macs_remote."""
         with contextlib.nested(
             mock.patch.object(ovsdb_writer.OVSDBWriter,
                               '_get_ucast_macs_remote_dict'),
@@ -239,6 +239,70 @@ class TestOVSDBWriter(base.BaseTestCase):
             get_ucast_mac_remote.assert_called()
             get_physical_locator_dict.assert_called()
             get_logical_switch_dict.assert_called()
+
+    def test_update_ucast_macs_remote(self):
+        """Test case to test update ucast_macs_remote."""
+        with contextlib.nested(
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_get_dict_for_update_ucast_mac_remote'),
+            mock.patch.object(random,
+                              'getrandbits',
+                              return_value=self.op_id
+                              ),
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_send_and_receive'
+                              ),
+            mock.patch.object(ovsdb_writer.LOG,
+                              'debug'),
+            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
+            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
+        ) as (get_update_ucast_mac_remote,
+              get_rand,
+              send_n_receive,
+              mock_log,
+              mock_pl,
+              mock_ucmr):
+                self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
+                                                         mock.MagicMock())
+                get_rand.assert_called_with(128)
+                send_n_receive.assert_called_with(mock.ANY,
+                                                  self.op_id)
+
+                get_update_ucast_mac_remote.assert_called()
+
+    def test_update_ucast_macs_remote_with_no_locator_id(self):
+        """Test case to test update ucast_macs_remote
+
+           without locator_id and logical_switch_id.
+        """
+        with contextlib.nested(
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_get_dict_for_update_ucast_mac_remote'),
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_get_physical_locator_dict'),
+            mock.patch.object(random,
+                              'getrandbits',
+                              return_value=self.op_id
+                              ),
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_send_and_receive'
+                              ),
+            mock.patch.object(ovsdb_writer.LOG,
+                              'debug'),
+            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
+            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
+        ) as (get_update_ucast_mac_remote,
+              get_physical_locator_dict,
+              get_rand,
+              send_n_receive,
+              mock_log,
+              mock_pl, mock_ucmr):
+            locator = mock_pl.return_value
+            locator.uuid = None
+            self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
+                                                     mock.MagicMock())
+            get_update_ucast_mac_remote.assert_called()
+            get_physical_locator_dict.assert_called()
 
     def test_delete_ucast_macs_remote(self):
         """Test case to test delete_ucast_macs_remote."""
@@ -391,6 +455,19 @@ class TestOVSDBWriter(base.BaseTestCase):
         self.assertEqual(ucast_mac_remote_dict['row']['locator'], locator_list)
         self.assertEqual(ucast_mac_remote_dict['row']['logical_switch'],
                          logical_switch_list)
+
+    def test_get_dict_for_update_ucast_mac_remote(self):
+        """Test case to test _get_dict_for_update_ucast_mac_remote."""
+        fake_mac = mock.Mock()
+        fake_mac.uuid = 'fake_uuid'
+        fake_mac.ip_address = 'fake_ip'
+        locator_list = ['fake_list']
+        temp_method = self.l2gw_ovsdb._get_dict_for_update_ucast_mac_remote
+        ucast_mac_remote_dict = temp_method(
+            fake_mac, locator_list)
+        self.assertEqual(ucast_mac_remote_dict['row']['locator'], locator_list)
+        self.assertEqual(ucast_mac_remote_dict['where'],
+                         [["_uuid", "==", ["uuid", fake_mac.uuid]]])
 
     def test_recv_data(self):
         """Test case to test _recv_data with a valid data."""

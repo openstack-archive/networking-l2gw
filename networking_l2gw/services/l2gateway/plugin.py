@@ -67,6 +67,16 @@ class L2gatewayAgentApi(object):
                           locator_dict=physical_locator,
                           mac_dict=mac_remote)
 
+    def update_vif_to_gateway(self, context, ovsdb_identifier,
+                              physical_locator, mac_remote):
+        """RPC to update the VM MAC details to gateway."""
+        cctxt = self.client.prepare()
+        return cctxt.cast(context,
+                          'update_vif_to_gateway',
+                          ovsdb_identifier=ovsdb_identifier,
+                          locator_dict=physical_locator,
+                          mac_dict=mac_remote)
+
     def delete_vif_from_gateway(self, context, ovsdb_identifier,
                                 logical_switch_uuid, macs):
         """RPC to delete the VM MAC details from gateway."""
@@ -184,9 +194,22 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                     ucast_mac_remote = db.get_ucast_mac_remote_by_mac_and_ls(
                         context, mac_dict)
                     if ucast_mac_remote:
-                        LOG.debug("add_port_mac: MAC %s exists "
-                                  "in Gateway", mac_dict['mac'])
+                        # check whether locator got changed in vm migration
+                        if ucast_mac_remote['locator'
+                                            ] != physical_locator['uuid']:
+                            mac_remote['uuid'] = ucast_mac_remote['uuid']
+                            self.agent_rpc.update_vif_to_gateway(
+                                context, ovsdb_identifier,
+                                physical_locator, mac_remote)
+                            LOG.debug("VM migrated from %s to %s. Update"
+                                      "locator in Ucast_Macs_Remote",
+                                      ucast_mac_remote['locator'],
+                                      physical_locator['uuid'])
+                        else:
+                            LOG.debug("add_port_mac: MAC %s exists "
+                                      "in Gateway", mac_dict['mac'])
                         continue
+                    # else it is a new port created
                     self.agent_rpc.add_vif_to_gateway(
                         context, ovsdb_identifier, logical_switch,
                         physical_locator, mac_remote)

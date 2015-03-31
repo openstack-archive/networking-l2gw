@@ -212,6 +212,17 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             with self._open_connection(ovsdb_identifier) as ovsdb_fd:
                 ovsdb_fd.delete_ucast_macs_remote(logical_switch_uuid, mac)
 
+    def update_vif_to_gateway(self, context, ovsdb_identifier,
+                              locator_dict, mac_dict):
+        """Handle RPC cast from plugin to update neutron port MACs.
+
+        for VM migration.
+        """
+        if self._is_valid_request(ovsdb_identifier):
+            with self._open_connection(ovsdb_identifier) as ovsdb_fd:
+                ovsdb_fd.update_ucast_macs_remote(locator_dict,
+                                                  mac_dict)
+
     def update_connection_to_gateway(self, context, ovsdb_identifier,
                                      logical_switch_dict, locator_dicts,
                                      mac_dicts, port_dicts):

@@ -140,6 +140,40 @@ class OVSDBWriter(base_connection.BaseConnection):
         LOG.debug("insert_ucast_macs_remote: query: %s", query)
         self._send_and_receive(query, op_id)
 
+    def update_ucast_macs_remote(self, locator_dict, mac_dict):
+        """Update an entry in Ucast_Macs_Remote OVSDB table."""
+        # It is possible that the locator may not exist already.
+        locator = ovsdb_schema.PhysicalLocator(locator_dict['uuid'],
+                                               locator_dict['dst_ip'])
+        macObject = ovsdb_schema.UcastMacsRemote(mac_dict['uuid'],
+                                                 mac_dict['mac'],
+                                                 mac_dict['logical_switch_id'],
+                                                 mac_dict['physical_locator_id'
+                                                          ],
+                                                 mac_dict['ip_address'])
+        # Form the insert query now.
+        commit_dict = {"op": "commit", "durable": True}
+        op_id = str(random.getrandbits(128))
+        params = [n_const.OVSDB_SCHEMA_NAME]
+
+        # If the physical_locator does not exist (VM moving to a new compute
+        # node), then insert a new record in Physical_Locator first.
+        if locator.uuid:
+            locator_list = ['uuid', locator.uuid]
+        else:
+            locator.uuid = ''.join(['a', str(random.getrandbits(128))])
+            locator_list = ["named-uuid", locator.uuid]
+            params.append(self._get_physical_locator_dict(locator))
+
+        params.append(self._get_dict_for_update_ucast_mac_remote(
+            macObject, locator_list))
+        params.append(commit_dict)
+        query = {"method": "transact",
+                 "params": params,
+                 "id": op_id}
+        LOG.debug("update_ucast_macs_remote: query: %s", query)
+        self._send_and_receive(query, op_id)
+
     def delete_ucast_macs_remote(self, logical_switch_uuid, macs):
         """Delete entries from Ucast_Macs_Remote OVSDB table."""
         commit_dict = {"op": "commit", "durable": True}
@@ -359,3 +393,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                         "ipaddr": mac.ip_address,
                         "locator": locator_list,
                         "logical_switch": logical_switch_list}}
+
+    def _get_dict_for_update_ucast_mac_remote(self, mac, locator_list):
+        return {"op": "update",
+                "table": "Ucast_Macs_Remote",
+                "where": [["_uuid", "==",
+                           ["uuid", mac.uuid]]],
+                "row": {"locator": locator_list}}
