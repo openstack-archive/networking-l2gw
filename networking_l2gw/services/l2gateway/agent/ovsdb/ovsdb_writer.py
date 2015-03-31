@@ -224,12 +224,15 @@ class OVSDBWriter(base_connection.BaseConnection):
         # information, we just need ports.
         locator_list = []
         port_list = []
+        ls_list = []
+        logical_switch = None
         # Convert logical switch dict to a class object
-        logical_switch = ovsdb_schema.LogicalSwitch(l_switch_dict['uuid'],
-                                                    l_switch_dict['name'],
-                                                    l_switch_dict['key'],
-                                                    l_switch_dict['description'
-                                                                  ])
+        if l_switch_dict:
+            logical_switch = ovsdb_schema.LogicalSwitch(
+                l_switch_dict['uuid'],
+                l_switch_dict['name'],
+                l_switch_dict['key'],
+                l_switch_dict['description'])
 
         # Convert locator dicts into class objects
         for locator in locator_dicts:
@@ -256,8 +259,8 @@ class OVSDBWriter(base_connection.BaseConnection):
         for port in port_dicts:
             phys_port = ovsdb_schema.PhysicalPort(port['uuid'],
                                                   port['name'],
-                                                  port['phys_switch_id'],
-                                                  port['vlan_binding_dicts'])
+                                                  port['physical_switch_id'],
+                                                  port['vlan_bindings'])
             port_list.append(phys_port)
 
         bindings = []
@@ -269,7 +272,7 @@ class OVSDBWriter(base_connection.BaseConnection):
 
         # Use logical switch
         if logical_switch:
-            ls_list = self._form_logical_switch(logical_switch, params)
+            ls_list.append(self._form_logical_switch(logical_switch, params))
 
         # Use physical locators
         if locator_list:

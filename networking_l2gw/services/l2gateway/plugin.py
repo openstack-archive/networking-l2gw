@@ -63,9 +63,9 @@ class L2gatewayAgentApi(object):
         return cctxt.cast(context,
                           'add_vif_to_gateway',
                           ovsdb_identifier=ovsdb_identifier,
-                          logical_switch=logical_switch,
-                          physical_locator=physical_locator,
-                          mac_remote=mac_remote)
+                          logical_switch_dict=logical_switch,
+                          locator_dict=physical_locator,
+                          mac_dict=mac_remote)
 
     def delete_vif_from_gateway(self, context, ovsdb_identifier,
                                 logical_switch_uuid, macs):
@@ -93,10 +93,10 @@ class L2gatewayAgentApi(object):
         return cctxt.call(context,
                           'update_connection_to_gateway',
                           ovsdb_identifier=ovsdb_identifier,
-                          ls_dict=ls_dict,
-                          locator_list=locator_list,
-                          mac_dict=mac_dict,
-                          port_dict=port_dict)
+                          logical_switch_dict=ls_dict,
+                          locator_dicts=locator_list,
+                          mac_dicts=mac_dict,
+                          port_dicts=port_dict)
 
 
 class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
@@ -252,6 +252,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 else:
                     LOG.debug("delete_port_mac:Logical Switch %s "
                               "does not exist ", port_dict.get('network_id'))
+                    return
         self.agent_rpc.delete_vif_from_gateway(context,
                                                ovsdb_identifier,
                                                logical_switch_uuid,
@@ -290,9 +291,11 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             raise l2gw_exc.L2GatewayConnectionExists(mapping=nw_map,
                                                      gateway_id=l2_gw_id)
 
-    def _process_port_list(self, context, device, port_dict,
+    def _process_port_list(self, context, device,
                            gw_connection, method,
                            gw_connection_ovsdb_set=None):
+        port_dicts = []
+        port_dict = {}
         logical_switch_uuid = None
         seg_id = gw_connection.get('segmentation_id', None)
         interfaces = self.get_l2gateway_interfaces_by_device_id(
@@ -325,32 +328,38 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 msg = _('The PHYSICAL PORT data not found in the server')
                 raise Exception(msg)
             pp_dict['uuid'] = ps_port.get('uuid')
-            self._generate_port_list(
-                context, method, seg_id, interface, pp_dict, port_dict,
+            port_dict = self._generate_port_list(
+                context, method, seg_id, interface, pp_dict,
                 logical_switch_uuid, gw_connection)
-        return ovsdb_identifier, logical_switch
+            port_dicts.append(port_dict)
+        return ovsdb_identifier, logical_switch, port_dicts
 
     def _generate_port_list(self, context, method, seg_id,
-                            interface, pp_dict, port_dict,
+                            interface, pp_dict,
                             logical_switch_uuid, gw_connection=None):
         port_list = []
-        vlan_list = []
         vlan_bindings = db.get_all_vlan_bindings_by_physical_port(
             context, pp_dict)
-        port_uuid = pp_dict.get('uuid')
-        port_dict[port_uuid] = []
         if method == "CREATE":
             if not seg_id:
                 vlan_id = interface.get('segmentation_id')
             else:
                 vlan_id = int(seg_id)
-            new_vlan_list = [vlan_id, logical_switch_uuid]
-            (port_dict[port_uuid]).append(new_vlan_list)
+            vlan_dict = {'vlan': vlan_id,
+                         'logical_switch_uuid': logical_switch_uuid}
+            port_list.append(vlan_dict)
             for vlan_binding in vlan_bindings:
-                vlan_list = [vlan_binding.get('vlan'),
-                             vlan_binding.get('logical_switch_uuid')]
-                port_list = port_dict[port_uuid]
-                port_list.append(vlan_list)
+                vlan_dict = {'vlan': vlan_binding.get('vlan'),
+                             'logical_switch_uuid': vlan_binding.get(
+                                 'logical_switch_uuid')}
+                port_list.append(vlan_dict)
+            physical_port = self._get_dict(
+                ovsdb_schema.PhysicalPort(
+                    uuid=pp_dict.get('uuid'),
+                    name=pp_dict.get('interface_name'),
+                    phys_switch_id=pp_dict.get('physical_switch_id'),
+                    vlan_binding_dicts=None))
+            physical_port['vlan_bindings'] = port_list
         else:
             vlan_id = gw_connection.get('segmentation_id')
             if not vlan_id:
@@ -359,11 +368,18 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 if not vlan_binding.get('vlan') == vlan_id:
                     if not vlan_binding.get(
                        'logical_switch_uuid') == logical_switch_uuid:
-                        vlan_list = [vlan_binding.get(
-                            'vlan'), vlan_binding.get(
-                                'logical_switch_uuid')]
-                        port_list = port_dict[port_uuid]
-                        port_list.append(vlan_list)
+                        vlan_dict = {
+                            'vlan': vlan_id,
+                            'logical_switch_uuid': logical_switch_uuid}
+                        port_list.append(vlan_dict)
+            physical_port = self._get_dict(
+                ovsdb_schema.PhysicalPort(
+                    uuid=pp_dict.get('uuid'),
+                    name=pp_dict.get('interface_name'),
+                    phys_switch_id=pp_dict.get('physical_switch_id'),
+                    vlan_binding_dicts=None))
+            physical_port['vlan_bindings'] = port_list
+        return physical_port
 
     def _get_ip_details(self, context, port):
         host = port[portbindings.HOST_ID]
@@ -450,10 +466,10 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         l2gateway_devices = self.get_l2gateway_devices_by_gateway_id(
             context, gw_connection.get('l2_gateway_id'))
         for device in l2gateway_devices:
-            port_dict = {}
             locator_list = []
-            ovsdb_identifier, logical_switch = self._process_port_list(
-                context, device, port_dict, gw_connection, "CREATE")
+            ovsdb_identifier, logical_switch, port_dict = (
+                self._process_port_list(context, device,
+                                        gw_connection, "CREATE"))
             ls_dict = self._get_logical_switch_dict(
                 context, logical_switch, gw_connection)
             ports = self._get_port_details(context,
@@ -550,9 +566,10 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             context, gw_connection.get('l2_gateway_id'))
         for device in l2gateway_devices:
             port_dict = {}
-            ovsdb_identifier, logical_switch = self._process_port_list(
-                context, device, port_dict, gw_connection,
-                "DELETE", gw_connection_ovsdb_set)
+            (ovsdb_identifier, logical_switch, port_dict) = (
+                self._process_port_list(
+                    context, device, gw_connection,
+                    "DELETE", gw_connection_ovsdb_set))
             self.agent_rpc.update_connection_to_gateway(
                 context, ovsdb_identifier, ls_dict, locator_list, mac_dict,
                 port_dict)
