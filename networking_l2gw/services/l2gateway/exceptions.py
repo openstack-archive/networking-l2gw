@@ -60,6 +60,16 @@ class L2GatewayInterfaceNotFound(exceptions.NeutronException):
     message = _("L2 Gateway interface not found on '%(interface_id)s'")
 
 
+class L2GatewayPhysicalPortFaultStatus(exceptions.NeutronException):
+    message = _("Physical Port '%(int_name)s' in Physical switch "
+                "'%(device_name)s' port_fault_status is '%(fault_status)s'")
+
+
+class L2GatewayPhysicalSwitchFaultStatus(exceptions.NeutronException):
+    message = _("Physical Switch '%(device_name)s' switch_fault_status is "
+                "'%(fault_status)s'")
+
+
 class L2GatewayConnectionNotFound(exceptions.NotFound):
     message = _("The connection %(id)s not found on the l2 gateway")
 

@@ -258,9 +258,37 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                                                logical_switch_uuid,
                                                mac_list)
 
+    def _check_port_fault_status_and_switch_fault_status(self, context,
+                                                         l2_gateway_id):
+        l2gw = self.get_l2_gateway(context, l2_gateway_id)
+        devices = l2gw['devices']
+        rec_dict = {}
+        for device in devices:
+            device_name = device['device_name']
+            dev_db = db.get_physical_switch_by_name(context, device_name)
+            rec_dict['physical_switch_id'] = dev_db['uuid']
+            rec_dict['ovsdb_identifier'] = dev_db['ovsdb_identifier']
+            status = dev_db.get('switch_fault_status')
+            if status != constants.SWITCH_FAULT_STATUS_UP:
+                raise l2gw_exc.L2GatewayPhysicalSwitchFaultStatus(
+                    device_name=device_name, fault_status=status)
+            for interface_list in device['interfaces']:
+                int_name = interface_list.get('name')
+                rec_dict['interface_name'] = int_name
+                port_db = db.get_physical_port_by_name_and_ps(context,
+                                                              rec_dict)
+                port_status = port_db['port_fault_status']
+                if (port_db['port_fault_status']) != (
+                   constants.PORT_FAULT_STATUS_UP):
+                    raise l2gw_exc.L2GatewayPhysicalPortFaultStatus(
+                        int_name=int_name, device_name=device_name,
+                        fault_status=port_status)
+
     def _validate_connection(self, context, gw_connection):
         seg_id = gw_connection.get('segmentation_id', None)
         l2_gw_id = gw_connection.get('l2_gateway_id')
+        self._check_port_fault_status_and_switch_fault_status(context,
+                                                              l2_gw_id)
         check_vlan = self._is_vlan_configured_on_any_interface_for_l2gw(
             context, l2_gw_id)
         nw_map = {}
@@ -358,7 +386,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                     uuid=pp_dict.get('uuid'),
                     name=pp_dict.get('interface_name'),
                     phys_switch_id=pp_dict.get('physical_switch_id'),
-                    vlan_binding_dicts=None))
+                    vlan_binding_dicts=None,
+                    port_fault_status=None))
             physical_port['vlan_bindings'] = port_list
         else:
             vlan_id = gw_connection.get('segmentation_id')
@@ -377,7 +406,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                     uuid=pp_dict.get('uuid'),
                     name=pp_dict.get('interface_name'),
                     phys_switch_id=pp_dict.get('physical_switch_id'),
-                    vlan_binding_dicts=None))
+                    vlan_binding_dicts=None,
+                    port_fault_status=None))
             physical_port['vlan_bindings'] = port_list
         return physical_port
 

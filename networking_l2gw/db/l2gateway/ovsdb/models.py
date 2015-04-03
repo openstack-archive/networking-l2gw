@@ -35,6 +35,7 @@ class PhysicalSwitches(model_base.BASEV2):
     tunnel_ip = sa.Column(sa.String(64), nullable=False)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
+    switch_fault_status = sa.Column(sa.String(length=16), nullable=True)
     __table_args__ = (sa.UniqueConstraint(uuid,
                                           ovsdb_identifier),)
 
@@ -46,6 +47,7 @@ class PhysicalPorts(model_base.BASEV2):
     physical_switch_id = sa.Column(sa.String(36), nullable=False)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
+    port_fault_status = sa.Column(sa.String(length=16), nullable=True)
     __table_args__ = (sa.UniqueConstraint(uuid,
                                           ovsdb_identifier),)
 

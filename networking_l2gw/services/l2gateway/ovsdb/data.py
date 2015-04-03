@@ -89,6 +89,8 @@ class OVSDBData(object):
                             self._process_deleted_local_macs,
                             'deleted_remote_macs':
                             self._process_deleted_remote_macs,
+                            'modified_physical_switches':
+                            self._process_modified_physical_switches,
                             }
 
         return
@@ -193,6 +195,7 @@ class OVSDBData(object):
             pp_dict[n_const.OVSDB_IDENTIFIER] = self.ovsdb_identifier
             modified_port = db.get_physical_port(context, pp_dict)
             if modified_port:
+                db.update_physical_ports_status(context, pp_dict)
                 port_vlan_bindings = physical_port.get('vlan_bindings')
                 vlan_bindings = db.get_all_vlan_bindings_by_physical_port(
                     context, pp_dict)
@@ -205,6 +208,11 @@ class OVSDBData(object):
                     db.add_vlan_binding(context, port_vlan_binding)
             else:
                 db.add_physical_port(context, pp_dict)
+
+    def _process_modified_physical_switches(self, context,
+                                            modified_physical_switches):
+        for physical_switch in modified_physical_switches:
+            db.update_physical_switch_status(context, physical_switch)
 
     def _process_deleted_logical_switches(self,
                                           context,

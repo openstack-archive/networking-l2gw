@@ -364,14 +364,18 @@ class TestOVSDBData(base.BaseTestCase):
             mock.patch.object(lib,
                               'get_all_vlan_bindings_by_physical_port'),
             mock.patch.object(lib,
-                              'add_vlan_binding')) as (
-                get_pp, add_pp, get_vlan, add_vlan):
+                              'add_vlan_binding'),
+            mock.patch.object(lib,
+                              'update_physical_ports_status')
+            ) as (
+                get_pp, add_pp, get_vlan, add_vlan, update_pp_status):
             self.ovsdb_data._process_modified_physical_ports(
                 self.context, fake_modified_physical_ports)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict2)
             self.assertEqual(fake_dict2[n_const.OVSDB_IDENTIFIER],
                              'fake_ovsdb_id')
             get_pp.assert_called_with(self.context, fake_dict2)
+            update_pp_status.assert_called_with(self.context, fake_dict2)
             self.assertFalse(add_pp.called)
             get_vlan.assert_called_with(self.context, fake_dict2)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict1)
