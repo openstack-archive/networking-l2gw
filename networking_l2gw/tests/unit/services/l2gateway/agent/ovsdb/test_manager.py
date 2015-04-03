@@ -19,6 +19,7 @@ import eventlet
 import mock
 
 from neutron.agent.common import config as agent_config
+from neutron.agent import rpc as agent_rpc
 from neutron.common import rpc
 from neutron import context
 from neutron.openstack.common import loopingcall
@@ -27,6 +28,7 @@ from neutron.tests import base
 from oslo.config import cfg
 
 from networking_l2gw.services.l2gateway.agent import agent_api
+from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
 from networking_l2gw.services.l2gateway.agent.ovsdb import manager
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_monitor
@@ -144,8 +146,33 @@ class TestManager(base.BaseTestCase):
                 self.l2gw_agent_manager._connect_to_ovsdb_server()
                 event_spawn.assert_not_called()
 
+    def test_handle_report_state_failure(self):
+        self.l2gw_agent_manager.l2gw_agent_type = n_const.MONITOR
+        with contextlib.nested(
+            mock.patch.object(self.l2gw_agent_manager,
+                              '_disconnect_all_ovsdb_servers'
+                              ),
+            mock.patch.object(agent_rpc.PluginReportStateAPI,
+                              'report_state',
+                              side_effect=Exception),
+            mock.patch.object(base_agent_manager.LOG,
+                              'exception'),
+            mock.patch.object(self.l2gw_agent_manager,
+                              '_stop_looping_task')
+        ) as (mock_disconnect_ovsdb_servers, mock_report_state,
+              mock_log, mock_stop_looping):
+            self.l2gw_agent_manager._report_state()
+            self.assertEqual(self.l2gw_agent_manager.l2gw_agent_type,
+                             '')
+            self.assertEqual(self.l2gw_agent_manager.
+                             agent_state.get('configurations'
+                                             )[n_const.L2GW_AGENT_TYPE
+                                               ],
+                             '')
+            mock_disconnect_ovsdb_servers.assert_called()
+            mock_stop_looping.assert_called()
+
     def test_set_monitor_agent_type_monitor(self):
-        self.l2gw_agent_manager.l2gw_agent_type = ''
         self.l2gw_agent_manager.conf.host = 'fake_host'
         with mock.patch.object(manager.OVSDBManager,
                                '_connect_to_ovsdb_server'
