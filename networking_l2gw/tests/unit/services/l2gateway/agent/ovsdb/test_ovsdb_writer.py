@@ -307,6 +307,48 @@ class TestOVSDBWriter(base.BaseTestCase):
             get_logical_switch_dict.assert_called()
             get_ucast_macs_remote.assert_called()
 
+    def test_get_bindings_to_update1(self):
+        """Test case to test _get_bindings_to_update."""
+        with contextlib.nested(
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_form_logical_switch'),
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_form_physical_locators'),
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_form_ports'),
+            mock.patch.object(ovsdb_schema, 'LogicalSwitch'),
+            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
+            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
+            mock.patch.object(ovsdb_schema, 'PhysicalPort')
+        ) as (form_ls, form_pl, form_pp,
+              mock_ls, mock_pl, mock_ucmr, mock_pp):
+            ls = mock_ls.return_value = ovsdb_schema.LogicalSwitch(
+                'ls_uuid', 'ls_name', 'ls_key', 'ls_desc')
+            pl = mock_pl.return_value = ovsdb_schema.PhysicalLocator(
+                'pl_uuid', 'pl_dst_ip')
+            mock_ucmr.return_value = ovsdb_schema.UcastMacsRemote(
+                'ucmr_uuid', 'ucmr_mac', 'ucmr_ls_id', 'ucmr_pl_id', 'ucmr_ip')
+            pp = mock_pp.return_value = ovsdb_schema.PhysicalPort(
+                'pp_uuid', 'pp_name', 'pp_ps_id', 'pp_vlan_bindings')
+            form_ls.return_value = ['uuid', ls.uuid]
+            self.l2gw_ovsdb._get_bindings_to_update(mock.MagicMock(),
+                                                    [{'uuid': 'uuid',
+                                                      'dst_ip': 'dst_ip'}],
+                                                    mock.MagicMock(),
+                                                    [{'uuid': 'uuid',
+                                                      'name': 'name',
+                                                      'physical_switch_id':
+                                                      'physical_switch_id',
+                                                      'vlan_bindings':
+                                                      'vlan_bindings',
+                                                      'port_fault_status':
+                                                      'port_fault_status'}])
+
+            form_ls.assert_called_with(ls, mock.ANY)
+            form_pl.assert_called_with(['uuid', ls.uuid], [pl],
+                                       mock.ANY, mock.ANY)
+            form_pp.assert_called_with(['uuid', ls.uuid], [pp], mock.ANY)
+
     def test_get_physical_locator_dict(self):
         """Test case to test _get_physical_locator_dict."""
         fake_locator = mock.Mock()

@@ -44,7 +44,7 @@ def upgrade():
                               nullable=True),
                     sa.Column('ovsdb_identifier', sa.String(length=64),
                               nullable=False),
-                    sa.Column('switch_fault_status', sa.String(length=16),
+                    sa.Column('switch_fault_status', sa.String(length=32),
                               nullable=True),
                     sa.PrimaryKeyConstraint('uuid', 'ovsdb_identifier'))
 
@@ -55,7 +55,7 @@ def upgrade():
                               nullable=True),
                     sa.Column('ovsdb_identifier', sa.String(length=64),
                               nullable=False),
-                    sa.Column('port_fault_status', sa.String(length=16),
+                    sa.Column('port_fault_status', sa.String(length=32),
                               nullable=True),
                     sa.PrimaryKeyConstraint('uuid', 'ovsdb_identifier'))
 

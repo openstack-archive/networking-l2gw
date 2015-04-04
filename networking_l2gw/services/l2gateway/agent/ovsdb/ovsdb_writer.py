@@ -260,7 +260,8 @@ class OVSDBWriter(base_connection.BaseConnection):
             phys_port = ovsdb_schema.PhysicalPort(port['uuid'],
                                                   port['name'],
                                                   port['physical_switch_id'],
-                                                  port['vlan_bindings'])
+                                                  port['vlan_bindings'],
+                                                  port['port_fault_status'])
             port_list.append(phys_port)
 
         bindings = []
@@ -272,7 +273,7 @@ class OVSDBWriter(base_connection.BaseConnection):
 
         # Use logical switch
         if logical_switch:
-            ls_list.append(self._form_logical_switch(logical_switch, params))
+            ls_list = self._form_logical_switch(logical_switch, params)
 
         # Use physical locators
         if locator_list:

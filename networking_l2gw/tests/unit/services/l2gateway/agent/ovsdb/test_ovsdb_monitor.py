@@ -414,6 +414,31 @@ class TestOVSDBMonitor(base.BaseTestCase):
                 self.assertIn(phy_port.return_value,
                               data_dict.get('deleted_physical_ports'))
 
+    def test_process_physical_port_with_empty_fault_status(self):
+        """Test case to process new physical_port with empty fault status."""
+        fake_id = 'fake_id'
+        add = {'new': {'uuid': 'fake_id',
+                       'name': 'fake_name',
+                       'physical_switch_id': 'fake_switch_id',
+                       'port_fault_status': ['set', []],
+                       'vlan_bindings': [["some"], []]}}
+        port_map = {'fake_id': 'fake_switch_id'}
+        data_dict = {'new_physical_ports': [],
+                     'modified_physical_ports': [],
+                     'deleted_physical_ports': []}
+
+        with mock.patch.object(ovsdb_schema, 'PhysicalPort') as phy_port:
+            with mock.patch.object(ovsdb_schema, 'VlanBinding'):
+                # test add
+                self.l2gw_ovsdb._process_physical_port(fake_id,
+                                                       add,
+                                                       port_map,
+                                                       data_dict)
+                phy_port.assert_called_with(fake_id, 'fake_name', None, None,
+                                            None)
+                self.assertIn(phy_port.return_value,
+                              data_dict.get('new_physical_ports'))
+
     def test_process_physical_switch(self):
         """Test case to process new physical_switch."""
         with mock.patch.object(ovsdb_schema, 'PhysicalPort') as phy_port:
@@ -458,6 +483,32 @@ class TestOVSDBMonitor(base.BaseTestCase):
                                                          data_dict)
                 self.assertIn(phy_switch.return_value,
                               data_dict['deleted_physical_switches'])
+
+    def test_process_physical_switch_with_empty_fault_status(self):
+        """Test case to process new physical_switch with empty fault status."""
+        with mock.patch.object(ovsdb_schema, 'PhysicalPort') as phy_port:
+            with mock.patch.object(ovsdb_schema,
+                                   'PhysicalSwitch') as phy_switch:
+                physical_port = phy_port.return_value
+                fake_id = 'fake_id'
+                add = {'new': {'uuid': 'fake_id',
+                               'name': 'fake_name',
+                               'tunnel_ips': 'fake_tunnel_ip',
+                               'switch_fault_status': ['set', []],
+                               'ports': ['set', 'set',
+                                         physical_port]}}
+                data_dict = {'new_physical_switches': [],
+                             'modified_physical_switches': [],
+                             'deleted_physical_switches': [],
+                             'new_physical_ports': []}
+                # test add
+                self.l2gw_ovsdb._process_physical_switch(fake_id,
+                                                         add,
+                                                         data_dict)
+                self.assertIn(phy_switch.return_value,
+                              data_dict['new_physical_switches'])
+                phy_switch.assert_called_with('fake_id', 'fake_name',
+                                              'fake_tunnel_ip', None)
 
     def test_process_logical_switch(self):
         """Test case to process new logical_switch."""
