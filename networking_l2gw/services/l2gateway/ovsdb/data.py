@@ -257,16 +257,14 @@ class OVSDBData(object):
                 for logical_switch_id in logical_switch_ids:
                     for physical_switch_ip in physical_switch_ips:
                         other_fdb_entries = self._get_fdb_entries(
-                            context, physical_switch_ip, logical_switch_id,
-                            self.ovsdb_identifier)
+                            context, physical_switch_ip, logical_switch_id)
                         agent_host = tunneling_ip_dict.get(agent_ip)
                         self._trigger_l2pop_delete(
                             context, other_fdb_entries, agent_host)
             else:
                 for logical_switch_id in logical_switch_ids:
                     other_fdb_entries = self._get_fdb_entries(
-                        context, agent_ip, logical_switch_id,
-                        self.ovsdb_identifier)
+                        context, agent_ip, logical_switch_id)
                     self._trigger_l2pop_delete(
                         context, other_fdb_entries)
             db.delete_physical_locator(context, pl_dict)
@@ -312,7 +310,7 @@ class OVSDBData(object):
         logical_switch = db.get_logical_switch(context, ls_dict)
         network_id = logical_switch.get('name')
         segment_id = logical_switch.get('key')
-        port_fdb_entries = n_const.FLOODING_ENTRY
+        port_fdb_entries = constants.FLOODING_ENTRY
         other_fdb_entries = {network_id: {'segment_id': segment_id,
                                           'network_type': 'vxlan',
                                           'ports': {agent_ip:
