@@ -214,14 +214,19 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                                          dst_ip=pl_dict.get('dst_ip')))
         return physical_locator
 
-    def delete_port_mac(self, context, port_dict):
+    def delete_port_mac(self, context, port):
         """Process the deleted port and trigger the RPC
 
         to delete from the gateway.
+
+        When the ML2 plugin invokes this call, the argument port is
+        a single port dict, whereas the L2gateway service plugin
+        sends it as a list of port dicts.
         """
         mac_list = []
-        if not isinstance(port_dict, list):
-            port_list = [port_dict]
+        port_list = port
+        if not isinstance(port, list):
+            port_list = [port]
         for port_dict in port_list:
             if port_dict['device_owner']:
                 logical_switches = db.get_all_logical_switches_by_name(

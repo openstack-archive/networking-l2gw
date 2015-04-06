@@ -553,7 +553,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                 self.context, ovsdb_identifier,
                 fake_logical_switch, fake_locator_dict, fake_dict)
 
-    def test_delete_port_mac(self):
+    def test_delete_port_mac_with_list(self):
         network_id = 'fake_network_id'
         fake_port_dict = {'network_id': 'fake_network_id',
                           'device_owner': 'fake_owner',
@@ -576,6 +576,34 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               'delete_vif_from_gateway')) as (
                 get_ls, get_mac, delete_rpc):
             self.plugin.delete_port_mac(self.context, fake_port_dict)
+            get_ls.assert_called_with(self.context, network_id)
+            get_mac.assert_called_with(self.context, fake_dict)
+            delete_rpc.assert_called_with(
+                self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
+
+    def test_delete_port_mac(self):
+        network_id = 'fake_network_id'
+        fake_port_list = [{'network_id': 'fake_network_id',
+                           'device_owner': 'fake_owner',
+                           'mac_address': 'fake_mac',
+                           'ovsdb_identifier': 'fake_ovsdb_id'}]
+        fake_logical_switch_dict = {'uuid': 'fake_uuid',
+                                    'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_logical_switch_list = [fake_logical_switch_dict]
+        fake_dict = {'mac': 'fake_mac',
+                     'logical_switch_uuid': 'fake_uuid',
+                     'ovsdb_identifier': 'fake_ovsdb_id'}
+        with contextlib.nested(
+            mock.patch.object(db,
+                              'get_all_logical_switches_by_name',
+                              return_value=fake_logical_switch_list),
+            mock.patch.object(db,
+                              'get_ucast_mac_remote_by_mac_and_ls',
+                              return_value=True),
+            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+                              'delete_vif_from_gateway')) as (
+                get_ls, get_mac, delete_rpc):
+            self.plugin.delete_port_mac(self.context, fake_port_list)
             get_ls.assert_called_with(self.context, network_id)
             get_mac.assert_called_with(self.context, fake_dict)
             delete_rpc.assert_called_with(
