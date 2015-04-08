@@ -297,12 +297,11 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         check_vlan = self._is_vlan_configured_on_any_interface_for_l2gw(
             context, l2_gw_id)
         nw_map = {}
-        nw_map['network_id'] = gw_connection.get('network_id')
+        network_id = gw_connection.get(constants.NETWORK_ID)
+        nw_map[constants.NETWORK_ID] = network_id
         nw_map['l2_gateway_id'] = l2_gw_id
         if seg_id:
-            nw_map[constants.SEG_ID] = gw_connection.get('segmentation_id')
-        network_id = l2gw_validators.validate_network_mapping_list(nw_map,
-                                                                   check_vlan)
+            nw_map[constants.SEG_ID] = gw_connection.get(constants.SEG_ID)
         net_segments_list = self._get_network_segments(context, network_id)
         if len(net_segments_list) > 1:
             raise l2gw_exc.MultipleSegmentsFound(network_id=network_id)
@@ -314,6 +313,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                                               nw_map):
             raise l2gw_exc.L2GatewayConnectionExists(mapping=nw_map,
                                                      gateway_id=l2_gw_id)
+        l2gw_validators.validate_network_mapping_list(nw_map, check_vlan)
         gw_db = self._get_l2_gateway(context, l2_gw_id)
         tenant_id = self._get_tenant_id_for_create(context, gw_db)
         l2gw_connection = self.get_l2_gateway_connections(
