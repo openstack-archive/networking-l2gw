@@ -313,16 +313,80 @@ class TestOVSDBData(base.BaseTestCase):
             delete_pp.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_physical_locators(self):
-        fake_dict = {}
-        fake_deleted_physical_locators = [fake_dict]
+        """Test case to test _process_deleted_physical_locators.
+
+        for unicast rpc to the L2 agent
+        """
+        fake_dict1 = {'dst_ip': '1.1.1.1'}
+        fake_dict2 = {'dst_ip': '2.2.2.2'}
+        fake_deleted_physical_locators = [fake_dict2, fake_dict1]
         mock.patch.object(manager, 'NeutronManager').start()
-        with mock.patch.object(lib, 'delete_physical_locator') as delete_pl:
+        with contextlib.nested(
+            mock.patch.object(data.OVSDBData,
+                              '_get_logical_switch_ids',
+                              return_value=['1']),
+            mock.patch.object(lib,
+                              'get_all_physical_switches_by_ovsdb_id',
+                              return_value=[{'tunnel_ip': '3.3.3.3'}]),
+            mock.patch.object(data.OVSDBData,
+                              '_get_fdb_entries'),
+            mock.patch.object(lib,
+                              'delete_physical_locator'),
+            mock.patch.object(data.OVSDBData, '_get_agent_ips',
+                              return_value={'1.1.1.1': 'hostname'}),
+            mock.patch.object(data.OVSDBData, '_trigger_l2pop_delete')
+        ) as (get_ls, get_all_ps, get_fdb, delete_pl, get_agent_ips,
+              trig_l2pop):
             self.ovsdb_data._process_deleted_physical_locators(
                 self.context, fake_deleted_physical_locators)
-            self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
+            self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict1)
+            get_ls.assert_called()
+            get_all_ps.assert_called()
+            get_fdb.assert_called()
+            self.assertEqual(fake_dict1[n_const.OVSDB_IDENTIFIER],
                              'fake_ovsdb_id')
-            delete_pl.assert_called_with(self.context, fake_dict)
+            delete_pl.assert_called_with(self.context, fake_dict1)
+            get_agent_ips.assert_called()
+            trig_l2pop.assert_called_with(self.context,
+                                          mock.ANY,
+                                          'hostname')
+
+    def test_process_deleted_physical_locators1(self):
+        """Test case to test _process_deleted_physical_locators.
+
+        for broadcast rpc to the L2 agents
+        """
+        fake_dict1 = {'dst_ip': '1.1.1.1'}
+        fake_deleted_physical_locators = [fake_dict1]
+        mock.patch.object(manager, 'NeutronManager').start()
+        with contextlib.nested(
+            mock.patch.object(data.OVSDBData,
+                              '_get_logical_switch_ids',
+                              return_value=['1']),
+            mock.patch.object(lib,
+                              'get_all_physical_switches_by_ovsdb_id',
+                              return_value=[{'tunnel_ip': '3.3.3.3'}]),
+            mock.patch.object(data.OVSDBData,
+                              '_get_fdb_entries'),
+            mock.patch.object(lib,
+                              'delete_physical_locator'),
+            mock.patch.object(data.OVSDBData, '_get_agent_ips',
+                              return_value={'2.2.2.2': 'hostname'}),
+            mock.patch.object(data.OVSDBData, '_trigger_l2pop_delete')
+        ) as (get_ls, get_all_ps, get_fdb, delete_pl, get_agent_ips,
+              trig_l2pop):
+            self.ovsdb_data._process_deleted_physical_locators(
+                self.context, fake_deleted_physical_locators)
+            self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict1)
+            get_ls.assert_called()
+            get_all_ps.assert_called()
+            get_fdb.assert_called()
+            self.assertEqual(fake_dict1[n_const.OVSDB_IDENTIFIER],
+                             'fake_ovsdb_id')
+            delete_pl.assert_called_with(self.context, fake_dict1)
+            get_agent_ips.assert_called()
+            trig_l2pop.assert_called_with(self.context,
+                                          mock.ANY)
 
     def test_process_deleted_local_macs(self):
         fake_dict = {'uuid': '123456',
