@@ -97,6 +97,10 @@ class L2GatewaySegmentationRequired(exceptions.NeutronException):
                 "the interfaces")
 
 
+class L2GatewayDuplicateSegmentationID(exceptions.Conflict):
+    message = _("%(message)s")
+
+
 class OVSDBError(exceptions.NeutronException):
     message = _("%(message)s")
 
@@ -106,4 +110,5 @@ base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayConnectionNotFound: web_exc.HTTPNotFound,
                        MultipleSegmentsFound: web_exc.HTTPConflict,
                        L2GatewaySegmentationRequired: web_exc.HTTPConflict,
-                       L2MultipleGatewayConnections: web_exc.HTTPConflict})
+                       L2MultipleGatewayConnections: web_exc.HTTPConflict,
+                       L2GatewayDuplicateSegmentationID: web_exc.HTTPConflict})

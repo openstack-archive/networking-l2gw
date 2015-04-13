@@ -361,6 +361,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 msg = _('The PHYSICAL PORT data not found in the server')
                 raise Exception(msg)
             pp_dict['uuid'] = ps_port.get('uuid')
+            pp_dict['name'] = ps_port.get('name')
             port_dict = self._generate_port_list(
                 context, method, seg_id, interface, pp_dict,
                 logical_switch_uuid, gw_connection)
@@ -382,6 +383,13 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                          'logical_switch_uuid': logical_switch_uuid}
             port_list.append(vlan_dict)
             for vlan_binding in vlan_bindings:
+                if vlan_binding.get('vlan') == vlan_id:
+                    msg = _('Duplicate segmentation ID for the interface '
+                            'name=%(name)s uuid=%(uuid)s'
+                            ) % {'name': pp_dict['name'],
+                                 'uuid': pp_dict['uuid']}
+                    raise l2gw_exc.L2GatewayDuplicateSegmentationID(message=msg
+                                                                    )
                 vlan_dict = {'vlan': vlan_binding.get('vlan'),
                              'logical_switch_uuid': vlan_binding.get(
                                  'logical_switch_uuid')}

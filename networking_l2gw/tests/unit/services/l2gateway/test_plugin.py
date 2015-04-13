@@ -239,10 +239,12 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                         'ovsdb_identifier': 'fake_ovsdb_id',
                         'physical_switch_id': 'fake_uuid',
                         'logical_switch_name': 'fake_network_id',
-                        'uuid': 'fake_uuid'}
+                        'uuid': 'fake_uuid',
+                        'name': 'fake_name'}
         fake_logical_switch = {'uuid': 'fake_uuid',
                                'name': 'fake_network_id'}
-        fake_physical_port = {'uuid': 'fake_uuid'}
+        fake_physical_port = {'uuid': 'fake_uuid',
+                              'name': 'fake_name'}
         with contextlib.nested(
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'get_l2gateway_interfaces_by_device_id',
@@ -264,8 +266,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                                            fake_method)
             get_intf.assert_called_with(self.context, 'fake_device_id')
             get_ps.assert_called_with(self.context, 'fake_device_name')
-            get_ls.assert_called_with(self.context, fake_pp_dict)
             get_pp.assert_called_with(self.context, fake_pp_dict)
+            get_ls.assert_called_with(self.context, fake_pp_dict)
             gen_port_list.assert_called_with(
                 self.context, fake_method, 100L, fake_interface,
                 fake_pp_dict, 'fake_uuid', fake_connection)
@@ -277,7 +279,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                         'ovsdb_identifier': 'fake_ovsdb_id',
                         'physical_switch_id': 'fake_uuid',
                         'logical_switch_name': 'fake_network_id',
-                        'uuid': 'fake_uuid'}
+                        'uuid': 'fake_uuid',
+                        'name': 'fake_name'}
         fake_vlan_binding = {'vlan': 100L,
                              'logical_switch_uuid': 'fake_uuid'}
         fake_vlan_binding_list = [fake_vlan_binding]
@@ -286,8 +289,30 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             return_value=fake_vlan_binding_list) as (
                 get_vlan):
             self.plugin._generate_port_list(
-                self.context, fake_method, 100L, fake_interface,
+                self.context, fake_method, 101L, fake_interface,
                 fake_pp_dict, 'fake_uuid')
+            get_vlan.assert_called_with(self.context, fake_pp_dict)
+
+    def test_generate_port_list_for_create_for_duplicate_seg_id(self):
+        fake_method = 'CREATE'
+        fake_interface = {'interface_name': 'fake_interface_name'}
+        fake_pp_dict = {'interface_name': 'fake_interface_name',
+                        'ovsdb_identifier': 'fake_ovsdb_id',
+                        'physical_switch_id': 'fake_uuid',
+                        'logical_switch_name': 'fake_network_id',
+                        'uuid': 'fake_uuid',
+                        'name': 'fake_name'}
+        fake_vlan_binding = {'vlan': 100L,
+                             'logical_switch_uuid': 'fake_uuid'}
+        fake_vlan_binding_list = [fake_vlan_binding]
+        with mock.patch.object(
+            db, 'get_all_vlan_bindings_by_physical_port',
+            return_value=fake_vlan_binding_list) as (
+                get_vlan):
+            self.assertRaises(l2gw_exc.L2GatewayDuplicateSegmentationID,
+                              self.plugin._generate_port_list,
+                              self.context, fake_method, 100L,
+                              fake_interface, fake_pp_dict, 'fake_uuid')
             get_vlan.assert_called_with(self.context, fake_pp_dict)
 
     def test_generate_port_list_for_delete(self):
