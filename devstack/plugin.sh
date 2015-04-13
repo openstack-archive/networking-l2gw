@@ -40,8 +40,8 @@ if is_service_enabled l2gw-plugin; then
         :
     elif [[ "$1" == "stack" && "$2" == "install" ]]; then
         install_l2gw
-        configure_l2gw_plugin
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+        configure_l2gw_plugin
     	run_l2gw_alembic_migration
     elif [[ "$1" == "stack" && "$2" == "post-extra" ]]; then
         # no-op
@@ -65,8 +65,8 @@ if is_service_enabled l2gw-agent; then
         :
     elif [[ "$1" == "stack" && "$2" == "install" ]]; then
         install_l2gw
-        configure_agent_conf
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+        configure_agent_conf
         start_l2gw_agent
     fi
 
