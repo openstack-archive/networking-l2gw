@@ -1,0 +1,6 @@
+[l2_gateway]
+#List of switch device,interfaces name and segmentation_ids for l2gateway
+l2gw_switch = cell08-5930-01::FortyGigE1/0/1|100
+#l2gw_switch = cell08-5930-01::FortyGigE1/0/1|100#200;FortyGigE1/0/2|300
+#l2gw_switch = cell08-5930-01::FortyGigE1/0/1|100#200,cell08-5930-02::FortyGigE1/0/2|300
+
