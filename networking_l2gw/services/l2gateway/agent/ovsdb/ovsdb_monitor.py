@@ -137,8 +137,10 @@ class OVSDBMonitor(base_connection.BaseConnection):
             for uuid in table_dict.keys():
                 uuid_dict = table_dict.get(uuid)
                 if table_name == 'Physical_Switch':
-                    port_map = self._process_physical_switch(uuid, uuid_dict,
-                                                             data_dict)
+                    self._process_physical_switch(uuid,
+                                                  uuid_dict,
+                                                  port_map,
+                                                  data_dict)
                 elif table_name == 'Physical_Port':
                     self._process_physical_port(uuid, uuid_dict,
                                                 port_map, data_dict)
@@ -340,9 +342,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
             deleted_physical_ports = data_dict.get('deleted_physical_ports')
             deleted_physical_ports.append(port)
 
-    def _process_physical_switch(self, uuid, uuid_dict, data_dict):
+    def _process_physical_switch(self, uuid, uuid_dict, port_map, data_dict):
         """Processes Physical_Switch record from the OVSDB event."""
-        port_map = {}
         new_row = uuid_dict.get('new', None)
         old_row = uuid_dict.get('old', None)
         if new_row:
@@ -398,7 +399,6 @@ class OVSDBMonitor(base_connection.BaseConnection):
             deleted_physical_switches = data_dict.get(
                 'deleted_physical_switches')
             deleted_physical_switches.append(phys_switch)
-        return port_map
 
     def _process_logical_switch(self, uuid, uuid_dict, data_dict):
         """Processes Logical_Switch record from the OVSDB event."""

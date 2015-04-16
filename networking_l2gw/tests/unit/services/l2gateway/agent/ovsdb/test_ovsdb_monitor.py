@@ -441,6 +441,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
 
     def test_process_physical_switch(self):
         """Test case to process new physical_switch."""
+        port_map = {'fake_id': 'fake_switch_id'}
         with mock.patch.object(ovsdb_schema, 'PhysicalPort') as phy_port:
             with mock.patch.object(ovsdb_schema,
                                    'PhysicalSwitch') as phy_switch:
@@ -466,6 +467,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
                 # test add
                 self.l2gw_ovsdb._process_physical_switch(fake_id,
                                                          add,
+                                                         port_map,
                                                          data_dict)
                 self.assertIn(phy_switch.return_value,
                               data_dict['new_physical_switches'])
@@ -474,18 +476,21 @@ class TestOVSDBMonitor(base.BaseTestCase):
                 # test modify
                 self.l2gw_ovsdb._process_physical_switch(fake_id,
                                                          modify,
+                                                         port_map,
                                                          data_dict)
                 self.assertIn(phy_switch.return_value,
                               data_dict['modified_physical_switches'])
                 # test delete
                 self.l2gw_ovsdb._process_physical_switch(fake_id,
                                                          delete,
+                                                         port_map,
                                                          data_dict)
                 self.assertIn(phy_switch.return_value,
                               data_dict['deleted_physical_switches'])
 
     def test_process_physical_switch_with_empty_fault_status(self):
         """Test case to process new physical_switch with empty fault status."""
+        port_map = {'fake_id': 'fake_switch_id'}
         with mock.patch.object(ovsdb_schema, 'PhysicalPort') as phy_port:
             with mock.patch.object(ovsdb_schema,
                                    'PhysicalSwitch') as phy_switch:
@@ -504,6 +509,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
                 # test add
                 self.l2gw_ovsdb._process_physical_switch(fake_id,
                                                          add,
+                                                         port_map,
                                                          data_dict)
                 self.assertIn(phy_switch.return_value,
                               data_dict['new_physical_switches'])
