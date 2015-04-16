@@ -40,9 +40,9 @@ if is_service_enabled l2gw-plugin; then
         :
     elif [[ "$1" == "stack" && "$2" == "install" ]]; then
         install_l2gw
-    elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         configure_l2gw_plugin
-    	run_l2gw_alembic_migration
+    elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+        run_l2gw_alembic_migration
     elif [[ "$1" == "stack" && "$2" == "post-extra" ]]; then
         # no-op
         :
