@@ -144,8 +144,6 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
 
         to add to the gateway.
         """
-        logical_switch_uuid = None
-        locator_uuid = None
         port_id = port_dict.get("id")
         port = self._core_plugin.get_port(context, port_id)
         if port['device_owner']:
@@ -172,6 +170,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                                     'ovsdb_identifier': ovsdb_identifier}
                     physical_locator = self._form_physical_locator_schema(
                         context, locator_dict)
+                    locator_uuid = physical_locator.get('uuid')
+                    logical_switch_uuid = logical_switch.get('uuid')
                     mac_remote = self._get_dict(ovsdb_schema.UcastMacsRemote(
                         uuid=None,
                         mac=port['mac_address'],
@@ -180,6 +180,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                         ip_address=ip_address))
                     mac_dict = mac_remote
                     mac_dict['ovsdb_identifier'] = ovsdb_identifier
+                    mac_dict['logical_switch_uuid'] = logical_switch_uuid
                     ucast_mac_remote = db.get_ucast_mac_remote_by_mac_and_ls(
                         context, mac_dict)
                     if ucast_mac_remote:

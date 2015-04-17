@@ -25,6 +25,7 @@ from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import l2gw_validators
+from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
@@ -553,6 +554,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(self.plugin,
                               '_form_physical_locator_schema',
                               return_value=fake_locator_dict),
+            mock.patch.object(ovsdb_schema,
+                              'UcastMacsRemote'),
             mock.patch.object(self.plugin,
                               '_get_dict',
                               return_value=fake_dict),
@@ -562,7 +565,12 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
                               'add_vif_to_gateway')) as (
                 get_ip, get_network, get_l2gw_conn, get_device, get_ps,
-                get_ls, get_pl, get_dict, get_ucast_mac, add_rpc):
+                get_ls, get_pl, mock_ucmr, get_dict, get_ucast_mac, add_rpc):
+            remote_mac = ovsdb_schema.UcastMacsRemote(
+                None, fake_dict['mac'], fake_logical_switch['uuid'],
+                fake_locator_dict['uuid'],
+                fake_ip2)
+            mock_ucmr.return_value = remote_mac
             self.plugin.add_port_mac(self.context, fake_dict)
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw_conn.assert_called_with(
@@ -574,6 +582,13 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                                       fake_ls_dict)
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
+            get_dict.assert_called_with(remote_mac)
+            mock_ucmr.assert_called_with(
+                uuid=None,
+                mac=fake_dict['mac'],
+                logical_switch_id=fake_logical_switch['uuid'],
+                physical_locator_id=fake_locator_dict['uuid'],
+                ip_address=fake_ip2)
             add_rpc.assert_called_with(
                 self.context, ovsdb_identifier,
                 fake_logical_switch, fake_locator_dict, fake_dict)

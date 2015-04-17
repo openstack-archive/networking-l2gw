@@ -316,7 +316,7 @@ def get_physical_locator_by_dst_ip(context, record_dict):
     try:
         query = context.session.query(models.PhysicalLocators)
         physical_locator = query.filter_by(
-            uuid=record_dict['dst_ip'],
+            dst_ip=record_dict['dst_ip'],
             ovsdb_identifier=record_dict['ovsdb_identifier']).one()
     except exc.NoResultFound:
         LOG.debug('no physical locator found for %s and %s',

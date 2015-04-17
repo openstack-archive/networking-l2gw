@@ -404,7 +404,8 @@ class OvsdbLibTestCase(testlib_api.SqlTestCase):
         with self.ctx.session.begin(subtransactions=True):
             entry = self._create_physical_locator(record_dict, '20.0.0.1')
         record_dict['dst_ip'] = '20.0.0.1'
-        result = lib.get_physical_locator(self.ctx, record_dict)
+        record_dict.pop('uuid')
+        result = lib.get_physical_locator_by_dst_ip(self.ctx, record_dict)
         self.assertEqual(entry, result)
 
     def test_get_physical_switch_by_name(self):
