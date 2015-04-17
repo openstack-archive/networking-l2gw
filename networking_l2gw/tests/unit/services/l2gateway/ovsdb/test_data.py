@@ -59,12 +59,16 @@ class TestOVSDBData(base.BaseTestCase):
 
     def test_update_ovsdb_changes(self):
         fake_dict = {}
+        fake_remote_mac = {'uuid': '123456',
+                           'mac': 'mac123',
+                           'ovsdb_identifier': 'host1',
+                           'logical_switch_id': 'ls123'}
         fake_new_logical_switches = [fake_dict]
         fake_new_physical_port = [fake_dict]
         fake_new_physical_switches = [fake_dict]
         fake_new_physical_locators = [fake_dict]
         fake_new_local_macs = [fake_dict]
-        fake_new_remote_macs = [fake_dict]
+        fake_new_remote_macs = [fake_remote_mac]
         fake_modified_physical_ports = [fake_dict]
         fake_modified_local_macs = [fake_dict]
         fake_deleted_logical_switches = [fake_dict]

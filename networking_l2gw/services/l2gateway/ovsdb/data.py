@@ -61,6 +61,8 @@ class OVSDBData(object):
             lookup = self.entry_table.get(item, None)
             if lookup:
                 lookup(context, value)
+        if ovsdb_data.get('new_remote_macs'):
+            self._handle_l2pop(context, ovsdb_data.get('new_remote_macs'))
 
     def _setup_entry_table(self):
         self.entry_table = {'new_logical_switches':
@@ -165,7 +167,6 @@ class OVSDBData(object):
             r_mac = db.get_ucast_mac_remote(context, rm_dict)
             if not r_mac:
                 db.add_ucast_mac_remote(context, rm_dict)
-                self._handle_l2pop(context, rm_dict)
 
     def _get_physical_switch_ips(self, context, mac):
         physical_switch_ips = set()
@@ -180,12 +181,13 @@ class OVSDBData(object):
             physical_switch_ips.add(physical_switch.get('tunnel_ip'))
         return list(physical_switch_ips)
 
-    def _handle_l2pop(self, context, mac):
-        agent_ips = self._get_physical_switch_ips(context, mac)
-        for agent_ip in agent_ips:
-            other_fdb_entries = self._get_fdb_entries(
-                context, agent_ip, mac.get('logical_switch_id'))
-            self._trigger_l2pop_sync(context, other_fdb_entries)
+    def _handle_l2pop(self, context, new_remote_macs):
+        for mac in new_remote_macs:
+            agent_ips = self._get_physical_switch_ips(context, mac)
+            for agent_ip in agent_ips:
+                other_fdb_entries = self._get_fdb_entries(
+                    context, agent_ip, mac.get('logical_switch_id'))
+                self._trigger_l2pop_sync(context, other_fdb_entries)
 
     def _process_modified_physical_ports(self,
                                          context,
@@ -304,8 +306,8 @@ class OVSDBData(object):
             agent_ip_dict[tunnel_ip] = agent.get('host')
         return agent_ip_dict
 
-    def _get_fdb_entries(self, context, agent_ip, switch_id):
-        ls_dict = {'uuid': switch_id,
+    def _get_fdb_entries(self, context, agent_ip, logical_switch_uuid):
+        ls_dict = {'uuid': logical_switch_uuid,
                    n_const.OVSDB_IDENTIFIER: self.ovsdb_identifier}
         logical_switch = db.get_logical_switch(context, ls_dict)
         network_id = logical_switch.get('name')
