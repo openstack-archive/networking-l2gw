@@ -35,24 +35,24 @@ l2gatewayconnections      represents connection between neutron network and the 
 
 L2GW NB REST API definitions are below,
 
-3.1 Create l2gateway: neutron l2-gateway-create <l2gateway-name> --device name="<device_name>",interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
+3.1 Create l2gateway: neutron-l2gw l2-gateway-create <l2gateway-name> --device name="<device_name>",interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
 Note : segid is an optional parameter , if it’s not provided while creating l2gateway , it needs to be provided while creating l2-gateway-connection
 
-3.2 List l2gateways: neutron l2-gateway-list
+3.2 List l2gateways: neutron-l2gw l2-gateway-list
 
-3.3 Show l2gateway: neutron l2-gateway-show <l2gateway-id/l2gateway-name>
+3.3 Show l2gateway: neutron-l2gw l2-gateway-show <l2gateway-id/l2gateway-name>
 
-3.4 Delete l2gateway: neutron l2-gateway-delete <l2gateway-id/l2gateway-name>
+3.4 Delete l2gateway: neutron-l2gw l2-gateway-delete <l2gateway-id/l2gateway-name>
 
-3.5 Updatel2gateway: neutron l2-gateway-update <l2gateway-id/l2gateway-name> --name <new l2gateway-name> --device name=<device_name>,interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
+3.5 Update l2gateway: neutron-l2gw l2-gateway-update <l2gateway-id/l2gateway-name> --name <new l2gateway-name> --device name=<device_name>,interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
 
-3.6 Create l2gateway-connection: neutron l2-gateway-connection-create <l2gateway-id > <network-id> --default-segmentation-id [seg-id]
+3.6 Create l2gateway-connection: neutron-l2gw l2-gateway-connection-create <l2gateway-id > <network-id> --default-segmentation-id [seg-id]
 
-3.7 List l2gateway-connection: neutron l2-gateway-connection-list
+3.7 List l2gateway-connection: neutron-l2gw l2-gateway-connection-list
 
-3.8 Show l2gateway-connection: neutron l2-gateway-connection-show <l2gateway-connection-id>
+3.8 Show l2gateway-connection: neutron-l2gw l2-gateway-connection-show <l2gateway-connection-id>
 
-3.9 Delete l2gateway-connection: neutron l2-gateway-connection-delete <l2gateway-connection-id>
+3.9 Delete l2gateway-connection: neutron-l2gw l2-gateway-connection-delete <l2gateway-connection-id>
 
 .. _l2gw_agent:
 
