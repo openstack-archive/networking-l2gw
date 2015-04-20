@@ -111,4 +111,5 @@ base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        MultipleSegmentsFound: web_exc.HTTPConflict,
                        L2GatewaySegmentationRequired: web_exc.HTTPConflict,
                        L2MultipleGatewayConnections: web_exc.HTTPConflict,
-                       L2GatewayDuplicateSegmentationID: web_exc.HTTPConflict})
+                       L2GatewayDuplicateSegmentationID: web_exc.HTTPConflict,
+                       OVSDBError: web_exc.HTTPConflict})
