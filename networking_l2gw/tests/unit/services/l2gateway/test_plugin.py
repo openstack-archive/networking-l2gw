@@ -319,7 +319,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
     def test_generate_port_list_for_delete(self):
         fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
                            'network_id': 'fake_network_id',
-                           'segmentation_id': 100L}
+                           'segmentation_id': 200L}
         fake_method = 'DELETE'
         fake_interface = {'interface_name': 'fake_interface_name'}
         fake_pp_dict = {'interface_name': 'fake_interface_name',
@@ -330,15 +330,27 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_vlan_binding = {'vlan': 100L,
                              'logical_switch_uuid': 'fake_uuid'}
         fake_vlan_binding_list = [fake_vlan_binding]
+
+        vlan_dict = {'vlan': 100,
+                     'logical_switch_uuid': 'fake_uuid'}
+        physical_port = ovsdb_schema.PhysicalPort(
+            uuid='fake_uuid',
+            name='fake_interface_name',
+            phys_switch_id='fake_uuid',
+            vlan_binding_dicts=None,
+            port_fault_status=None)
+        phys_port_dict = physical_port.__dict__
+        phys_port_dict['vlan_bindings'] = [vlan_dict]
         with mock.patch.object(
             db,
             'get_all_vlan_bindings_by_physical_port',
             return_value=fake_vlan_binding_list) as (
                 get_vlan):
-            self.plugin._generate_port_list(
+            port = self.plugin._generate_port_list(
                 self.context, fake_method, 100L, fake_interface,
-                fake_pp_dict, 'fake_uuid', fake_connection)
+                fake_pp_dict, 'fake_uuid1', fake_connection)
             get_vlan.assert_called_with(self.context, fake_pp_dict)
+            self.assertEqual(port, phys_port_dict)
 
     def test_get_ip_details(self):
         fake_port = {'binding:host_id': 'fake_host',

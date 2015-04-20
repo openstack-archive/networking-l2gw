@@ -408,12 +408,13 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             if not vlan_id:
                 vlan_id = interface.get('segmentation_id')
             for vlan_binding in vlan_bindings:
-                if not vlan_binding.get('vlan') == vlan_id:
-                    if not vlan_binding.get(
-                       'logical_switch_uuid') == logical_switch_uuid:
+                if vlan_binding.get('vlan') != vlan_id:
+                    if vlan_binding.get(
+                       'logical_switch_uuid') != logical_switch_uuid:
                         vlan_dict = {
-                            'vlan': vlan_id,
-                            'logical_switch_uuid': logical_switch_uuid}
+                            'vlan': vlan_binding.get('vlan'),
+                            'logical_switch_uuid':
+                            vlan_binding.get('logical_switch_uuid')}
                         port_list.append(vlan_dict)
             physical_port = self._get_dict(
                 ovsdb_schema.PhysicalPort(

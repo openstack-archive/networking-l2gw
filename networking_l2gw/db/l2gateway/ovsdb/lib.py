@@ -266,7 +266,10 @@ def get_ucast_mac_local(context, record_dict):
 
 
 def get_ucast_mac_remote_by_mac_and_ls(context, record_dict):
-    """Get ucast macs remote that matches the uuid and ovsdb_identifier."""
+    """Get ucast macs remote that matches the MAC addres and
+
+       ovsdb_identifier.
+    """
     try:
         query = context.session.query(models.UcastMacsRemotes)
         remote_mac = query.filter_by(
@@ -275,7 +278,7 @@ def get_ucast_mac_remote_by_mac_and_ls(context, record_dict):
             logical_switch_id=record_dict['logical_switch_uuid']).one()
     except exc.NoResultFound:
         LOG.debug('no Remote mac found for %s and %s',
-                  record_dict['uuid'],
+                  record_dict['mac'],
                   record_dict['logical_switch_uuid'])
         return
     return remote_mac

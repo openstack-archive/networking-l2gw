@@ -443,6 +443,14 @@ class OvsdbLibTestCase(testlib_api.SqlTestCase):
                                                         record_dict)
         self.assertEqual(entry, result)
 
+    def test_get_ucast_mac_remote_by_mac_and_ls_when_not_found(self):
+        record_dict = self._get_ucast_mac_remote_dict()
+        record_dict['mac'] = '00:11:22:33:44:55:66'
+        record_dict['logical_switch_uuid'] = 'ls123'
+        result = lib.get_ucast_mac_remote_by_mac_and_ls(self.ctx,
+                                                        record_dict)
+        self.assertEqual(result, None)
+
     def test_get_physical_port_by_name_and_ps(self):
         record_dict = self._get_physical_port_dict()
         with self.ctx.session.begin(subtransactions=True):
