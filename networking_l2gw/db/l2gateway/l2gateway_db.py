@@ -113,9 +113,10 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                                        interfaces_db['interface_name'],
                                        constants.SEG_ID:
                                        seg_id})
+            aligned_int__list = self._align_interfaces_list(interface_list)
             device_list.append({'device_name': d['device_name'],
                                 'id': d['id'],
-                                'interfaces': interface_list})
+                                'interfaces': aligned_int__list})
         res = {'id': l2_gateway['id'],
                'name': l2_gateway['name'],
                'devices': device_list,
@@ -414,6 +415,26 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                 for interfaces in interface_list[1:len(interface_list)]:
                     if constants.SEG_ID in interfaces:
                         raise l2gw_exc.L2GatewaySegmentationRequired()
+
+    def _align_interfaces_list(self, interface_list):
+        """Align interfaces list based on input dict for multiple seg ids."""
+        interface_dict = {}
+        aligned_interface_list = []
+        for interfaces in interface_list:
+            actual__name = interfaces.get('name')
+            if actual__name in interface_dict:
+                interface_name = interface_dict.get(actual__name)
+                seg_id_list = interfaces.get(constants.SEG_ID)
+                interface_name.append(str(seg_id_list))
+                interface_dict.update({actual__name: interface_name})
+            else:
+                seg_id = str(interfaces.get(constants.SEG_ID)).split()
+                interface_dict.update({actual__name: seg_id})
+        for name in interface_dict:
+            aligned_interface_list.append({'segmentation_id':
+                                           interface_dict[name],
+                                           'name': name})
+        return aligned_interface_list
 
 
 def l2gw_callback(resource, event, trigger, **kwargs):

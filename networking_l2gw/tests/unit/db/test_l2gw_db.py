@@ -312,3 +312,16 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                        **fake_kwargs)
             service_plugins.return_value[constants.L2GW
                                          ].delete_port_mac.assert_called()
+
+    def test_l2_gateway_create_output_aligned_with_input(self):
+        """Test l2 gateway create output that is aligned with input dict."""
+        name = "l2gw_1"
+        device_name = "device1"
+        data = self._get_l2_gateway_data_with_multiple_segid(name, device_name)
+        result = self._create_l2gateway(data)
+        gw_input = data['l2_gateway']
+        devices_input = gw_input['devices']
+        devices_output = result['devices']
+        input_seg_list = devices_input[0]['interfaces'][0]['segmentation_id']
+        output_seg_list = devices_output[0]['interfaces'][0]['segmentation_id']
+        self.assertEqual(len(input_seg_list), len(output_seg_list))
