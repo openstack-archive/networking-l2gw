@@ -481,7 +481,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                           mac_list, locator_list):
         locator_uuid = None
         locator_dict = self._get_physical_locator_dict(
-            dst_ip, ovsdb_identifier)
+            dst_ip, None, None, ovsdb_identifier)
         locator = db.get_physical_locator_by_dst_ip(
             context, locator_dict)
         if locator:
