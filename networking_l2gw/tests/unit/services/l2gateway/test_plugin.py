@@ -29,6 +29,7 @@ from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
+from oslo import messaging
 from oslo_utils import importutils
 
 
@@ -100,6 +101,35 @@ class TestL2GatewayAgentApi(base.BaseTestCase):
             locator_dicts=fake_physical_locator_list,
             mac_dicts=fake_mac_dicts,
             port_dicts=fake_port_dicts)
+
+    def test_update_connection_to_gateway_with_error(self):
+        cctxt = mock.Mock()
+        fake_ovsdb_identifier = 'fake_ovsdb_id'
+        fake_logical_switch = {}
+        fake_physical_locator_list = []
+        fake_mac_dicts = [{}]
+        fake_port_dicts = [{}]
+        self.plugin_rpc.client.prepare.return_value = cctxt
+
+        # Test with a timeout exception
+        with mock.patch.object(cctxt,
+                               'call',
+                               side_effect=messaging.MessagingTimeout):
+            self.assertRaises(
+                l2gw_exc.OVSDBError,
+                self.plugin_rpc.update_connection_to_gateway,
+                self.context, fake_ovsdb_identifier, fake_logical_switch,
+                fake_physical_locator_list, fake_mac_dicts, fake_port_dicts)
+
+        # Test with a remote exception
+        with mock.patch.object(cctxt,
+                               'call',
+                               side_effect=Exception):
+            self.assertRaises(
+                l2gw_exc.OVSDBError,
+                self.plugin_rpc.update_connection_to_gateway,
+                self.context, fake_ovsdb_identifier, fake_logical_switch,
+                fake_physical_locator_list, fake_mac_dicts, fake_port_dicts)
 
 
 class TestL2GatewayPlugin(base.BaseTestCase):

@@ -90,13 +90,22 @@ class L2gatewayAgentApi(object):
                                      port_dict):
         """RPC to update the connection to gateway."""
         cctxt = self.client.prepare()
-        return cctxt.call(context,
-                          'update_connection_to_gateway',
-                          ovsdb_identifier=ovsdb_identifier,
-                          logical_switch_dict=ls_dict,
-                          locator_dicts=locator_list,
-                          mac_dicts=mac_dict,
-                          port_dicts=port_dict)
+        try:
+            return cctxt.call(context,
+                              'update_connection_to_gateway',
+                              ovsdb_identifier=ovsdb_identifier,
+                              logical_switch_dict=ls_dict,
+                              locator_dicts=locator_list,
+                              mac_dicts=mac_dict,
+                              port_dicts=port_dict)
+        except messaging.MessagingTimeout:
+            message = _("Communication error with the L2 gateway agent")
+            raise l2gw_exc.OVSDBError(message=message)
+        except Exception as ex:
+            message = str(ex)
+            msg_splits = message.split('\n')
+            raise l2gw_exc.OVSDBError(message="Error on the OVSDB "
+                                      "server: " + msg_splits[0])
 
 
 class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
