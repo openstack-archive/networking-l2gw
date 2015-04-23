@@ -15,6 +15,7 @@
 import contextlib
 import socket
 import ssl
+import time
 
 import eventlet
 import mock
@@ -270,6 +271,25 @@ class TestOVSDBMonitor(base.BaseTestCase):
                 self.assertFalse(self.l2gw_ovsdb.connected)
                 self.assertFalse(self.l2gw_ovsdb.read_on)
                 self.assertTrue(sock_close.called)
+
+    def test_rcv_thread_data(self):
+        """Test case to test _rcv_thread receives data from socket."""
+        self.assertTrue(self.l2gw_ovsdb.read_on)
+        with mock.patch.object(self.l2gw_ovsdb.socket,
+                               'recv',
+                               return_value=jsonutils.dumps(
+                                   {"key": "value"})) as sock_recv:
+            with mock.patch.object(self.l2gw_ovsdb.socket,
+                                   'close'):
+                with mock.patch.object(self.l2gw_ovsdb,
+                                       '_on_remote_message'
+                                       ) as mock_rem_msg:
+                    eventlet.greenthread.spawn_n(self.l2gw_ovsdb._rcv_thread)
+                    time.sleep(1)
+                    self.l2gw_ovsdb.read_on = False
+                    mock_rem_msg.assert_called()
+                    self.assertTrue(sock_recv.called)
+                    self.assertTrue(self.l2gw_ovsdb.connected)
 
     def test_rcv_thread_exception(self):
         """Test case to test _rcv_thread with exception."""

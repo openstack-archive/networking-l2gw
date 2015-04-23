@@ -210,7 +210,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
                         elif lc == rc and lc is not 0:
                             chunks.append(response[message_mark:i + 1])
                             message = "".join(chunks)
-                            self._on_remote_message(message)
+                            eventlet.greenthread.spawn_n(
+                                self._on_remote_message, message)
                             lc = rc = 0
                             message_mark = i + 1
                             chunks = []
