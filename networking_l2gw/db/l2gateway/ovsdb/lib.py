@@ -400,8 +400,9 @@ def get_physical_port_by_name_and_ps(context, record_dict):
             physical_switch_id=record_dict['physical_switch_id'],
             ovsdb_identifier=record_dict['ovsdb_identifier']).one()
     except exc.NoResultFound:
-        LOG.debug('no physical switch found for %s and %s',
-                  record_dict['name'])
+        LOG.debug('no physical port found for %s and %s',
+                  record_dict['physical_switch_id'],
+                  record_dict['interface_name'])
         return
     return physical_port
 

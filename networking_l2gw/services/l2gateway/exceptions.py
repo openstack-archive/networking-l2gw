@@ -57,7 +57,7 @@ class L2MultipleGatewayConnections(exceptions.NeutronException):
 
 
 class L2GatewayInterfaceNotFound(exceptions.NeutronException):
-    message = _("L2 Gateway interface not found on '%(interface_id)s'")
+    message = _("L2 Gateway interface '%(interface_id)s' not found.")
 
 
 class L2GatewayPhysicalPortFaultStatus(exceptions.NeutronException):

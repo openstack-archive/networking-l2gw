@@ -304,6 +304,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         for device in devices:
             device_name = device['device_name']
             dev_db = db.get_physical_switch_by_name(context, device_name)
+            if not dev_db:
+                raise l2gw_exc.L2GatewayDeviceNotFound(device_id=device_name)
             rec_dict['physical_switch_id'] = dev_db['uuid']
             rec_dict['ovsdb_identifier'] = dev_db['ovsdb_identifier']
             status = dev_db.get('switch_fault_status')
@@ -315,6 +317,10 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 rec_dict['interface_name'] = int_name
                 port_db = db.get_physical_port_by_name_and_ps(context,
                                                               rec_dict)
+                if not port_db:
+                    raise l2gw_exc.L2GatewayInterfaceNotFound(
+                        interface_id=int_name)
+
                 port_status = port_db['port_fault_status']
                 if (port_status and port_status !=
                         constants.PORT_FAULT_STATUS_UP):
