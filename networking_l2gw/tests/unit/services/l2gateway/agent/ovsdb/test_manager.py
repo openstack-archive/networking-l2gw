@@ -286,6 +286,25 @@ class TestManager(base.BaseTestCase):
                 mocked_conn.delete_ucast_macs_remote.assert_called_once()
                 discon.assert_called_once()
 
+    def test_update_vif_to_gateway(self):
+        with contextlib.nested(
+            mock.patch.object(manager.OVSDBManager,
+                              '_open_connection'),
+            mock.patch.object(manager.OVSDBManager,
+                              '_is_valid_request',
+                              return_value=True),
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              'update_ucast_macs_remote'),
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              'disconnect')
+        ) as (gw_open_conn, valid_req, ins_ucast, discon):
+                self.l2gw_agent_manager.update_vif_to_gateway(
+                    self.context, mock.Mock(), mock.Mock(), mock.Mock())
+                self.assertTrue(gw_open_conn.called)
+                mocked_conn = gw_open_conn.return_value
+                mocked_conn.update_ucast_macs_remote.assert_called_once()
+                discon.assert_called_once()
+
     def test_update_connection_to_gateway(self):
         with contextlib.nested(
             mock.patch.object(manager.OVSDBManager,

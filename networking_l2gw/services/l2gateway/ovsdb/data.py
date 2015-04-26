@@ -77,6 +77,8 @@ class OVSDBData(object):
                             self._process_new_local_macs,
                             'new_remote_macs':
                             self._process_new_remote_macs,
+                            'modified_remote_macs':
+                            self._process_modified_remote_macs,
                             'modified_physical_ports':
                             self._process_modified_physical_ports,
                             'deleted_logical_switches':
@@ -167,6 +169,13 @@ class OVSDBData(object):
             r_mac = db.get_ucast_mac_remote(context, rm_dict)
             if not r_mac:
                 db.add_ucast_mac_remote(context, rm_dict)
+
+    def _process_modified_remote_macs(self,
+                                      context,
+                                      modified_remote_macs):
+        for remote_mac in modified_remote_macs:
+            remote_mac[n_const.OVSDB_IDENTIFIER] = self.ovsdb_identifier
+            db.update_ucast_mac_remote(context, remote_mac)
 
     def _get_physical_switch_ips(self, context, mac):
         physical_switch_ips = set()

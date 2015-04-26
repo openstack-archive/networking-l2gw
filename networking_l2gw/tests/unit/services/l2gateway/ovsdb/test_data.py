@@ -69,6 +69,7 @@ class TestOVSDBData(base.BaseTestCase):
         fake_new_physical_locators = [fake_dict]
         fake_new_local_macs = [fake_dict]
         fake_new_remote_macs = [fake_remote_mac]
+        fake_modified_remote_macs = [fake_dict]
         fake_modified_physical_ports = [fake_dict]
         fake_modified_local_macs = [fake_dict]
         fake_deleted_logical_switches = [fake_dict]
@@ -86,6 +87,7 @@ class TestOVSDBData(base.BaseTestCase):
             'new_physical_locators': fake_new_physical_locators,
             'new_local_macs': fake_new_local_macs,
             'new_remote_macs': fake_new_remote_macs,
+            'modified_remote_macs': fake_modified_remote_macs,
             'modified_physical_ports': fake_modified_physical_ports,
             'modified_local_macs': fake_modified_local_macs,
             'deleted_logical_switches': fake_deleted_logical_switches,
@@ -108,6 +110,8 @@ class TestOVSDBData(base.BaseTestCase):
             mock.patch.object(self.ovsdb_data,
                               '_process_new_remote_macs'),
             mock.patch.object(self.ovsdb_data,
+                              '_process_modified_remote_macs'),
+            mock.patch.object(self.ovsdb_data,
                               '_process_modified_physical_ports'),
             mock.patch.object(self.ovsdb_data,
                               '_process_deleted_logical_switches'),
@@ -127,6 +131,7 @@ class TestOVSDBData(base.BaseTestCase):
                   process_new_physical_locators,
                   process_new_local_macs,
                   process_new_remote_macs,
+                  process_modified_remote_macs,
                   process_modified_physical_ports,
                   process_deleted_logical_switches,
                   process_deleted_physical_switches,
@@ -141,6 +146,7 @@ class TestOVSDBData(base.BaseTestCase):
                 'new_physical_locators': process_new_physical_locators,
                 'new_local_macs': process_new_local_macs,
                 'new_remote_macs': process_new_remote_macs,
+                'modified_remote_macs': process_modified_remote_macs,
                 'modified_physical_ports': process_modified_physical_ports,
                 'deleted_logical_switches': process_deleted_logical_switches,
                 'deleted_physical_switches': process_deleted_physical_switches,
@@ -163,6 +169,8 @@ class TestOVSDBData(base.BaseTestCase):
                 self.context, fake_new_local_macs)
             process_new_remote_macs.assert_called_with(
                 self.context, fake_new_remote_macs)
+            process_modified_remote_macs.assert_called_with(
+                self.context, fake_modified_remote_macs)
             process_modified_physical_ports.assert_called_with(
                 self.context, fake_modified_physical_ports)
             process_deleted_logical_switches.assert_called_with(
@@ -282,6 +290,18 @@ class TestOVSDBData(base.BaseTestCase):
                                  'fake_ovsdb_id')
                 get_mr.assert_called_with(self.context, fake_dict)
                 add_mr.assert_called_with(self.context, fake_dict)
+
+    def test_process_modified_remote_macs(self):
+        fake_dict = {'logical_switch_id': 'ls123'}
+        fake_modified_remote_macs = [fake_dict]
+        with mock.patch.object(lib,
+                               'update_ucast_mac_remote') as update_mr:
+            self.ovsdb_data._process_modified_remote_macs(
+                self.context, fake_modified_remote_macs)
+            self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
+            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
+                             'fake_ovsdb_id')
+            update_mr.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_logical_switches(self):
         fake_dict = {}

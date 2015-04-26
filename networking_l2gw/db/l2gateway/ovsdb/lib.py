@@ -189,6 +189,22 @@ def add_ucast_mac_remote(context, record_dict):
         session.add(ucast_mac_remote)
 
 
+def update_ucast_mac_remote(context, rec_dict):
+    """Update ucast mac remote."""
+    try:
+        with context.session.begin(subtransactions=True):
+            (context.session.query(models.UcastMacsRemotes).filter_by(
+                uuid=rec_dict['uuid'],
+                ovsdb_identifier=rec_dict['ovsdb_identifier']).update(
+                    {'physical_locator_id': rec_dict['physical_locator_id'],
+                     'ip_address': rec_dict['ip_address']},
+                    synchronize_session=False))
+    except exc.NoResultFound:
+        LOG.debug('no Remote mac found for %s and %s',
+                  rec_dict['uuid'],
+                  rec_dict['ovsdb_identifier'])
+
+
 def delete_ucast_mac_remote(context, record_dict):
     """Delete ucast mac remote that matches the supplied uuid."""
     session = context.session
