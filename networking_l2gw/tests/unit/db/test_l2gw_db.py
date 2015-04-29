@@ -170,6 +170,28 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         with self.ctx.session.begin(subtransactions=True):
             return self.mixin.get_l2_gateway_connections(self.ctx)
 
+    def _delete_l2gw_connection_by_l2gw_id(self, l2gw_id):
+        """Delete l2 gateway connection."""
+        with self.ctx.session.begin(subtransactions=True):
+            return self.mixin._delete_connection_by_l2gw_id(self.ctx, l2gw_id)
+
+    def test_get_l2gw_ids_by_interface_switch(self):
+        """Test get L2 gateway ids by interface and switch name."""
+        name = "l2gw_con1"
+        device_name = "device1"
+        data_l2gw = self._get_l2_gateway_data(name, device_name)
+        gw = self._create_l2gateway(data_l2gw)
+        net_data = self._get_nw_data()
+        net = self.plugin.create_network(self.ctx, net_data)
+        l2gw_id = gw['id']
+        data_con = {self.con_resource: {'l2_gateway_id': l2gw_id,
+                                        'network_id': net['id']}}
+
+        self._create_l2gateway_connection(data_con)
+        l2gw_id_list = self.mixin._get_l2gw_ids_by_interface_switch(
+            self.ctx, 'port1', 'device1')
+        self.assertEqual(l2gw_id_list[0], l2gw_id)
+
     def test_l2gateway_connection_create_delete_list(self):
         """Test l2 gateway connection create and delete."""
         name = "l2gw_con1"
@@ -184,10 +206,9 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         gw_con = self._create_l2gateway_connection(data_con)
         exp_net_id = gw_con['network_id']
         self.assertEqual(net['id'], exp_net_id)
-        cn_id = gw_con['id']
         list_con = self._list_l2gateway_connection()
         self.assertIn('id', list_con[0])
-        result = self._delete_l2gw_connection(cn_id)
+        result = self._delete_l2gw_connection_by_l2gw_id(l2gw_id)
         self.assertIsNone(result)
 
     def test_l2gateway_con_create_and_delete_in_use_without_seg_id(self):

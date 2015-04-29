@@ -17,9 +17,11 @@ from neutron.common import constants
 from neutron import manager
 from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 
+from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import topics
+from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
 from oslo.config import cfg
@@ -53,6 +55,7 @@ class OVSDBData(object):
         self._setup_entry_table()
         self.agent_rpc = l2gw_plugin.L2gatewayAgentApi(
             topics.L2GATEWAY_AGENT, cfg.CONF.host)
+        self.l2gw_mixin = l2gateway_db.L2GatewayMixin()
 
     def update_ovsdb_changes(self, context, ovsdb_data):
         """RPC to update the changes from OVSDB in the database."""
@@ -247,6 +250,30 @@ class OVSDBData(object):
         for physical_port in deleted_physical_ports:
             pp_dict = physical_port
             pp_dict[n_const.OVSDB_IDENTIFIER] = self.ovsdb_identifier
+            port_name = pp_dict['name']
+            p_port = db.get_physical_port(context, pp_dict)
+            if not p_port:
+                raise l2gw_exc.L2GatewayInterfaceNotFound(
+                    interface_id=port_name)
+            p_switch_id = p_port.get('physical_switch_id')
+            switch_dict = {}
+            switch_dict['uuid'] = p_switch_id
+            switch_dict[n_const.OVSDB_IDENTIFIER] = self.ovsdb_identifier
+            switch_db = db.get_physical_switch(context, switch_dict)
+            if not switch_db:
+                raise l2gw_exc.L2GatewayDeviceNotFound(
+                    device_id=p_switch_id)
+            switch_name = switch_db.get('name')
+            l2gw_id_list = self.l2gw_mixin._get_l2gw_ids_by_interface_switch(
+                context, port_name, switch_name)
+            if l2gw_id_list:
+                for l2gw_id in l2gw_id_list:
+                    self.l2gw_mixin._delete_connection_by_l2gw_id(context,
+                                                                  l2gw_id)
+            vlan_bindings = db.get_all_vlan_bindings_by_physical_port(
+                context, pp_dict)
+            for vlan_binding in vlan_bindings:
+                db.delete_vlan_binding(context, vlan_binding)
             db.delete_physical_port(context, pp_dict)
 
     def _process_deleted_physical_locators(self,

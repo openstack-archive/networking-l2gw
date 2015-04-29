@@ -436,6 +436,68 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                                            'name': name})
         return aligned_interface_list
 
+    def _get_l2_gateway_connections(self, context):
+        """Get l2 gateway connections."""
+        try:
+            con = context.session.query(models.L2GatewayConnection).all()
+        except sa_orm_exc.NoResultFound:
+            raise l2gw_exc.L2GatewayConnectionNotFound(
+                id="")
+        return con
+
+    def _get_l2gw_ids_by_interface_switch(self, context, interface_name,
+                                          switch_name):
+        """Get l2 gateway ids by interface and switch."""
+        connections = self._get_l2_gateway_connections(context)
+        l2gw_id_list = []
+        if connections:
+            for connection in connections:
+                l2gw_id = connection.l2_gateway_id
+                devices = self._get_l2_gateway_device_by_name_id(context,
+                                                                 switch_name,
+                                                                 l2gw_id)
+                if devices:
+                    for device in devices:
+                        interfaces = self._get_l2_gw_interfaces(context,
+                                                                device.id)
+                        for interface in interfaces:
+                            if interface_name == interface.interface_name:
+                                l2gw_id_list.append(l2gw_id)
+                else:
+                    LOG.debug("l2 gateway devices are empty")
+        else:
+            LOG.debug("l2 gateway connections are empty")
+        return l2gw_id_list
+
+    def _delete_connection_by_l2gw_id(self, context, l2gw_id):
+        """Delete the l2 gateway connection by l2gw id."""
+        with context.session.begin(subtransactions=True):
+            con_db = self._get_l2_gateway_connection_by_l2gw_id(context,
+                                                                l2gw_id)
+            if con_db:
+                context.session.delete(con_db[0])
+                LOG.debug("l2 gateway connection was destroyed.")
+
+    def _get_l2_gateway_connection_by_l2gw_id(self, context, l2gw_id):
+        """Get the l2 gateway connection by l2gw id."""
+        try:
+            con = context.session.query(models.L2GatewayConnection).filter_by(
+                l2_gateway_id=l2gw_id).all()
+        except sa_orm_exc.NoResultFound:
+            raise l2gw_exc.L2GatewayConnectionNotFound(
+                id=l2gw_id)
+        return con
+
+    def _get_l2_gateway_device_by_name_id(self, context, device_name, l2gw_id):
+        """Get the l2 gateway device by name and id."""
+        try:
+            gw = context.session.query(models.L2GatewayDevice).filter_by(
+                device_name=device_name, l2_gateway_id=l2gw_id).all()
+        except sa_orm_exc.NoResultFound:
+            raise l2gw_exc.L2GatewayDeviceNotFound(
+                device_id=device_name)
+        return gw
+
 
 def l2gw_callback(resource, event, trigger, **kwargs):
     l2gwservice = manager.NeutronManager.get_service_plugins().get(

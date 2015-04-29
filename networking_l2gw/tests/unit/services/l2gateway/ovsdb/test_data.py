@@ -20,6 +20,7 @@ from neutron import context
 from neutron import manager
 from neutron.tests import base
 
+from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.ovsdb import data
@@ -326,14 +327,33 @@ class TestOVSDBData(base.BaseTestCase):
             delete_ps.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_physical_ports(self):
-        fake_dict = {}
+        fake_dict = {'name': 'fake_uuid', 'uuid': 'fake_name'}
         fake_deleted_physical_ports = [fake_dict]
-        with mock.patch.object(lib, 'delete_physical_port') as delete_pp:
+        fake_physical_port = {'uuid': 'fake_uuid',
+                              'name': 'fake_name'}
+        fake_physical_switch = {'uuid': 'fake_uuid',
+                                'ovsdb_identifier': 'fake_ovsdb_id',
+                                'name': 'fake_switch'}
+        with contextlib.nested(
+            mock.patch.object(lib,
+                              'delete_physical_port'),
+            mock.patch.object(lib,
+                              'get_physical_port',
+                              return_value=fake_physical_port),
+            mock.patch.object(lib, 'get_physical_switch',
+                              return_vaue=fake_physical_switch),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_get_l2gw_ids_by_interface_switch',
+                              return_value=['fake_uuid']),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_delete_connection_by_l2gw_id')
+        ) as (delete_pp, get_pp, get_ps, l2gw_del, l2gw_conn_del):
             self.ovsdb_data._process_deleted_physical_ports(
                 self.context, fake_deleted_physical_ports)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
             self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
                              'fake_ovsdb_id')
+            l2gw_conn_del.assert_called_with(self.context, 'fake_uuid')
             delete_pp.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_physical_locators(self):
