@@ -115,18 +115,22 @@ class TestManager(base.BaseTestCase):
         gateway = l2gateway_config.L2GatewayConfig(self.fake_config_json)
         ovsdb_ident = self.fake_config_json.get(n_const.OVSDB_IDENTIFIER)
         self.l2gw_agent_manager.gateways[ovsdb_ident] = gateway
-        with mock.patch.object(ovsdb_monitor,
-                               'OVSDBMonitor') as ovsdb_connection:
-            with mock.patch.object(eventlet.greenthread,
-                                   'spawn_n') as event_spawn:
-                with mock.patch.object(manager.OVSDBManager,
-                                       'agent_to_plugin_rpc'
-                                       ) as call_back:
-                    self.l2gw_agent_manager._connect_to_ovsdb_server()
-                    self.assertTrue(event_spawn.called)
-                    self.assertTrue(ovsdb_connection.called)
-                    ovsdb_connection.assert_called_with(
-                        self.conf.ovsdb, gateway, call_back)
+        with contextlib.nested(
+            mock.patch.object(ovsdb_monitor,
+                              'OVSDBMonitor'),
+            mock.patch.object(eventlet.greenthread,
+                              'spawn_n'),
+            mock.patch.object(manager.OVSDBManager,
+                              'agent_to_plugin_rpc'),
+            mock.patch.object(self.plugin_rpc,
+                              'notify_ovsdb_states')
+        ) as (ovsdb_connection, event_spawn, call_back, notify):
+            self.l2gw_agent_manager._connect_to_ovsdb_server()
+            self.assertTrue(event_spawn.called)
+            self.assertTrue(ovsdb_connection.called)
+            ovsdb_connection.assert_called_with(
+                self.conf.ovsdb, gateway, call_back)
+            notify.assert_called(mock.ANY, mock.ANY)
 
     def test_connect_to_ovsdb_server_with_exc(self):
         self.l2gw_agent_manager.gateways = {}

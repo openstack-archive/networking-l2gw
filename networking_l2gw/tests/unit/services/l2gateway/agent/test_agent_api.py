@@ -37,5 +37,13 @@ class L2GatewayAgentApiTestCase(base.BaseTestCase):
         context = mock.Mock()
         self.agent_rpc.client.prepare.return_value = cctxt
         self.agent_rpc.update_ovsdb_changes(context, mock.ANY)
-        cctxt.call.assert_called_with(
+        cctxt.cast.assert_called_with(
             context, 'update_ovsdb_changes', ovsdb_data=mock.ANY)
+
+    def test_notify_ovsdb_states(self):
+        cctxt = mock.Mock()
+        context = mock.Mock()
+        self.agent_rpc.client.prepare.return_value = cctxt
+        self.agent_rpc.notify_ovsdb_states(context, mock.ANY)
+        cctxt.cast.assert_called_with(
+            context, 'notify_ovsdb_states', ovsdb_states=mock.ANY)

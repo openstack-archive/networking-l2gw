@@ -12,12 +12,12 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.from oslo.config import cfg
-
 from neutron.common import constants as n_const
 from neutron.common import exceptions
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
 from neutron.extensions import portbindings
+from neutron.i18n import _LE
 from neutron import manager
 
 from networking_l2gw.db.l2gateway import l2gateway_db
@@ -60,7 +60,7 @@ class L2gatewayAgentApi(object):
                            physical_locator, mac_remote):
         """RPC to enter the VM MAC details to gateway."""
         cctxt = self.client.prepare()
-        return cctxt.cast(context,
+        return cctxt.call(context,
                           'add_vif_to_gateway',
                           ovsdb_identifier=ovsdb_identifier,
                           logical_switch_dict=logical_switch,
@@ -71,7 +71,7 @@ class L2gatewayAgentApi(object):
                               physical_locator, mac_remote):
         """RPC to update the VM MAC details to gateway."""
         cctxt = self.client.prepare()
-        return cctxt.cast(context,
+        return cctxt.call(context,
                           'update_vif_to_gateway',
                           ovsdb_identifier=ovsdb_identifier,
                           locator_dict=physical_locator,
@@ -81,7 +81,7 @@ class L2gatewayAgentApi(object):
                                 logical_switch_uuid, macs):
         """RPC to delete the VM MAC details from gateway."""
         cctxt = self.client.prepare()
-        return cctxt.cast(context,
+        return cctxt.call(context,
                           'delete_vif_from_gateway',
                           ovsdb_identifier=ovsdb_identifier,
                           logical_switch_uuid=logical_switch_uuid,
@@ -204,24 +204,55 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                         context, mac_dict)
                     if ucast_mac_remote:
                         # check whether locator got changed in vm migration
-                        if ucast_mac_remote['locator'
+                        if ucast_mac_remote['physical_locator_id'
                                             ] != physical_locator['uuid']:
                             mac_remote['uuid'] = ucast_mac_remote['uuid']
-                            self.agent_rpc.update_vif_to_gateway(
-                                context, ovsdb_identifier,
-                                physical_locator, mac_remote)
-                            LOG.debug("VM migrated from %s to %s. Update"
-                                      "locator in Ucast_Macs_Remote",
-                                      ucast_mac_remote['locator'],
-                                      physical_locator['uuid'])
+                            try:
+                                self.agent_rpc.update_vif_to_gateway(
+                                    context, ovsdb_identifier,
+                                    physical_locator, mac_remote)
+                                LOG.debug(
+                                    "VM migrated from %s to %s. Update"
+                                    "locator in Ucast_Macs_Remote",
+                                    ucast_mac_remote['physical_locator_id'],
+                                    physical_locator['uuid'])
+                            except messaging.MessagingTimeout:
+                                # If RPC is timed out, then the RabbitMQ
+                                # will retry the operation.
+                                LOG.exception(_LE("Communication error with "
+                                                  "the L2 gateway agent"))
+                            except Exception:
+                                # The remote OVSDB server may be down.
+                                # We need to retry this operation later.
+                                db.add_pending_ucast_mac_remote(
+                                    context, 'update',
+                                    ovsdb_identifier,
+                                    logical_switch_uuid,
+                                    physical_locator,
+                                    [mac_remote])
                         else:
                             LOG.debug("add_port_mac: MAC %s exists "
                                       "in Gateway", mac_dict['mac'])
                         continue
                     # else it is a new port created
-                    self.agent_rpc.add_vif_to_gateway(
-                        context, ovsdb_identifier, logical_switch,
-                        physical_locator, mac_remote)
+                    try:
+                        self.agent_rpc.add_vif_to_gateway(
+                            context, ovsdb_identifier, logical_switch,
+                            physical_locator, mac_remote)
+                    except messaging.MessagingTimeout:
+                        # If RPC is timed out, then the RabbitMQ
+                        # will retry the operation.
+                        LOG.exception(_LE("Communication error with "
+                                          "the L2 gateway agent"))
+                    except Exception:
+                        # The remote OVSDB server may be down.
+                        # We need to retry this operation later.
+                        LOG.debug("The remote OVSDB server may be down")
+                        db.add_pending_ucast_mac_remote(
+                            context, 'insert', ovsdb_identifier,
+                            logical_switch_uuid,
+                            physical_locator,
+                            [mac_remote])
 
     def _form_logical_switch_schema(self, context, network, ls_dict):
         logical_switch_uuid = None
@@ -256,7 +287,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         a single port dict, whereas the L2gateway service plugin
         sends it as a list of port dicts.
         """
-        mac_list = []
+        ls_dict = {}
         port_list = port
         if not isinstance(port, list):
             port_list = [port]
@@ -281,20 +312,48 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                         ucast_mac_remote = (
                             db.get_ucast_mac_remote_by_mac_and_ls(
                                 context, record_dict))
-                        if ucast_mac_remote:
-                            mac_list.append(mac)
-                        else:
+                        del_count = 0
+                        if not ucast_mac_remote:
                             LOG.debug("delete_port_mac: MAC %s does"
                                       " not exist", mac)
-                            continue
+                            # It is possible that this MAC is present
+                            # in the pending_ucast_mac_remote table.
+                            # Delete this MAC as it was not inserted
+                            # into the OVSDB server earlier.
+                            del_count = db.delete_pending_ucast_mac_remote(
+                                context, 'insert',
+                                ovsdb_identifier,
+                                logical_switch_uuid,
+                                mac)
+                        if not del_count:
+                            mac_list = ls_dict.get(logical_switch_uuid, [])
+                            mac_list.append(mac)
+                            ls_dict[logical_switch_uuid] = mac_list
                 else:
                     LOG.debug("delete_port_mac:Logical Switch %s "
                               "does not exist ", port_dict.get('network_id'))
                     return
-        self.agent_rpc.delete_vif_from_gateway(context,
-                                               ovsdb_identifier,
-                                               logical_switch_uuid,
-                                               mac_list)
+        for logical_switch_uuid, mac_list in ls_dict.items():
+            try:
+                if mac_list:
+                    self.agent_rpc.delete_vif_from_gateway(context,
+                                                           ovsdb_identifier,
+                                                           logical_switch_uuid,
+                                                           mac_list)
+            except messaging.MessagingTimeout:
+                # If RPC is timed out, then the RabbitMQ
+                # will retry the operation.
+                LOG.exception(_LE("Communication error with "
+                                  "the L2 gateway agent"))
+            except Exception as ex:
+                # The remote OVSDB server may be down.
+                # We need to retry this operation later.
+                LOG.debug("Exception occurred %s", str(ex))
+                db.add_pending_ucast_mac_remote(
+                    context, 'delete', ovsdb_identifier,
+                    logical_switch_uuid,
+                    None,
+                    mac_list)
 
     def _check_port_fault_status_and_switch_fault_status(self, context,
                                                          l2_gateway_id):

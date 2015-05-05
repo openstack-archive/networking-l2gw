@@ -12,8 +12,9 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from oslo_log import log as logging
+from oslo_utils import timeutils
+from sqlalchemy import asc
 from sqlalchemy.orm import exc
 
 from networking_l2gw.db.l2gateway.ovsdb import models
@@ -427,3 +428,71 @@ def get_all_vlan_bindings_by_logical_switch(context, record_dict):
     return query.filter_by(
         logical_switch_uuid=record_dict['logical_switch_id'],
         ovsdb_identifier=record_dict['ovsdb_identifier']).all()
+
+
+def add_pending_ucast_mac_remote(context, operation,
+                                 ovsdb_identifier,
+                                 logical_switch_id,
+                                 physical_locator,
+                                 mac_remotes):
+    """Insert a pending ucast_mac_remote (insert/update/delete)."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        for mac in mac_remotes:
+            pending_mac = models.PendingUcastMacsRemote(
+                uuid=mac.get('uuid', None),
+                mac=mac['mac'],
+                logical_switch_uuid=logical_switch_id,
+                vm_ip=mac['ip_address'],
+                ovsdb_identifier=ovsdb_identifier,
+                operation=operation,
+                timestamp=timeutils.utcnow())
+            if physical_locator:
+                pending_mac['dst_ip'] = physical_locator.get('dst_ip', None)
+                pending_mac['locator_uuid'] = physical_locator.get('uuid',
+                                                                   None)
+            session.add(pending_mac)
+
+
+def delete_pending_ucast_mac_remote(context, operation,
+                                    ovsdb_identifier,
+                                    logical_switch_id,
+                                    mac_remote):
+    """Delete a pending ucast_mac_remote."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        if(mac_remote and logical_switch_id
+           and ovsdb_identifier and operation):
+            query = session.query(models.PendingUcastMacsRemote).filter_by(
+                mac=mac_remote,
+                ovsdb_identifier=ovsdb_identifier,
+                logical_switch_uuid=logical_switch_id,
+                operation=operation)
+            row_count = query.count()
+            query.delete()
+            return row_count
+
+
+def get_pending_ucast_mac_remote(context, ovsdb_identifier, mac,
+                                 logical_switch_uuid):
+    """Get pending mac that matches the supplied parameters."""
+    try:
+        query = context.session.query(models.PendingUcastMacsRemote)
+        pending_mac = query.filter_by(
+            ovsdb_identifier=ovsdb_identifier,
+            logical_switch_uuid=logical_switch_uuid,
+            mac=mac).one()
+        return pending_mac
+    except exc.NoResultFound:
+        return
+
+
+def get_all_pending_remote_macs_in_asc_order(context, ovsdb_identifier):
+    """Get all the pending remote macs in ascending order of timestamp."""
+    session = context.session
+    with session.begin():
+        return session.query(
+            models.PendingUcastMacsRemote
+            ).filter_by(ovsdb_identifier=ovsdb_identifier
+                        ).order_by(
+                            asc(models.PendingUcastMacsRemote.timestamp)).all()

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from oslo.db import exception as d_exc
+from oslo_utils import timeutils
 
 from neutron import context
 from neutron.openstack.common import uuidutils
@@ -462,3 +463,72 @@ class OvsdbLibTestCase(testlib_api.SqlTestCase):
         result = lib.get_physical_port_by_name_and_ps(self.ctx,
                                                       record_dict)
         self.assertEqual(entry, result)
+
+    def _get_pending_mac_dict(self, timestamp):
+        record_dict = {'uuid': _uuid(),
+                       'mac': 'aa:aa:aa:aa:aa:aa',
+                       'logical_switch_uuid': 'fake_ls_id',
+                       'locator_uuid': _uuid(),
+                       'dst_ip': '1.1.1.1',
+                       'vm_ip': '2.2.2.2',
+                       'ovsdb_identifier': 'ovsdb1',
+                       'operation': 'insert',
+                       'timestamp': timestamp}
+        return record_dict
+
+    def _create_pending_mac(self, record_dict):
+        with self.ctx.session.begin(subtransactions=True):
+            entry = models.PendingUcastMacsRemote(
+                uuid=record_dict['uuid'],
+                mac=record_dict['mac'],
+                logical_switch_uuid=record_dict['logical_switch_uuid'],
+                locator_uuid=record_dict['locator_uuid'],
+                dst_ip=record_dict['dst_ip'],
+                vm_ip=record_dict['vm_ip'],
+                ovsdb_identifier=record_dict['ovsdb_identifier'],
+                operation=record_dict['operation'],
+                timestamp=record_dict['timestamp'])
+            self.ctx.session.add(entry)
+            return entry
+
+    def test_add_pending_ucast_mac_remote(self):
+        timestamp = timeutils.utcnow()
+        record_dict = self._get_pending_mac_dict(timestamp)
+        self._create_pending_mac(record_dict)
+        count = self.ctx.session.query(models.PendingUcastMacsRemote).count()
+        self.assertEqual(1, count)
+
+    def test_get_pending_ucast_mac_remote(self):
+        timestamp = timeutils.utcnow()
+        record_dict = self._get_pending_mac_dict(timestamp)
+        with self.ctx.session.begin(subtransactions=True):
+            entry = self._create_pending_mac(record_dict)
+        result = lib.get_pending_ucast_mac_remote(
+            self.ctx, record_dict['ovsdb_identifier'],
+            record_dict['mac'], record_dict['logical_switch_uuid'])
+        self.assertEqual(entry, result)
+
+    def test_get_all_pending_remote_macs_in_asc_order(self):
+        timestamp1 = timeutils.utcnow()
+        record_dict1 = self._get_pending_mac_dict(timestamp1)
+        timestamp2 = timeutils.utcnow()
+        record_dict2 = self._get_pending_mac_dict(timestamp2)
+        with self.ctx.session.begin(subtransactions=True):
+            entry1 = self._create_pending_mac(record_dict1)
+            entry2 = self._create_pending_mac(record_dict2)
+        result = lib.get_all_pending_remote_macs_in_asc_order(
+            self.ctx, record_dict1['ovsdb_identifier'])
+        self.assertEqual(result[0], entry1)
+        self.assertEqual(result[1], entry2)
+
+    def test_delete_pending_ucast_mac_remote(self):
+        timestamp = timeutils.utcnow()
+        record_dict = self._get_pending_mac_dict(timestamp)
+        self._create_pending_mac(record_dict)
+        lib.delete_pending_ucast_mac_remote(self.ctx,
+                                            record_dict['operation'],
+                                            record_dict['ovsdb_identifier'],
+                                            record_dict['logical_switch_uuid'],
+                                            record_dict['mac'])
+        count = self.ctx.session.query(models.UcastMacsRemotes).count()
+        self.assertEqual(count, 0)

@@ -80,9 +80,25 @@ def upgrade():
                                         'network_id'),
                     sa.PrimaryKeyConstraint('id'))
 
+    op.create_table('pending_ucast_macs_remotes',
+                    sa.Column('id', sa.String(length=36), nullable=False),
+                    sa.Column('uuid', sa.String(length=36), nullable=True),
+                    sa.Column('mac', sa.String(32), nullable=False),
+                    sa.Column('logical_switch_uuid', sa.String(36),
+                              nullable=False),
+                    sa.Column('locator_uuid', sa.String(36),
+                              nullable=True),
+                    sa.Column('dst_ip', sa.String(64)),
+                    sa.Column('vm_ip', sa.String(64)),
+                    sa.Column('ovsdb_identifier', sa.String(64),
+                              nullable=False),
+                    sa.Column('operation', sa.String(8), nullable=False),
+                    sa.Column('timestamp', sa.DateTime, nullable=False))
+
 
 def downgrade():
     op.drop_table('l2gatewayconnections')
     op.drop_table('l2gatewayinterfaces')
     op.drop_table('l2gatewaydevices')
     op.drop_table('l2gateways')
+    op.drop_table('pending_ucast_macs_remotes')

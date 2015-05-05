@@ -14,11 +14,13 @@
 # limitations under the License.
 
 from neutron.common import constants
+from neutron.i18n import _LE
 from neutron import manager
 from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import constants as n_const
+from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway.common import topics
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
@@ -37,12 +39,21 @@ class L2GatewayOVSDBCallbacks(object):
     def __init__(self, plugin):
         super(L2GatewayOVSDBCallbacks, self).__init__()
         self.plugin = plugin
+        self.ovsdb = None
 
     def update_ovsdb_changes(self, context, ovsdb_data):
         """RPC to update the changes from OVSDB in the database."""
         self.ovsdb = OVSDBData(
             ovsdb_data.get(n_const.OVSDB_IDENTIFIER))
         self.ovsdb.update_ovsdb_changes(context, ovsdb_data)
+
+    def notify_ovsdb_states(self, context, ovsdb_states):
+        """RPC to notify the OVSDB servers connection state."""
+        if ovsdb_states:
+            self.ovsdb = OVSDBData(ovsdb_states.keys()[0])
+        if self.ovsdb:
+            LOG.debug("ovsdb_states = %s", ovsdb_states)
+            self.ovsdb.notify_ovsdb_states(context, ovsdb_states)
 
 
 class OVSDBData(object):
@@ -63,6 +74,65 @@ class OVSDBData(object):
                 lookup(context, value)
         if ovsdb_data.get('new_remote_macs'):
             self._handle_l2pop(context, ovsdb_data.get('new_remote_macs'))
+
+    def notify_ovsdb_states(self, context, ovsdb_states):
+        """RPC to notify the OVSDB servers connection state."""
+        for ovsdb_identifier, state in ovsdb_states.items():
+            if state == 'connected':
+                pending_recs = db.get_all_pending_remote_macs_in_asc_order(
+                    context, ovsdb_identifier)
+                if pending_recs:
+                    for pending_mac in pending_recs:
+                        logical_switch_uuid = pending_mac['logical_switch_uuid'
+                                                          ]
+                        mac = pending_mac['mac']
+                        operation = pending_mac['operation']
+                        try:
+                            if operation == 'insert' or operation == 'update':
+                                l_switch = ovsdb_schema.LogicalSwitch(
+                                    logical_switch_uuid, None, None, None)
+                                locator_uuid = pending_mac.get(
+                                    'locator_uuid', None)
+                                dst_ip = pending_mac.get(
+                                    'dst_ip', None)
+                                locator = ovsdb_schema.PhysicalLocator(
+                                    locator_uuid, dst_ip)
+                                mac_remote = ovsdb_schema.UcastMacsRemote(
+                                    pending_mac.get('uuid', None),
+                                    mac,
+                                    logical_switch_uuid,
+                                    locator_uuid,
+                                    pending_mac['vm_ip'])
+                                if operation == 'insert':
+                                    self.agent_rpc.add_vif_to_gateway(
+                                        context,
+                                        ovsdb_identifier,
+                                        l_switch.__dict__,
+                                        locator.__dict__,
+                                        mac_remote.__dict__)
+                                else:
+                                    # update operation
+                                    self.agent_rpc.update_vif_to_gateway(
+                                        context,
+                                        ovsdb_identifier,
+                                        locator.__dict__,
+                                        mac_remote.__dict__)
+                            else:
+                                self.agent_rpc.delete_vif_from_gateway(
+                                    context, ovsdb_identifier,
+                                    logical_switch_uuid, [mac])
+
+                            # As the pending operation is over, delete the
+                            # record from the pending_ucast_mac_remote table
+                            db.delete_pending_ucast_mac_remote(
+                                context,
+                                operation,
+                                ovsdb_identifier,
+                                logical_switch_uuid,
+                                mac)
+                        except Exception as ex:
+                            LOG.exception(_LE("Exception occurred = %s"),
+                                          str(ex))
 
     def _setup_entry_table(self):
         self.entry_table = {'new_logical_switches':
