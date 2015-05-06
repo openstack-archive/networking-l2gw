@@ -175,91 +175,86 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 context, filters={'network_id': [network_id]})
             if not l2gateway_connections:
                 return
-            for connection in l2gateway_connections:
-                l2_gateway_id = connection.get('l2_gateway_id')
-                l2gateway_devices = self.get_l2gateway_devices_by_gateway_id(
-                    context, l2_gateway_id)
-                for device in l2gateway_devices:
-                    physical_switch = db.get_physical_switch_by_name(
-                        context, device.get('device_name'))
-                    ovsdb_identifier = physical_switch.get('ovsdb_identifier')
-                    ls_dict = {'logical_switch_name': network_id,
-                               'ovsdb_identifier': ovsdb_identifier}
-                    logical_switch = self._form_logical_switch_schema(
-                        context, network, ls_dict)
-                    locator_dict = {'dst_ip': dst_ip,
-                                    'ovsdb_identifier': ovsdb_identifier}
-                    physical_locator = self._form_physical_locator_schema(
-                        context, locator_dict)
-                    locator_uuid = physical_locator.get('uuid')
-                    logical_switch_uuid = logical_switch.get('uuid')
-                    mac_remote = self._get_dict(ovsdb_schema.UcastMacsRemote(
-                        uuid=None,
-                        mac=port['mac_address'],
-                        logical_switch_id=logical_switch_uuid,
-                        physical_locator_id=locator_uuid,
-                        ip_address=ip_address))
-                    mac_dict = mac_remote
-                    mac_dict['ovsdb_identifier'] = ovsdb_identifier
-                    mac_dict['logical_switch_uuid'] = logical_switch_uuid
-                    ucast_mac_remote = db.get_ucast_mac_remote_by_mac_and_ls(
-                        context, mac_dict)
-                    if ucast_mac_remote:
-                        # check whether locator got changed in vm migration
-                        if ucast_mac_remote['physical_locator_id'
-                                            ] != physical_locator['uuid']:
-                            mac_remote['uuid'] = ucast_mac_remote['uuid']
-                            try:
-                                self.agent_rpc.update_vif_to_gateway(
-                                    context, ovsdb_identifier,
-                                    physical_locator, mac_remote)
-                                LOG.debug(
-                                    "VM migrated from %s to %s. Update"
-                                    "locator in Ucast_Macs_Remote",
-                                    ucast_mac_remote['physical_locator_id'],
-                                    physical_locator['uuid'])
-                            except messaging.MessagingTimeout:
-                                # If RPC is timed out, then the RabbitMQ
-                                # will retry the operation.
-                                LOG.exception(_LE("Communication error with "
-                                                  "the L2 gateway agent"))
-                            except Exception:
-                                # The remote OVSDB server may be down.
-                                # We need to retry this operation later.
-                                db.add_pending_ucast_mac_remote(
-                                    context, 'update',
-                                    ovsdb_identifier,
-                                    logical_switch_uuid,
-                                    physical_locator,
-                                    [mac_remote])
-                        else:
-                            LOG.debug("add_port_mac: MAC %s exists "
-                                      "in Gateway", mac_dict['mac'])
-                            ovsdb_data_handler = (
-                                self.ovsdb_callback.get_ovsdbdata_object(
-                                    ovsdb_identifier))
-                            ovsdb_data_handler._handle_l2pop(
-                                context, [ucast_mac_remote])
-                        continue
-                    # else it is a new port created
-                    try:
-                        self.agent_rpc.add_vif_to_gateway(
-                            context, ovsdb_identifier, logical_switch,
-                            physical_locator, mac_remote)
-                    except messaging.MessagingTimeout:
-                        # If RPC is timed out, then the RabbitMQ
-                        # will retry the operation.
-                        LOG.exception(_LE("Communication error with "
-                                          "the L2 gateway agent"))
-                    except Exception:
-                        # The remote OVSDB server may be down.
-                        # We need to retry this operation later.
-                        LOG.debug("The remote OVSDB server may be down")
-                        db.add_pending_ucast_mac_remote(
-                            context, 'insert', ovsdb_identifier,
-                            logical_switch_uuid,
-                            physical_locator,
-                            [mac_remote])
+            logical_switches = db.get_all_logical_switches_by_name(context,
+                                                                   network_id)
+            if not logical_switches:
+                return
+            for logical_switch in logical_switches:
+                logical_switch['description'] = network.get('name')
+                ovsdb_identifier = logical_switch.get('ovsdb_identifier')
+                locator_dict = {'dst_ip': dst_ip,
+                                'ovsdb_identifier': ovsdb_identifier}
+                physical_locator = self._form_physical_locator_schema(
+                    context, locator_dict)
+                locator_uuid = physical_locator.get('uuid')
+                logical_switch_uuid = logical_switch.get('uuid')
+                mac_remote = self._get_dict(ovsdb_schema.UcastMacsRemote(
+                    uuid=None,
+                    mac=port['mac_address'],
+                    logical_switch_id=logical_switch_uuid,
+                    physical_locator_id=locator_uuid,
+                    ip_address=ip_address))
+                mac_dict = mac_remote
+                mac_dict['ovsdb_identifier'] = ovsdb_identifier
+                mac_dict['logical_switch_uuid'] = logical_switch_uuid
+                ucast_mac_remote = db.get_ucast_mac_remote_by_mac_and_ls(
+                    context, mac_dict)
+                if ucast_mac_remote:
+                    # check whether locator got changed in vm migration
+                    if ucast_mac_remote['physical_locator_id'
+                                        ] != physical_locator['uuid']:
+                        mac_remote['uuid'] = ucast_mac_remote['uuid']
+                        try:
+                            self.agent_rpc.update_vif_to_gateway(
+                                context, ovsdb_identifier,
+                                physical_locator, mac_remote)
+                            LOG.debug(
+                                "VM migrated from %s to %s. Update"
+                                "locator in Ucast_Macs_Remote",
+                                ucast_mac_remote['physical_locator_id'],
+                                physical_locator['uuid'])
+                        except messaging.MessagingTimeout:
+                            # If RPC is timed out, then the RabbitMQ
+                            # will retry the operation.
+                            LOG.exception(_LE("Communication error with "
+                                              "the L2 gateway agent"))
+                        except Exception:
+                            # The remote OVSDB server may be down.
+                            # We need to retry this operation later.
+                            db.add_pending_ucast_mac_remote(
+                                context, 'update',
+                                ovsdb_identifier,
+                                logical_switch_uuid,
+                                physical_locator,
+                                [mac_remote])
+                    else:
+                        LOG.debug("add_port_mac: MAC %s exists "
+                                  "in Gateway", mac_dict['mac'])
+                        ovsdb_data_handler = (
+                            self.ovsdb_callback.get_ovsdbdata_object(
+                                ovsdb_identifier))
+                        ovsdb_data_handler._handle_l2pop(
+                            context, [ucast_mac_remote])
+                    continue
+                # else it is a new port created
+                try:
+                    self.agent_rpc.add_vif_to_gateway(
+                        context, ovsdb_identifier, logical_switch,
+                        physical_locator, mac_remote)
+                except messaging.MessagingTimeout:
+                    # If RPC is timed out, then the RabbitMQ
+                    # will retry the operation.
+                    LOG.exception(_LE("Communication error with "
+                                      "the L2 gateway agent"))
+                except Exception:
+                    # The remote OVSDB server may be down.
+                    # We need to retry this operation later.
+                    LOG.debug("The remote OVSDB server may be down")
+                    db.add_pending_ucast_mac_remote(
+                        context, 'insert', ovsdb_identifier,
+                        logical_switch_uuid,
+                        physical_locator,
+                        [mac_remote])
 
     def _form_logical_switch_schema(self, context, network, ls_dict):
         logical_switch_uuid = None
@@ -295,13 +290,32 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         sends it as a list of port dicts.
         """
         ls_dict = {}
-        port_list = port
-        if not isinstance(port, list):
+        mac_list = []
+        logical_switches = []
+        ovsdb_identifier = None
+        if isinstance(port, list):
+            from_l2gw_plugin = True
+            network_id = port[0].get('network_id')
+            ovsdb_identifier = port[0].get('ovsdb_identifier')
+            lg_dict = {'logical_switch_name': network_id,
+                       'ovsdb_identifier': ovsdb_identifier}
+            logical_switch = db.get_logical_switch_by_name(
+                context, lg_dict)
+            logical_switches.append(logical_switch)
+            port_list = port
+        else:
+            from_l2gw_plugin = False
+            network_id = port.get('network_id')
+            logical_switches = (
+                db.get_all_logical_switches_by_name(
+                    context, network_id))
+            l2gateway_connections = self.get_l2_gateway_connections(
+                context, filters={'network_id': [network_id]})
+            if not l2gateway_connections:
+                return
             port_list = [port]
         for port_dict in port_list:
             if port_dict['device_owner']:
-                logical_switches = db.get_all_logical_switches_by_name(
-                    context, port_dict.get('network_id'))
                 if logical_switches:
                     for logical_switch in logical_switches:
                         logical_switch_uuid = logical_switch.get('uuid')
@@ -316,6 +330,17 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                                        'logical_switch_uuid':
                                        logical_switch_uuid,
                                        'ovsdb_identifier': ovsdb_identifier}
+                        rec_dict = {'logical_switch_id': logical_switch_uuid,
+                                    'ovsdb_identifier': ovsdb_identifier}
+                        if len(db.get_all_vlan_bindings_by_logical_switch(
+                               context, rec_dict)) > 1:
+                            if from_l2gw_plugin:
+                                ls = logical_switch.get('name')
+                                l2gateway_connections = (
+                                    self.get_l2_gateway_connections(
+                                        context, filters={'network_id': [ls]}))
+                                if len(l2gateway_connections) > 1:
+                                    continue
                         ucast_mac_remote = (
                             db.get_ucast_mac_remote_by_mac_and_ls(
                                 context, record_dict))
@@ -512,14 +537,16 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             if not vlan_id:
                 vlan_id = interface.get('segmentation_id')
             for vlan_binding in vlan_bindings:
-                if vlan_binding.get('vlan') != vlan_id:
-                    if vlan_binding.get(
-                       'logical_switch_uuid') != logical_switch_uuid:
-                        vlan_dict = {
-                            'vlan': vlan_binding.get('vlan'),
-                            'logical_switch_uuid':
-                            vlan_binding.get('logical_switch_uuid')}
-                        port_list.append(vlan_dict)
+                if ((vlan_binding.get('vlan') == vlan_id) and (
+                    vlan_binding.get(
+                        'logical_switch_uuid') == logical_switch_uuid)):
+                    continue
+                else:
+                    vlan_dict = {
+                        'vlan': vlan_binding.get('vlan'),
+                        'logical_switch_uuid':
+                        vlan_binding.get('logical_switch_uuid')}
+                    port_list.append(vlan_dict)
             physical_port = self._get_dict(
                 ovsdb_schema.PhysicalPort(
                     uuid=pp_dict.get('uuid'),
@@ -604,6 +631,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
 
         to update the connection to the gateway.
         """
+        u_mac_dict = {}
         ls_dict = {}
         mac_dict = {}
         is_mac = False
@@ -637,7 +665,18 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                                 logical_switch_id=None,
                                 physical_locator_id=None,
                                 ip_address=ip_address))
-                        mac_list.append(mac_remote)
+                        if logical_switch:
+                            u_mac_dict['mac'] = port.get('mac_address')
+                            u_mac_dict['ovsdb_identifier'] = ovsdb_identifier
+                            u_mac_dict['logical_switch_uuid'] = (
+                                logical_switch.get('uuid'))
+                            ucast_mac_remote = (
+                                db.get_ucast_mac_remote_by_mac_and_ls(
+                                    context, u_mac_dict))
+                            if not ucast_mac_remote:
+                                mac_list.append(mac_remote)
+                        else:
+                            mac_list.append(mac_remote)
                         locator_list = self._get_locator_list(
                             context, dst_ip, ovsdb_identifier, mac_list,
                             locator_list)
@@ -708,8 +747,6 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         ovsdb_id_set = self._get_set_of_ovsdb_ids(context,
                                                   gw_connection,
                                                   gw_connection_ovsdb_set)
-        # call delete vif_from_gateway for ovsdb_id_set
-        self._remove_vm_macs(context, network_id, ovsdb_id_set)
         # call delete connection RPC to gw_connection_ovsdb_set
         l2gateway_devices = self.get_l2gateway_devices_by_gateway_id(
             context, gw_connection.get('l2_gateway_id'))
@@ -722,6 +759,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             self.agent_rpc.update_connection_to_gateway(
                 context, ovsdb_identifier, ls_dict, locator_list, mac_dict,
                 port_dict)
+        # call delete vif_from_gateway for ovsdb_id_set
+        self._remove_vm_macs(context, network_id, ovsdb_id_set)
         # call l2gateway db function
         return super(L2GatewayPlugin, self).delete_l2_gateway_connection(
             context, l2_gateway_connection)
