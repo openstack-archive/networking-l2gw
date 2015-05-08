@@ -100,7 +100,7 @@ def is_valid_vlan_id(seg_id):
         int_seg_id = int(seg_id)
     except ValueError:
         msg = _("segmentation_id must be a valid integer")
-    if int_seg_id <= 0 or int_seg_id >= 4095:
+    if int_seg_id < 0 or int_seg_id >= 4095:
         msg = _("Segmentation id is out of range")
     if msg:
         raise exceptions.InvalidInput(error_message=msg)
