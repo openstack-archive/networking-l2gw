@@ -16,6 +16,7 @@
 import sqlalchemy as sa
 
 from neutron.db import model_base
+from neutron.db import models_v2
 
 
 class PhysicalLocators(model_base.BASEV2):
@@ -100,3 +101,16 @@ class VlanBindings(model_base.BASEV2):
     __table_args__ = (sa.UniqueConstraint(port_uuid, vlan,
                                           logical_switch_uuid,
                                           ovsdb_identifier),)
+
+
+class PendingUcastMacsRemote(model_base.BASEV2, models_v2.HasId):
+    __tablename__ = 'pending_ucast_macs_remotes'
+    uuid = sa.Column(sa.String(36), nullable=True)
+    mac = sa.Column(sa.String(32), nullable=False)
+    logical_switch_uuid = sa.Column(sa.String(36), nullable=True)
+    locator_uuid = sa.Column(sa.String(36), nullable=True)
+    dst_ip = sa.Column(sa.String(64))
+    vm_ip = sa.Column(sa.String(64))
+    ovsdb_identifier = sa.Column(sa.String(64), nullable=False)
+    operation = sa.Column(sa.String(8), nullable=False)
+    timestamp = sa.Column(sa.DateTime, nullable=False)

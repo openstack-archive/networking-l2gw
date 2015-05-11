@@ -23,7 +23,9 @@ from neutron.tests import base
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib
 from networking_l2gw.services.l2gateway.common import constants as n_const
+from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway.ovsdb import data
+from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
 
 class TestL2GatewayOVSDBCallbacks():
@@ -40,6 +42,15 @@ class TestL2GatewayOVSDBCallbacks():
             ovsdb_return_value = ovs_data.return_value
             ovsdb_return_value.update_ovsdb_changes.assert_called_with(
                 self.context, fake_ovsdb_data)
+
+    def test_notify_ovsdb_states(self):
+        fake_ovsdb_states = {'ovsdb1': 'connected'}
+        with mock.patch.object(data, 'OVSDBData') as ovs_data:
+            self.l2gw_callbacks.notify_ovsdb_states(self.context,
+                                                    fake_ovsdb_states)
+            ovsdb_return_value = ovs_data.return_value
+            ovsdb_return_value.notify_ovsdb_states.assert_called_with(
+                self.context, fake_ovsdb_states)
 
 
 class TestOVSDBData(base.BaseTestCase):
@@ -186,6 +197,49 @@ class TestOVSDBData(base.BaseTestCase):
                 self.context, fake_deleted_local_macs)
             process_deleted_remote_macs.assert_called_with(
                 self.context, fake_deleted_remote_macs)
+
+    def test_notify_ovsdb_states(self):
+        fake_ovsdb_states = {'ovsdb1': 'connected'}
+        fake_dict = {'logical_switch_uuid': 'fake_ls_id',
+                     'mac': 'fake_mac',
+                     'locator_uuid': 'fake_loc_id',
+                     'dst_ip': 'fake_dst_ip',
+                     'vm_ip': 'fake_vm_ip'}
+        fake_insert_dict = {'operation': 'insert'
+                            }.update(fake_dict)
+        fake_update_dict = {'operation': 'update'
+                            }.update(fake_dict)
+        fake_delete_dict = {'operation': 'delete'
+                            }.update(fake_dict)
+        with contextlib.nested(
+            mock.patch.object(
+                lib, 'get_all_pending_remote_macs_in_asc_order'),
+            mock.patch.object(lib,
+                              'delete_pending_ucast_mac_remote'),
+            mock.patch.object(ovsdb_schema, 'LogicalSwitch'),
+            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
+            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
+            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+                              'add_vif_to_gateway'),
+            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+                              'update_vif_to_gateway'),
+            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+                              'delete_vif_from_gateway')
+        ) as (mock_get_pend_recs, mock_del_pend_recs,
+              mock_ls, mock_pl, mock_ucmr, mock_add_vif,
+              mock_upd_vif, mock_del_vif):
+            mock_get_pend_recs.return_value = fake_insert_dict
+            self.ovsdb_data.notify_ovsdb_states(
+                self.context, fake_ovsdb_states)
+            mock_add_vif.assert_called()
+            mock_get_pend_recs.return_value = fake_update_dict
+            self.ovsdb_data.notify_ovsdb_states(
+                self.context, fake_ovsdb_states)
+            mock_upd_vif.assert_called()
+            mock_get_pend_recs.return_value = fake_delete_dict
+            self.ovsdb_data.notify_ovsdb_states(
+                self.context, fake_ovsdb_states)
+            mock_del_vif.assert_called()
 
     def test_process_new_logical_switches(self):
         fake_dict = {}

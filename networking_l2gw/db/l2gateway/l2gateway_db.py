@@ -12,6 +12,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+from eventlet import greenthread
+
 from neutron.callbacks import events
 from neutron.callbacks import registry
 from neutron.callbacks import resources
@@ -506,7 +508,8 @@ def l2gw_callback(resource, event, trigger, **kwargs):
     port_dict = kwargs.get('port')
     if l2gwservice:
         if event in [events.AFTER_CREATE, events.AFTER_UPDATE]:
-            l2gwservice.add_port_mac(context, port_dict)
+            greenthread.spawn_n(l2gwservice.add_port_mac,
+                                context, port_dict)
         elif event == events.AFTER_DELETE:
             l2gwservice.delete_port_mac(context, port_dict)
 

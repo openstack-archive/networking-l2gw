@@ -96,6 +96,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
 
     def _connect_to_ovsdb_server(self):
         """Initializes the connection to the OVSDB servers."""
+        ovsdb_states = {}
         if self.gateways and self.l2gw_agent_type == n_const.MONITOR:
             for key in self.gateways.keys():
                 gateway = self.gateways.get(key)
@@ -109,6 +110,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                             gateway,
                             self.agent_to_plugin_rpc)
                     except Exception:
+                        ovsdb_states[key] = 'disconnected'
                         # Log a warning and continue so that it can be retried
                         # in the next iteration.
                         LOG.error(_LE("OVSDB server %s is not "
@@ -121,6 +123,11 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                             ovsdb_fd.set_monitor_response_handler)
                     except Exception:
                         raise SystemExit(Exception.message)
+                if ovsdb_fd and ovsdb_fd.connected:
+                    ovsdb_states[key] = 'connected'
+        LOG.debug("Calling notify_ovsdb_states")
+        self.plugin_rpc.notify_ovsdb_states(ctx.get_admin_context(),
+                                            ovsdb_states)
 
     def handle_report_state_failure(self):
         # Not able to deliver the heart beats to the Neutron server.
