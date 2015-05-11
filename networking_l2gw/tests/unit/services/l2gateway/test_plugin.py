@@ -27,6 +27,7 @@ from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
+from networking_l2gw.services.l2gateway.ovsdb import data
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
 from oslo import messaging
@@ -152,6 +153,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
     def setUp(self):
         super(TestL2GatewayPlugin, self).setUp()
         self.plugin = l2gw_plugin.L2GatewayPlugin()
+        self.ovsdb_identifier = 'fake_ovsdb_id'
+        self.ovsdb_data = data.OVSDBData(self.ovsdb_identifier)
         self.context = mock.ANY
 
     def test_l2gatewayplugin_init(self):
@@ -936,6 +939,96 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             self.assertFalse(add_rpc.called)
             update_rpc.assert_called()
             add_pending_mac.assert_called()
+
+    def test_add_port_mac_tunnel_recreation(self):
+        "Test case to test recreation of tunnels"
+        "when the openvswitch agent is restarted."
+        fake_ip1 = "fake_ip1"
+        fake_ip2 = "fake_ip2"
+        fake_network_dict = {'provider:segmentation_id': 100L,
+                             'name': 'fake_name',
+                             'id': 'fake_network_id'}
+        fake_conn_dict = {'id': 'fake_conn_id',
+                          'l2_gateway_id': 'fake_gateway_id'}
+        fake_conn_list = [fake_conn_dict]
+        fake_device_dict = {'device_name': 'fake_name'}
+        fake_device_list = [fake_device_dict]
+        fake_ls_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
+                        'logical_switch_name': 'fake_network_id'}
+        fake_physical_switch = {'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_logical_switch = {'ovsdb_identifier': 'fake_ovsdb_id',
+                               'uuid': 'fake_network_id',
+                               'description': 'fake_name'}
+        fake_locator_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
+                             'uuid': 'fake_locator_id',
+                             'dst_ip': 'fake_ip2'}
+        fake_pl_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
+                        'dst_ip': 'fake_ip1'}
+        fake_mac_dict = {'mac': 'fake_mac',
+                         'uuid': 'fake_mac_id',
+                         'locator': 'fake_locator_id',
+                         'logical_switch_id': 'fake_network_id',
+                         'physical_locator_id': 'fake_locator_id',
+                         'ip_address': 'fake_ip1'}
+        fake_dict = fake_mac_dict
+        fake_dict['ovsdb_identifier'] = 'fake_ovsdb_id'
+        core_plugin = mock.PropertyMock()
+        type(self.plugin)._core_plugin = core_plugin
+        (self.plugin._core_plugin.get_port.
+         return_value) = {'device_owner': 'fake_owner',
+                          'network_id': 'fake_network_id',
+                          'mac_address': 'fake_mac'}
+        with contextlib.nested(
+            mock.patch.object(self.plugin,
+                              '_get_ip_details',
+                              return_value=(fake_ip1,
+                                            fake_ip2)),
+            mock.patch.object(self.plugin,
+                              '_get_network_details',
+                              return_value=fake_network_dict),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'get_l2_gateway_connections',
+                              return_value=fake_conn_list),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'get_l2gateway_devices_by_gateway_id',
+                              return_value=fake_device_list),
+            mock.patch.object(db,
+                              'get_physical_switch_by_name',
+                              return_value=fake_physical_switch),
+            mock.patch.object(self.plugin,
+                              '_form_logical_switch_schema',
+                              return_value=fake_logical_switch),
+            mock.patch.object(self.plugin,
+                              '_form_physical_locator_schema',
+                              return_value=fake_locator_dict),
+            mock.patch.object(self.plugin,
+                              '_get_dict',
+                              return_value=fake_dict),
+            mock.patch.object(db,
+                              'get_ucast_mac_remote_by_mac_and_ls',
+                              return_value=fake_mac_dict),
+            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+                              'add_vif_to_gateway'),
+            mock.patch.object(data.L2GatewayOVSDBCallbacks,
+                              'get_ovsdbdata_object'),
+            mock.patch.object(self.ovsdb_data, '_handle_l2pop')) as (
+                get_ip, get_network, get_l2gw_conn, get_device, get_ps,
+                get_ls, get_pl, get_dict, get_ucast_mac, add_rpc,
+                get_ovsdbdata_obj, handle_l2pop):
+            self.plugin.add_port_mac(self.context, fake_dict)
+            get_network.assert_called_with(self.context, 'fake_network_id')
+            get_l2gw_conn.assert_called_with(
+                self.context, filters={'network_id': ['fake_network_id']})
+            get_device.assert_called_with(self.context, 'fake_gateway_id')
+            get_ps.assert_called_with(self.context, 'fake_name')
+            get_ls.assert_called_with(self.context,
+                                      fake_network_dict,
+                                      fake_ls_dict)
+            get_pl.assert_called_with(self.context, fake_pl_dict)
+            get_ucast_mac.assert_called_with(self.context, fake_dict)
+            self.assertFalse(add_rpc.called)
+            get_ovsdbdata_obj.assert_called()
+            handle_l2pop.assert_called()
 
     def test_delete_port_mac_with_list(self):
         network_id = 'fake_network_id'

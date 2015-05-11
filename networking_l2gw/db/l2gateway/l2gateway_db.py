@@ -507,7 +507,7 @@ def l2gw_callback(resource, event, trigger, **kwargs):
     context = kwargs.get('context')
     port_dict = kwargs.get('port')
     if l2gwservice:
-        if event in [events.AFTER_CREATE, events.AFTER_UPDATE]:
+        if event == events.AFTER_UPDATE:
             greenthread.spawn_n(l2gwservice.add_port_mac,
                                 context, port_dict)
         elif event == events.AFTER_DELETE:
@@ -515,8 +515,7 @@ def l2gw_callback(resource, event, trigger, **kwargs):
 
 
 def subscribe():
-    interested_events = (events.AFTER_CREATE,
-                         events.AFTER_UPDATE,
+    interested_events = (events.AFTER_UPDATE,
                          events.AFTER_DELETE)
     for x in interested_events:
         registry.subscribe(

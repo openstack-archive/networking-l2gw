@@ -52,6 +52,14 @@ class TestL2GatewayOVSDBCallbacks():
             ovsdb_return_value.notify_ovsdb_states.assert_called_with(
                 self.context, fake_ovsdb_states)
 
+    def test_get_ovsdbdata_object(self):
+        fake_ovsdb_id = 'fake_ovsdb_id'
+        with mock.patch.object(data, 'OVSDBData') as ovs_data:
+            ret_value = self.l2gw_callbacks.get_ovsdbdata_object(
+                fake_ovsdb_id)
+            ret_value1 = ovs_data.assert_called_with(fake_ovsdb_id)
+            self.assertEqual(ret_value, ret_value1)
+
 
 class TestOVSDBData(base.BaseTestCase):
 

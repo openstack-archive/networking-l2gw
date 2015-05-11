@@ -286,22 +286,6 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         self.assertRaises(exceptions.L2GatewayDeviceNotFound,
                           self._update_l2_gateway, l2gw_id, data_l2gw_update)
 
-    def test_l2gw_callback_add_port(self):
-        service_plugins = mock.MagicMock()
-        fake_context = mock.Mock()
-        fake_port = mock.Mock()
-        fake_kwargs = {'context': fake_context,
-                       'port': fake_port}
-        with mock.patch.object(manager.NeutronManager,
-                               'get_service_plugins',
-                               return_value=service_plugins):
-            l2gateway_db.l2gw_callback(resources.PORT,
-                                       events.AFTER_CREATE,
-                                       mock.Mock(),
-                                       **fake_kwargs)
-            service_plugins.return_value[constants.L2GW
-                                         ].add_port_mac.assert_called()
-
     def test_l2gw_callback_update_port(self):
         service_plugins = mock.MagicMock()
         fake_context = mock.Mock()

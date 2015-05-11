@@ -45,17 +45,20 @@ class L2GatewayOVSDBCallbacks(object):
 
     def update_ovsdb_changes(self, context, ovsdb_data):
         """RPC to update the changes from OVSDB in the database."""
-        self.ovsdb = OVSDBData(
-            ovsdb_data.get(n_const.OVSDB_IDENTIFIER))
+        self.ovsdb = self.get_ovsdbdata_object(
+            n_const.OVSDB_IDENTIFIER)
         self.ovsdb.update_ovsdb_changes(context, ovsdb_data)
 
     def notify_ovsdb_states(self, context, ovsdb_states):
         """RPC to notify the OVSDB servers connection state."""
         if ovsdb_states:
-            self.ovsdb = OVSDBData(ovsdb_states.keys()[0])
+            self.ovsdb = self.get_ovsdbdata_object(ovsdb_states.keys()[0])
         if self.ovsdb:
             LOG.debug("ovsdb_states = %s", ovsdb_states)
             self.ovsdb.notify_ovsdb_states(context, ovsdb_states)
+
+    def get_ovsdbdata_object(self, ovsdb_identifier):
+        return OVSDBData(ovsdb_identifier)
 
 
 class OVSDBData(object):

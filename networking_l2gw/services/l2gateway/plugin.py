@@ -131,9 +131,11 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
     def __init__(self):
         """Do the initialization for the l2 gateway service plugin here."""
         config.register_l2gw_opts_helper()
-        l2gatewaycallback = cfg.CONF.l2gw_callback_class
-        self.endpoints = [importutils.import_object(l2gatewaycallback, self),
-                          agents_db.AgentExtRpcCallback()]
+        self.l2gatewaycallback = cfg.CONF.l2gw_callback_class
+        self.ovsdb_callback = importutils.import_object(
+            self.l2gatewaycallback, self)
+        self.endpoints = (
+            [self.ovsdb_callback, agents_db.AgentExtRpcCallback()])
         self.conn = n_rpc.create_connection(new=True)
         self.conn.create_consumer(topics.L2GATEWAY_PLUGIN,
                                   self.endpoints,
@@ -233,6 +235,11 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                         else:
                             LOG.debug("add_port_mac: MAC %s exists "
                                       "in Gateway", mac_dict['mac'])
+                            ovsdb_data_handler = (
+                                self.ovsdb_callback.get_ovsdbdata_object(
+                                    ovsdb_identifier))
+                            ovsdb_data_handler._handle_l2pop(
+                                context, [ucast_mac_remote])
                         continue
                     # else it is a new port created
                     try:
