@@ -20,6 +20,8 @@ from neutron.tests.tempest import test
 from networking_l2gw.tests.api import base_l2gw
 from networking_l2gw.tests.tempest import config
 
+from random import randint
+
 from tempest_lib.common.utils import data_utils
 from tempest_lib import exceptions as lib_exc
 
@@ -105,15 +107,6 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 
-    @classmethod
-    def _initialize_l2gw_attributes(self, vlan_id):
-        self.interface_name = CONF.network.interface_name
-        self.device_name = CONF.network.device_name
-        self.device = [{"device_name": self.device_name, "interfaces":
-                       [{"name": self.interface_name,
-                        "segmentation_id": [vlan_id]}]}]
-        return self.device
-
     @test.attr(type=['negative', 'smoke'])
     @test.idempotent_id('42067b44-3aff-4428-8305-d0496bd38179')
     def test_delete_l2gw_associated_l2gw_connection(self):
@@ -138,3 +131,146 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
         self.assertRaises(lib_exc.Conflict,
                           self.admin_client.delete_l2_gateway,
                           l2_gateway['id'])
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_create_l2gw_with_empty_device_name(self):
+        # Create an L2Gateway
+        seg_id = randint(2, 4094)
+        seg_id_str = [str(seg_id)]
+        gw_name = data_utils.rand_name('l2gw')
+        dev_name = ""
+        interface_name = data_utils.rand_name('interface')
+        device = [{"device_name": dev_name, "interfaces":
+                  [{"name": interface_name, "segmentation_id": seg_id_str}]}]
+        self.assertRaises(lib_exc.BadRequest,
+                          self.admin_client.create_l2_gateway,
+                          name=gw_name, devices=device
+                          )
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_create_l2gw_connection_with_invalid_segmentation_id(self):
+        # Create an L2Gateway
+        gw_name = data_utils.rand_name('l2gw')
+        dev_name = data_utils.rand_name('device_name')
+        interface_name = data_utils.rand_name('interface')
+        devices = [{"device_name": dev_name, "interfaces":
+                   [{"name": interface_name}]}]
+        body = self.admin_client.create_l2_gateway(
+            name=gw_name, devices=devices)
+        l2_gateway = body['l2_gateway']
+        l2_gw_id = l2_gateway['id']
+        self.addCleanup(self.admin_client.delete_l2_gateway, l2_gw_id)
+
+        # Create a network
+        name = data_utils.rand_name('network')
+        net_body = self.admin_client.create_network(name=name)
+        net_id = net_body['network']['id']
+        self.addCleanup(self.admin_client.delete_network, net_id)
+        for i in ['-1', '4095', '4096']:
+            seg_id = [i]
+            self.assertRaises(lib_exc.BadRequest,
+                              self.admin_client.create_l2_gateway_connection,
+                              l2_gateway_id=l2_gw_id, network_id=net_id,
+                              segmentation_id=seg_id)
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_create_l2gw_with_invalid_segmentation_id(self):
+        # Create an L2Gateway
+        gw_name = data_utils.rand_name('l2gw')
+        dev_name = data_utils.rand_name('device_name')
+        interface_name = data_utils.rand_name('interface')
+        for i in ['-1', '4095', '4096']:
+            seg_id = [i]
+            device = [{"device_name": dev_name, "interfaces":
+                      [{"name": interface_name, "segmentation_id": seg_id}]}]
+            self.assertRaises(lib_exc.BadRequest,
+                              self.admin_client.create_l2_gateway,
+                              name=gw_name, devices=device
+                              )
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_create_l2gw_with_empty_interface_name(self):
+        # Create an L2Gateway
+        seg_id = randint(2, 4094)
+        seg_id_str = [str(seg_id)]
+        gw_name = data_utils.rand_name('l2gw')
+        dev_name = data_utils.rand_name('device')
+        interface_name = ""
+        device = [{"device_name": dev_name, "interfaces":
+                  [{"name": interface_name, "segmentation_id": seg_id_str}]}]
+        self.assertRaises(lib_exc.BadRequest,
+                          self.admin_client.create_l2_gateway,
+                          name=gw_name, devices=device
+                          )
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_delete_non_existent_l2gateway(self):
+        non_exist_id = data_utils.rand_name('l2gw')
+        self.assertRaises(lib_exc.NotFound,
+                          self.admin_client.delete_l2_gateway,
+                          non_exist_id)
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_delete_non_existent_l2gateway_connection(self):
+        non_exist_id = data_utils.rand_name('l2gwConnection')
+        self.assertRaises(lib_exc.NotFound,
+                          self.admin_client.delete_l2_gateway_connection,
+                          non_exist_id)
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_create_l2gw_connection_with_invalid_network_name(self):
+        # Create an L2Gateway
+        gw_name = data_utils.rand_name('l2gw')
+        devices = base_l2gw.get_l2gw_body(CONF.network.l2gw_switch)["devices"]
+        body = self.admin_client.create_l2_gateway(
+            name=gw_name, devices=devices)
+        l2_gateway = body['l2_gateway']
+        l2_gw_id = l2_gateway['id']
+        self.addCleanup(self.admin_client.delete_l2_gateway, l2_gw_id)
+
+        # Create a network
+        net_id = "network"
+        self.assertRaises(lib_exc.NotFound,
+                          self.admin_client.create_l2_gateway_connection,
+                          l2_gateway_id=l2_gw_id, network_id=net_id
+                          )
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_update_gateway_with_invalid_device_name(self):
+        # Create an L2Gateway
+        gw_name = data_utils.rand_name('l2gw')
+        devices = base_l2gw.get_l2gw_body(CONF.network.l2gw_switch)["devices"]
+        body = self.admin_client.create_l2_gateway(
+            name=gw_name, devices=devices)
+        l2_gateway = body['l2_gateway']
+        self.addCleanup(self.admin_client.delete_l2_gateway, l2_gateway['id'])
+        device_1 = [{"device_name": ""}]
+
+        # Create a connection again for same L2Gateway and Network
+        self.assertRaises(lib_exc.BadRequest,
+                          self.admin_client.update_l2_gateway,
+                          gw_name, devices=device_1
+                          )
+
+    @test.attr(type=['negative', 'smoke'])
+    def test_create_l2gw_and_l2gw_connection_both_without_seg_id(self):
+        # Create an L2Gateway
+        gw_name = data_utils.rand_name('l2gw')
+        devices = base_l2gw.get_l2gw_body(CONF.network.l2gw_switch)["devices"]
+        if devices[0]['interfaces'][0]['segmentation_id']:
+            devices[0]['interfaces'][0].pop('segmentation_id')
+        body = self.admin_client.create_l2_gateway(
+            name=gw_name, devices=devices)
+        l2_gateway = body['l2_gateway']
+        l2_gw_id = l2_gateway['id']
+        self.addCleanup(self.admin_client.delete_l2_gateway, l2_gw_id)
+
+        # Create a network
+        name = data_utils.rand_name('network')
+        net_body = self.admin_client.create_network(name=name)
+        net_id = net_body['network']['id']
+        self.addCleanup(self.admin_client.delete_network, net_id)
+        self.assertRaises(lib_exc.BadRequest,
+                          self.admin_client.create_l2_gateway_connection,
+                          l2_gateway_id=l2_gw_id, network_id=net_id
+                          )
