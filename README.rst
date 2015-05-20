@@ -18,13 +18,13 @@ broadcast domain.
 Initial implementation
 ----------------------
 
-The are a number of use cases that can be addressed by an L2 Gateway API. Most
-notably in cloud computing environments, a typical use case is bridging the
-virtual with the physical. Translate this to Neutron and the OpenStack world,
-and this means relying on L2 Gateway capabilities to extend Neutron logical
-(overlay) networks into physical (provider) networks that are outside the
-OpenStack realm. These networks can be, for instance, VLAN's that may or may
-not be managed by OpenStack.
+There are a number of use cases that can be addressed by an L2 Gateway API.
+Most notably in cloud computing environments, a typical use case is bridging
+the virtual with the physical. Translate this to Neutron and the OpenStack
+world, and this means relying on L2 Gateway capabilities to extend Neutron
+logical (overlay) networks into physical (provider) networks that are outside
+the OpenStack realm. These networks can be, for instance, VLAN's that may or
+may not be managed by OpenStack.
 
 More information
 ----------------
