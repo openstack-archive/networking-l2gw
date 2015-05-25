@@ -365,6 +365,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
     def _check_port_fault_status_and_switch_fault_status(self, context,
                                                          l2_gateway_id):
         l2gw = self.get_l2_gateway(context, l2_gateway_id)
+        if not l2gw:
+            raise l2gw_exc.L2GatewayNotFound(gateway_id=l2_gateway_id)
         devices = l2gw['devices']
         rec_dict = {}
         for device in devices:
@@ -412,8 +414,6 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             raise l2gw_exc.MultipleSegmentsFound(network_id=network_id)
         if not self._get_network(context, network_id):
             raise exceptions.NetworkNotFound(net_id=network_id)
-        if not self._get_l2_gateway(context, l2_gw_id):
-            raise l2gw_exc.L2GatewayNotFound(gateway_id=l2_gw_id)
         if self._retrieve_gateway_connections(context, l2_gw_id,
                                               nw_map):
             raise l2gw_exc.L2GatewayConnectionExists(mapping=nw_map,
