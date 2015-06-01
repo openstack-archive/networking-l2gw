@@ -34,11 +34,11 @@ def validate_gwdevice_list(data, valid_values=None):
         for device in data:
             interface_data = device.get(constants.IFACE_NAME_ATTR)
             device_name = device.get(constants.DEVICE_ID_ATTR)
-            if not interface_data:
-                msg = _("Cannot create a gateway with an empty interfaces")
-                return msg
             if not device_name:
                 msg = _("Cannot create a gateway with an empty device_name")
+                return msg
+            if not interface_data:
+                msg = _("Cannot create a gateway with an empty interfaces")
                 return msg
             for int_dict in interface_data:
                 err_msg = attributes._validate_dict(int_dict, None)
