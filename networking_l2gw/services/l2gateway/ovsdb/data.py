@@ -46,7 +46,7 @@ class L2GatewayOVSDBCallbacks(object):
     def update_ovsdb_changes(self, context, ovsdb_data):
         """RPC to update the changes from OVSDB in the database."""
         self.ovsdb = self.get_ovsdbdata_object(
-            n_const.OVSDB_IDENTIFIER)
+            ovsdb_data.get(n_const.OVSDB_IDENTIFIER))
         self.ovsdb.update_ovsdb_changes(context, ovsdb_data)
 
     def notify_ovsdb_states(self, context, ovsdb_states):
