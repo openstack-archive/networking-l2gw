@@ -8,7 +8,7 @@
 
      > cat local.conf
      [[local|localrc]]
-     enable_plugin networking-l2gw https://github.com/stackforge/networking-l2gw
+     enable_plugin networking-l2gw https://github.com/openstack/networking-l2gw
      enable_service l2gw-plugin l2gw-agent
      OVSDB_HOSTS=<ovsdb_name>:<ip address>:<port>
 
