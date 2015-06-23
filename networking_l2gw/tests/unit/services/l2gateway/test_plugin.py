@@ -20,6 +20,7 @@ from neutron import context as ctx
 from neutron.db import agents_db
 from neutron.tests import base
 
+from networking_l2gw.db.l2gateway import db_query
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import agent_scheduler
@@ -238,7 +239,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               '_get_network_segments',
                               return_value=fake_net_seg_list),
-            mock.patch.object(l2gateway_db.L2GatewayMixin,
+            mock.patch.object(db_query.L2GatewayCommonDbMixin,
                               '_get_network',
                               return_value=True),
             mock.patch.object(l2gateway_db.L2GatewayMixin,
@@ -1199,8 +1200,15 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(db, 'get_physical_port_by_name_and_ps',
                               return_value=fake_physical_port),
             mock.patch.object(db, 'get_physical_switch_by_name',
-                              return_value=fake_physical_switch)
-        ) as (get_l2gw, admin_check, phy_port, phy_switch):
+                              return_value=fake_physical_switch),
+            mock.patch.object(db_query.L2GatewayCommonDbMixin,
+                              '_get_network',
+                              return_value=True),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_get_l2_gateway',
+                              return_value=True)
+        ) as (get_l2gw, admin_check, phy_port, phy_switch, get_network,
+              get_l2gateway):
             self.assertRaises(l2gw_exc.L2GatewayPhysicalSwitchFaultStatus,
                               self.plugin.create_l2_gateway_connection,
                               self.db_context,
@@ -1231,8 +1239,15 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(db, 'get_physical_port_by_name_and_ps',
                               return_value=fake_physical_port),
             mock.patch.object(db, 'get_physical_switch_by_name',
-                              return_value=fake_physical_switch)
-        ) as (get_l2gw, admin_check, phy_port, phy_switch):
+                              return_value=fake_physical_switch),
+            mock.patch.object(db_query.L2GatewayCommonDbMixin,
+                              '_get_network',
+                              return_value=True),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_get_l2_gateway',
+                              return_value=True)
+        ) as (get_l2gw, admin_check, phy_port, phy_switch, get_network,
+              get_l2gateway):
             self.assertRaises(l2gw_exc.L2GatewayPhysicalPortFaultStatus,
                               self.plugin.create_l2_gateway_connection,
                               self.db_context, fake_l2gw_conn_dict)
@@ -1355,8 +1370,14 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin, 'get_l2_gateway',
                               return_value=fake_device),
             mock.patch.object(db, 'get_physical_switch_by_name',
-                              return_value=fake_physical_switch)
-        ) as (get_l2gw, admin_check, phy_switch):
+                              return_value=fake_physical_switch),
+            mock.patch.object(db_query.L2GatewayCommonDbMixin,
+                              '_get_network',
+                              return_value=True),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_get_l2_gateway',
+                              return_value=True)
+        ) as (get_l2gw, admin_check, phy_switch, get_network, get_l2gateway):
             self.assertRaises(l2gw_exc.L2GatewayDeviceNotFound,
                               self.plugin.create_l2_gateway_connection,
                               self.db_context, fake_l2gw_conn_dict)
@@ -1383,8 +1404,15 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(db, 'get_physical_switch_by_name',
                               return_value=fake_physical_switch),
             mock.patch.object(db, 'get_physical_port_by_name_and_ps',
-                              return_value=fake_physical_port)
-        ) as (get_l2gw, admin_check, phy_port, phy_switch):
+                              return_value=fake_physical_port),
+            mock.patch.object(db_query.L2GatewayCommonDbMixin,
+                              '_get_network',
+                              return_value=True),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_get_l2_gateway',
+                              return_value=True)
+        ) as (get_l2gw, admin_check, phy_port, phy_switch, get_network,
+              get_l2gateway):
             self.assertRaises(l2gw_exc.L2GatewayInterfaceNotFound,
                               self.plugin.create_l2_gateway_connection,
                               self.db_context, fake_l2gw_conn_dict)
