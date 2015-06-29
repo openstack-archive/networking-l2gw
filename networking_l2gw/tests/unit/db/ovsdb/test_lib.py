@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from oslo.db import exception as d_exc
+from oslo_db import exception as d_exc
 from oslo_utils import timeutils
+from oslo_utils import uuidutils
 
 from neutron import context
-from neutron.openstack.common import uuidutils
 from neutron.tests.unit import testlib_api
 
 from networking_l2gw.db.l2gateway.ovsdb import lib

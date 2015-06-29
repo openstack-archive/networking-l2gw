@@ -12,14 +12,15 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
 from eventlet import greenthread
+from oslo_utils import uuidutils
 
 from neutron.callbacks import events
 from neutron.callbacks import registry
 from neutron.callbacks import resources
 from neutron.common import exceptions
 from neutron import manager
-from neutron.openstack.common import uuidutils
 
 from networking_l2gw.db.l2gateway import db_query
 from networking_l2gw.db.l2gateway import l2gateway_models as models
