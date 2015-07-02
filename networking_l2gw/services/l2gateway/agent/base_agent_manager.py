@@ -12,15 +12,16 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from neutron.agent import rpc as agent_rpc
 from neutron import context
 from neutron.i18n import _LE
 from neutron.i18n import _LI
-from neutron.openstack.common import loopingcall
-from neutron.openstack.common import periodic_task
 
-from oslo.config import cfg
+from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_service import loopingcall
+from oslo_service import periodic_task
 
 from networking_l2gw.services.l2gateway.agent import agent_api
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -33,8 +34,8 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
     """Basic agent manager that handles basic RPCs and report states."""
 
     def __init__(self, conf=None):
-        super(BaseAgentManager, self).__init__()
-        self.conf = conf or cfg.CONF
+        conf = getattr(self, "conf", cfg.CONF)
+        super(BaseAgentManager, self).__init__(conf)
         self.l2gw_agent_type = ''
         self.gateways = {}
         self.plugin_rpc = agent_api.L2GatewayAgentApi(

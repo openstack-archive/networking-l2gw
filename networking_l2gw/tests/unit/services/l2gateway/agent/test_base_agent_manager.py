@@ -17,10 +17,10 @@ import mock
 
 from neutron.agent.common import config as agent_config
 from neutron.agent import rpc as agent_rpc
-from neutron.openstack.common import loopingcall
 from neutron.tests import base
 
-from oslo.config import cfg
+from oslo_config import cfg
+from oslo_service import loopingcall
 
 from networking_l2gw.services.l2gateway.agent import (base_agent_manager
                                                       as l2gw_manager)

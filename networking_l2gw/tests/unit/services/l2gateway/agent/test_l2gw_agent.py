@@ -55,4 +55,4 @@ class TestL2gwAgent(base.BaseTestCase):
         ) as (mock_config, mock_logging, mock_launch, sys_argv,
               mgr_cls, ro):
             agent.main()
-            mock_launch.assert_called_once_with(mock.ANY)
+            mock_launch.assert_called_once_with(cfg.CONF, mock.ANY)

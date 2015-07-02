@@ -12,14 +12,15 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from neutron.agent.common import config as agent_config
 from neutron.common import config as common_config
 from neutron.common import rpc as n_rpc
-from neutron.openstack.common import service
 import sys
 
-from oslo.config import cfg
+from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_service import service
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import manager
 from networking_l2gw.services.l2gateway.common import config
@@ -45,4 +46,4 @@ def main():
         topic=topics.L2GATEWAY_AGENT,
         manager=mgr
     )
-    service.launch(svc).wait()
+    service.launch(cfg.CONF, svc).wait()

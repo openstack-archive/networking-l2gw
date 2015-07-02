@@ -13,19 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
 import contextlib
 import copy
 import datetime
 
 import mock
-from oslo.config import cfg
-from oslo.utils import timeutils
+from oslo_config import cfg
+from oslo_service import loopingcall
+from oslo_utils import timeutils
 
 from neutron.common import topics
 from neutron import context as neutron_context
 from neutron.db import agents_db
 from neutron import manager
-from neutron.openstack.common import loopingcall
 from neutron.plugins.ml2 import rpc
 from neutron.tests import base
 

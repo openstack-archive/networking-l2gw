@@ -12,23 +12,22 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from contextlib import contextmanager
 
 import eventlet
 
+from contextlib import contextmanager
 from neutron import context as ctx
 from neutron.i18n import _LE
-from neutron.openstack.common import loopingcall
+
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_service import loopingcall
 
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_monitor
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_writer
 from networking_l2gw.services.l2gateway.common import constants as n_const
-
-from oslo.config import cfg
-from oslo_log import log as logging
-
 
 LOG = logging.getLogger(__name__)
 
