@@ -17,20 +17,15 @@ import abc
 from neutron.api import extensions
 from neutron.api.v2 import attributes
 from neutron.api.v2 import resource_helper
-from neutron.plugins.common import constants
 
 import networking_l2gw.extensions
-from networking_l2gw.services.l2gateway.common import constants as l2gw_const
+from networking_l2gw.services.l2gateway.common import constants
 from networking_l2gw.services.l2gateway.common import l2gw_validators
 
 extensions.append_api_extensions_path(networking_l2gw.extensions.__path__)
-constants.L2GW = l2gw_const.L2GW
-constants.COMMON_PREFIXES["L2GW"] = ""
-constants.EXT_TO_SERVICE_MAPPING['l2gateway'] = constants.L2GW
-constants.ALLOWED_SERVICES.append(constants.L2GW)
 
 RESOURCE_ATTRIBUTE_MAP = {
-    l2gw_const.L2_GATEWAYS: {
+    constants.L2_GATEWAYS: {
         'id': {'allow_post': False, 'allow_put': False,
                'is_visible': True},
         'name': {'allow_post': True, 'allow_put': True,
