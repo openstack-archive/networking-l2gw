@@ -11,7 +11,8 @@
 #    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
-#    under the License.from oslo.config import cfg
+#    under the License.
+
 from neutron.common import constants as n_const
 from neutron.common import exceptions
 from neutron.common import rpc as n_rpc
@@ -30,8 +31,8 @@ from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway.common import topics
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 
-from oslo.config import cfg
 from oslo import messaging
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import importutils
 

@@ -12,6 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
 import mock
 
 from neutron.callbacks import events
@@ -24,8 +25,8 @@ from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import constants
 from networking_l2gw.services.l2gateway import exceptions
 
-from oslo.utils import importutils
 from oslo_log import log as logging
+from oslo_utils import importutils
 
 DB_PLUGIN_KLASS = 'neutron.db.db_base_plugin_v2.NeutronDbPluginV2'
 LOG = logging.getLogger(__name__)

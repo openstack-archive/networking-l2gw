@@ -12,13 +12,14 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import copy
 import socket
 import ssl
 import time
 
-from oslo.serialization import jsonutils
 from oslo_log import log as logging
+from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
 from neutron.i18n import _LE

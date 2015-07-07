@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import contextlib
 import socket
 import ssl
@@ -32,9 +33,9 @@ from networking_l2gw.services.l2gateway import exceptions
 from networking_l2gw.tests.unit.services.l2gateway.agent.ovsdb import (
     test_base_connection as base_test)
 
-from oslo.config import cfg
-from oslo.serialization import jsonutils
+from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_serialization import jsonutils
 
 LOG = logging.getLogger(__name__)
 

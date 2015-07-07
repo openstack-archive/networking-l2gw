@@ -17,6 +17,7 @@
 """
 Command-line interface to the L2gateway APIs
 """
+
 from __future__ import print_function
 
 import sys
@@ -25,7 +26,7 @@ from cliff import commandmanager
 from neutronclient.common import clientmanager
 from neutronclient.common import exceptions as exc
 from neutronclient import shell as neutronshell
-from oslo.utils import encodeutils
+from oslo_utils import encodeutils
 
 from networking_l2gw.l2gatewayclient.l2gateway.v2_0 import l2gateway
 from networking_l2gw.l2gatewayclient.l2gateway.v2_0 import l2gateway_connection

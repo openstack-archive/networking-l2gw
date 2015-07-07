@@ -20,7 +20,7 @@ import mock
 from neutron.common import config as common_config
 from neutron.tests import base
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway import l2gw_agent as agent

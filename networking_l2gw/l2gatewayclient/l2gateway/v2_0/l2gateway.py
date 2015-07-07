@@ -17,7 +17,7 @@
 from neutronclient.common import utils
 from neutronclient.i18n import _
 from neutronclient.neutron import v2_0 as l2gatewayV20
-from oslo.serialization import jsonutils
+from oslo_serialization import jsonutils
 
 L2_GW = 'l2_gateway'
 INTERFACE_DELIMITER = ";"

@@ -12,14 +12,15 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import random
 
 import eventlet
 
 from neutron.i18n import _LE
 
-from oslo.serialization import jsonutils
 from oslo_log import log as logging
+from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
