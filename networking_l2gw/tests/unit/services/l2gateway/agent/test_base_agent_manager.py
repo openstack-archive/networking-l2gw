@@ -66,25 +66,25 @@ class TestBaseAgentManager(base.BaseTestCase):
                     interval=mock.ANY)
 
     def test_report_state(self):
-        with mock.patch('neutron.agent.rpc.PluginReportStateAPI') as state_api:
+        with mock.patch.object(self.l2gw_agent_manager,
+                               'state_rpc') as state_api:
             self.assertTrue(self.l2gw_agent_manager.agent_state['start_flag'])
             self.l2gw_agent_manager._report_state()
             self.assertFalse(self.l2gw_agent_manager.agent_state['start_flag'])
-            state_api_inst = state_api.return_value
-            state_api_inst.report_state.assert_called_once()
+            self.assertTrue(state_api.report_state.called)
 
     def test_report_state_exception(self):
         cfg.CONF.set_override('report_interval', 1, 'AGENT')
-        with mock.patch.object(agent_rpc.PluginReportStateAPI,
-                               'report_state',
-                               side_effect=Exception):
+        with mock.patch.object(self.l2gw_agent_manager,
+                               'state_rpc') as state_rpc:
             with mock.patch.object(l2gw_manager.LOG, 'exception') as exc:
                 with mock.patch.object(self.l2gw_agent_manager,
                                        'handle_report_state_failure'
                                        ) as mock_handle_report_state_failure:
+                    state_rpc.report_state.side_effect = Exception()
                     self.l2gw_agent_manager._report_state()
-                    exc.assertCalled()
-                    mock_handle_report_state_failure.assert_called()
+                    self.assertTrue(exc.called)
+                    self.assertTrue(mock_handle_report_state_failure.called)
 
     def test_agent_updated(self):
         fake_payload = {'fake_key': 'fake_value'}

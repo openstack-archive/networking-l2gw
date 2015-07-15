@@ -23,7 +23,6 @@ from neutron.tests import base
 from networking_l2gw.db.l2gateway import db_query
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
-from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
@@ -197,24 +196,15 @@ class TestL2GatewayPlugin(base.BaseTestCase):
               super_init,
               subscribe):
             l2gw_plugin.L2GatewayPlugin()
-            reg_l2gw_opts.assert_called()
-            import_obj.assert_called()
-            agent_calback.assert_called()
-            create_conn.assert_called()
-            create_consum.assert_called()
-            consume_in_thread.assert_called()
-            get_admin_ctx.assert_called()
-            l2gw_api.assert_called()
-            debug.assert_called()
-            scheduler.assert_called()
-            super_init.assert_called()
-            subscribe.assert_called()
-
-    def test_start_l2gateway_agent_scheduler(self):
-        with mock.patch.object(agent_scheduler,
-                               'L2GatewayAgentScheduler')as agent_schedlr:
-            self.assertTrue(agent_schedlr.assert_called)
-            self.assertTrue(agent_schedlr.initialize_thread.assert_called)
+            self.assertTrue(reg_l2gw_opts.called)
+            self.assertTrue(import_obj.called)
+            self.assertTrue(agent_calback.called)
+            self.assertTrue(create_conn.called)
+            self.assertTrue(l2gw_api.called)
+            self.assertTrue(debug.called)
+            self.assertTrue(scheduler.called)
+            self.assertTrue(super_init.called)
+            self.assertTrue(subscribe.called)
 
     def test_validate_connection(self):
         fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
@@ -644,7 +634,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             self.assertFalse(update_rpc.called)
 
     def test_delete_port_mac_for_multiple_vlan_bindings(self):
-        network_id = 'fake_network_id'
         fake_port_list = [{'network_id': 'fake_network_id',
                            'device_owner': 'fake_owner',
                            'mac_address': 'fake_mac',
@@ -654,9 +643,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_logical_switch_list = [fake_logical_switch_dict]
         lg_dict = {'logical_switch_name': 'fake_network_id',
                    'ovsdb_identifier': 'fake_ovsdb_id'}
-        fake_dict = {'mac': 'fake_mac',
-                     'logical_switch_uuid': 'fake_uuid',
-                     'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_rec_dict = {'logical_switch_id': 'fake_uuid',
                          'ovsdb_identifier': 'fake_ovsdb_id'}
         with contextlib.nested(
@@ -680,12 +666,11 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                 get_all_ls, get_mac, delete_rpc, get_ls, get_vlan_binding,
                 get_l2gw_conn):
             self.plugin.delete_port_mac(self.context, fake_port_list)
-            get_all_ls.assert_not_called_with(self.context, network_id)
+            self.assertFalse(get_all_ls.called)
             get_ls.assert_called_with(self.context, lg_dict)
             get_vlan_binding.assert_called_with(self.context, fake_rec_dict)
-            get_mac.assert_not_called_with(self.context, fake_dict)
-            delete_rpc.assert_not_called_with(
-                self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
+            self.assertFalse(get_mac.called)
+            self.assertFalse(delete_rpc.called)
 
     def test_add_port_mac_with_ovsdb_server_down(self):
         "Test case to test add_port_mac when the OVSDB server is down."
@@ -774,7 +759,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                 self.context, ovsdb_identifier,
                 fake_logical_switch, fake_locator_dict, fake_dict)
             self.assertFalse(update_rpc.called)
-            add_pending_mac.assert_called()
+            self.assertTrue(add_pending_mac.called)
 
     def test_add_port_mac_vm_migrate(self):
         fake_ip1 = "fake_ip1"
@@ -921,8 +906,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
             self.assertFalse(add_rpc.called)
-            update_rpc.assert_called()
-            add_pending_mac.assert_called()
+            self.assertTrue(update_rpc.called)
+            self.assertTrue(add_pending_mac.called)
 
     def test_add_port_mac_tunnel_recreation(self):
         "Test case to test recreation of tunnels"
@@ -982,13 +967,12 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               'add_vif_to_gateway'),
             mock.patch.object(data.L2GatewayOVSDBCallbacks,
                               'get_ovsdbdata_object'),
-            mock.patch.object(self.ovsdb_data, '_handle_l2pop'),
             mock.patch.object(db,
                               'get_all_logical_switches_by_name',
                               return_value=fake_logical_switch_list)) as (
                 get_ip, get_network, get_l2gw_conn,
                 get_pl, get_dict, get_ucast_mac, add_rpc,
-                get_ovsdbdata_obj, handle_l2pop, get_all_ls):
+                get_ovsdbdata_obj, get_all_ls):
             self.plugin.add_port_mac(self.context, fake_dict)
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw_conn.assert_called_with(
@@ -996,8 +980,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
             self.assertFalse(add_rpc.called)
-            get_ovsdbdata_obj.assert_called()
-            handle_l2pop.assert_called()
+            self.assertTrue(get_ovsdbdata_obj.called)
 
     def test_delete_port_mac_with_list(self):
         network_id = 'fake_network_id'
@@ -1037,7 +1020,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                 self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
 
     def test_delete_port_mac(self):
-        network_id = 'fake_network_id'
         fake_port_list = [{'network_id': 'fake_network_id',
                            'device_owner': 'fake_owner',
                            'mac_address': 'fake_mac',
@@ -1068,7 +1050,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               return_value=fake_logical_switch_dict)) as (
                 get_all_ls, get_mac, delete_rpc, get_vlan_binding, get_ls):
             self.plugin.delete_port_mac(self.context, fake_port_list)
-            get_all_ls.assert_not_called_with(self.context, network_id)
+            self.assertFalse(get_all_ls.called)
             get_ls.assert_called_with(self.context, lg_dict)
             get_mac.assert_called_with(self.context, fake_dict)
             get_vlan_binding.assert_called_with(self.context, fake_rec_dict)
@@ -1077,7 +1059,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
 
     def test_delete_port_mac_with_ovsdb_server_down(self):
         "Test case to test delete_port_mac when the OVSDB server is down."
-        network_id = 'fake_network_id'
         fake_port_list = [{'network_id': 'fake_network_id',
                            'device_owner': 'fake_owner',
                            'mac_address': 'fake_mac',
@@ -1097,9 +1078,9 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               'get_ucast_mac_remote_by_mac_and_ls',
                               return_value=True),
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
-                              'delete_vif_from_gateway'),
-            mock.patch.object(db, 'add_pending_ucast_mac_remote',
+                              'delete_vif_from_gateway',
                               side_effect=RuntimeError),
+            mock.patch.object(db, 'add_pending_ucast_mac_remote'),
             mock.patch.object(db, 'get_logical_switch_by_name',
                               return_value=fake_logical_switch_dict),
             mock.patch.object(db,
@@ -1107,12 +1088,12 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         ) as (get_all_ls, get_mac, delete_rpc, add_pending_mac, get_ls,
               get_vlan_binding):
             self.plugin.delete_port_mac(self.context, fake_port_list)
-            get_all_ls.assert_not_called_with(self.context, network_id)
+            self.assertFalse(get_all_ls.called)
             get_ls.assert_called_with(self.context, lg_dict)
             get_mac.assert_called_with(self.context, fake_dict)
             delete_rpc.assert_called_with(
                 self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
-            add_pending_mac.assert_called()
+            self.assertTrue(add_pending_mac.called)
 
     def test_delete_l2_gateway_connection(self):
         self.db_context = ctx.get_admin_context()
@@ -1277,9 +1258,9 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         ) as (get_l2gw, phy_port, phy_switch):
             self.plugin._check_port_fault_status_and_switch_fault_status(
                 mock.Mock(), mock.Mock())
-            get_l2gw.assert_called()
-            phy_port.assert_called()
-            phy_switch.assert_called()
+            self.assertTrue(get_l2gw.called)
+            self.assertTrue(phy_port.called)
+            self.assertTrue(phy_switch.called)
 
     def test_create_l2_gateway_connection(self):
         self.db_context = ctx.get_admin_context()

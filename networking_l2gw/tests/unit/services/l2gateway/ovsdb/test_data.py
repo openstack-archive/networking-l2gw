@@ -213,12 +213,12 @@ class TestOVSDBData(base.BaseTestCase):
                      'locator_uuid': 'fake_loc_id',
                      'dst_ip': 'fake_dst_ip',
                      'vm_ip': 'fake_vm_ip'}
-        fake_insert_dict = {'operation': 'insert'
-                            }.update(fake_dict)
-        fake_update_dict = {'operation': 'update'
-                            }.update(fake_dict)
-        fake_delete_dict = {'operation': 'delete'
-                            }.update(fake_dict)
+        fake_insert_dict = {'operation': 'insert'}
+        fake_insert_dict.update(fake_dict)
+        fake_update_dict = {'operation': 'update'}
+        fake_update_dict.update(fake_dict)
+        fake_delete_dict = {'operation': 'delete'}
+        fake_delete_dict.update(fake_dict)
         with contextlib.nested(
             mock.patch.object(
                 lib, 'get_all_pending_remote_macs_in_asc_order'),
@@ -236,18 +236,18 @@ class TestOVSDBData(base.BaseTestCase):
         ) as (mock_get_pend_recs, mock_del_pend_recs,
               mock_ls, mock_pl, mock_ucmr, mock_add_vif,
               mock_upd_vif, mock_del_vif):
-            mock_get_pend_recs.return_value = fake_insert_dict
+            mock_get_pend_recs.return_value = [fake_insert_dict]
             self.ovsdb_data.notify_ovsdb_states(
                 self.context, fake_ovsdb_states)
-            mock_add_vif.assert_called()
-            mock_get_pend_recs.return_value = fake_update_dict
+            self.assertTrue(mock_add_vif.called)
+            mock_get_pend_recs.return_value = [fake_update_dict]
             self.ovsdb_data.notify_ovsdb_states(
                 self.context, fake_ovsdb_states)
-            mock_upd_vif.assert_called()
-            mock_get_pend_recs.return_value = fake_delete_dict
+            self.assertTrue(mock_upd_vif.called)
+            mock_get_pend_recs.return_value = [fake_delete_dict]
             self.ovsdb_data.notify_ovsdb_states(
                 self.context, fake_ovsdb_states)
-            mock_del_vif.assert_called()
+            self.assertTrue(mock_del_vif.called)
 
     def test_process_new_logical_switches(self):
         fake_dict = {}
@@ -446,13 +446,13 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_deleted_physical_locators(
                 self.context, fake_deleted_physical_locators)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict1)
-            get_ls.assert_called()
-            get_all_ps.assert_called()
-            get_fdb.assert_called()
+            self.assertTrue(get_ls.called)
+            self.assertTrue(get_all_ps.called)
+            self.assertTrue(get_fdb.called)
             self.assertEqual(fake_dict1[n_const.OVSDB_IDENTIFIER],
                              'fake_ovsdb_id')
             delete_pl.assert_called_with(self.context, fake_dict1)
-            get_agent_ips.assert_called()
+            self.assertTrue(get_agent_ips.called)
             trig_l2pop.assert_called_with(self.context,
                                           mock.ANY,
                                           'hostname')
@@ -484,13 +484,13 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_deleted_physical_locators(
                 self.context, fake_deleted_physical_locators)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict1)
-            get_ls.assert_called()
-            get_all_ps.assert_called()
-            get_fdb.assert_called()
+            self.assertTrue(get_ls.called)
+            self.assertTrue(get_all_ps.called)
+            self.assertTrue(get_fdb.called)
             self.assertEqual(fake_dict1[n_const.OVSDB_IDENTIFIER],
                              'fake_ovsdb_id')
-            delete_pl.assert_called_with(self.context, fake_dict1)
-            get_agent_ips.assert_called()
+            delete_pl.assert_called_once_with(self.context, fake_dict1)
+            self.assertTrue(get_agent_ips.called)
             trig_l2pop.assert_called_with(self.context,
                                           mock.ANY)
 

@@ -287,8 +287,10 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         self.assertRaises(exceptions.L2GatewayDeviceNotFound,
                           self._update_l2_gateway, l2gw_id, data_l2gw_update)
 
-    def test_l2gw_callback_update_port(self):
-        service_plugins = mock.MagicMock()
+    @mock.patch('eventlet.greenthread.spawn_n')
+    def test_l2gw_callback_update_port(self, spawn_n):
+        spawn_n.side_effect = lambda x, y, z: x(y, z)
+        service_plugins = {constants.L2GW: mock.Mock()}
         fake_context = mock.Mock()
         fake_port = mock.Mock()
         fake_kwargs = {'context': fake_context,
@@ -300,11 +302,11 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                        events.AFTER_UPDATE,
                                        mock.Mock(),
                                        **fake_kwargs)
-            service_plugins.return_value[constants.L2GW
-                                         ].add_port_mac.assert_called()
+            self.assertTrue(service_plugins[constants.L2GW].
+                            add_port_mac.called)
 
     def test_l2gw_callback_delete_port(self):
-        service_plugins = mock.MagicMock()
+        service_plugins = {constants.L2GW: mock.Mock()}
         fake_context = mock.Mock()
         fake_port = mock.Mock()
         fake_kwargs = {'context': fake_context,
@@ -316,8 +318,8 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                        events.AFTER_DELETE,
                                        mock.Mock(),
                                        **fake_kwargs)
-            service_plugins.return_value[constants.L2GW
-                                         ].delete_port_mac.assert_called()
+            self.assertTrue(service_plugins[constants.L2GW].
+                            delete_port_mac.called)
 
     def test_l2_gateway_create_output_aligned_with_input(self):
         """Test l2 gateway create output that is aligned with input dict."""

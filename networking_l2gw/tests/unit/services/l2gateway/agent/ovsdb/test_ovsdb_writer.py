@@ -124,8 +124,8 @@ class TestOVSDBWriter(base.BaseTestCase):
                               'debug')
         ) as (recv_data, proc_response, debug):
             self.l2gw_ovsdb._get_reply(self.op_id)
-            recv_data.assert_called()
-            proc_response.assert_called()
+            self.assertTrue(recv_data.called)
+            self.assertTrue(proc_response.called)
 
     def test_send_and_receive(self):
         """Test case to test _send_and_receive."""
@@ -196,7 +196,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 send_n_receive.assert_called_with(mock.ANY,
                                                   self.op_id)
 
-                get_ucast_mac_remote.assert_called()
+                self.assertTrue(get_ucast_mac_remote.called)
 
     def test_insert_ucast_macs_remote_with_no_locator_id(self):
         """Test case to test insert ucast_macs_remote
@@ -237,9 +237,9 @@ class TestOVSDBWriter(base.BaseTestCase):
             self.l2gw_ovsdb.insert_ucast_macs_remote(mock.MagicMock(),
                                                      mock.MagicMock(),
                                                      mock.MagicMock())
-            get_ucast_mac_remote.assert_called()
-            get_physical_locator_dict.assert_called()
-            get_logical_switch_dict.assert_called()
+            self.assertTrue(get_ucast_mac_remote.called)
+            self.assertTrue(get_physical_locator_dict.called)
+            self.assertTrue(get_logical_switch_dict.called)
 
     def test_update_ucast_macs_remote(self):
         """Test case to test update ucast_macs_remote."""
@@ -269,7 +269,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 send_n_receive.assert_called_with(mock.ANY,
                                                   self.op_id)
 
-                get_update_ucast_mac_remote.assert_called()
+                self.assertTrue(get_update_ucast_mac_remote.called)
 
     def test_update_ucast_macs_remote_with_no_locator_id(self):
         """Test case to test update ucast_macs_remote
@@ -302,8 +302,8 @@ class TestOVSDBWriter(base.BaseTestCase):
             locator.uuid = None
             self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
                                                      mock.MagicMock())
-            get_update_ucast_mac_remote.assert_called()
-            get_physical_locator_dict.assert_called()
+            self.assertTrue(get_update_ucast_mac_remote.called)
+            self.assertTrue(get_physical_locator_dict.called)
 
     def test_delete_ucast_macs_remote(self):
         """Test case to test delete_ucast_macs_remote."""
@@ -349,28 +349,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
                                                   self.op_id)
-                get_bindings.assert_called()
-
-    def test_get_bindings_to_update(self):
-        """Test case to test _get_bindings_to_update."""
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_logical_switch_dict'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_ucast_macs_remote_dict'),
-            mock.patch.object(ovsdb_schema, 'LogicalSwitch'),
-            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
-            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
-            mock.patch.object(ovsdb_schema, 'PhysicalPort')
-        ) as (get_logical_switch_dict, get_ucast_macs_remote,
-              mock_ls, mock_pl, mock_ucmr, pp):
-            self.l2gw_ovsdb._get_bindings_to_update(mock.MagicMock(),
-                                                    mock.MagicMock(),
-                                                    mock.MagicMock(),
-                                                    mock.MagicMock())
-
-            get_logical_switch_dict.assert_called()
-            get_ucast_macs_remote.assert_called()
+                self.assertTrue(get_bindings.called)
 
     def test_get_bindings_to_update1(self):
         """Test case to test _get_bindings_to_update."""

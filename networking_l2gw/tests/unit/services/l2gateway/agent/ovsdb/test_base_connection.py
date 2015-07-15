@@ -120,7 +120,7 @@ class TestBaseConnection(base.BaseTestCase):
                               cfg.CONF.ovsdb, ovsdb_conf)
             self.assertTrue(logger_warn.called)
             self.assertTrue(logger_exc.called)
-            sock_connect.assert_called()
+            self.assertTrue(sock_connect.called)
 
     def test_init_with_timeout(self):
         """Test case to test __init__ with socket timeout exception."""
@@ -138,7 +138,7 @@ class TestBaseConnection(base.BaseTestCase):
                               cfg.CONF.ovsdb, ovsdb_conf)
             self.assertTrue(logger_warn.called)
             self.assertTrue(logger_exc.called)
-            sock_connect.assert_called()
+            self.assertTrue(sock_connect.called)
 
     def test_response(self):
         """Test case to test _response."""
@@ -158,7 +158,7 @@ class TestBaseConnection(base.BaseTestCase):
                                            'warning'):
                         self.l2gw_ovsdb.send(mock.Mock())
                         self.assertTrue(send.called)
-                        mock_disconnect.assert_called()
+                        self.assertTrue(mock_disconnect.called)
 
     def test_disconnect(self):
         """Test case to test disconnect socket."""

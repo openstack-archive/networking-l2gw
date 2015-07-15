@@ -131,7 +131,7 @@ class TestManager(base.BaseTestCase):
             self.assertTrue(ovsdb_connection.called)
             ovsdb_connection.assert_called_with(
                 self.conf.ovsdb, gateway, call_back)
-            notify.assert_called(mock.ANY, mock.ANY)
+            notify.assert_called_once_with(mock.ANY, mock.ANY)
 
     def test_connect_to_ovsdb_server_with_exc(self):
         self.l2gw_agent_manager.gateways = {}
@@ -174,23 +174,8 @@ class TestManager(base.BaseTestCase):
                                              )[n_const.L2GW_AGENT_TYPE
                                                ],
                              '')
-            mock_disconnect_ovsdb_servers.assert_called()
-            mock_stop_looping.assert_called()
-
-    def test_set_monitor_agent_type_monitor(self):
-        self.l2gw_agent_manager.conf.host = 'fake_host'
-        with mock.patch.object(manager.OVSDBManager,
-                               '_connect_to_ovsdb_server'
-                               ) as mock_conn:
-            self.l2gw_agent_manager.set_monitor_agent(self.context,
-                                                      'fake_host')
-            self.assertEqual(n_const.MONITOR,
-                             self.l2gw_agent_manager.agent_state.
-                             get('configurations')[n_const.L2GW_AGENT_TYPE])
-            self.assertEqual(n_const.MONITOR,
-                             self.l2gw_agent_manager.l2gw_agent_type)
-            mock_conn.assert_called()
-            self.mock_looping_call.start().assert_called()
+            self.assertTrue(mock_disconnect_ovsdb_servers.called)
+            self.assertTrue(mock_stop_looping.called)
 
     def test_is_valid_request_fails(self):
         self.l2gw_agent_manager.gateways = {}
@@ -234,117 +219,5 @@ class TestManager(base.BaseTestCase):
                 self.l2gw_agent_manager.delete_network(self.context,
                                                        mock.Mock(),
                                                        mock.Mock())
-                logger_call.assert_called_once()
-                mock_del_ls.assert_not_called()
-
-    def test_disconnection(self):
-        self.l2gw_agent_manager.gateways = {}
-        fake_ovsdb_identifier = 'fake_ovsdb_identifier'
-        gateway = l2gateway_config.L2GatewayConfig(self.fake_config_json)
-        self.l2gw_agent_manager.gateways[fake_ovsdb_identifier] = gateway
-        with mock.patch.object(ovsdb_writer,
-                               'OVSDBWriter') as ovsdb_connection:
-            ovsdb_connection.return_value.connected = True
-            with mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                   'disconnect') as mock_dis:
-                with self.l2gw_agent_manager._open_connection(
-                        fake_ovsdb_identifier):
-                    self.assertTrue(ovsdb_connection.called)
-                    mock_dis.assert_called_once()
-
-    def test_add_vif_to_gateway(self):
-        with contextlib.nested(
-            mock.patch.object(manager.OVSDBManager,
-                              '_open_connection'),
-            mock.patch.object(manager.OVSDBManager,
-                              '_is_valid_request',
-                              return_value=True),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'insert_ucast_macs_remote'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'disconnect')
-        ) as (gw_open_conn, valid_req, ins_ucast, discon):
-                self.l2gw_agent_manager.add_vif_to_gateway(
-                    self.context, mock.Mock(), mock.Mock(),
-                    mock.Mock(), mock.Mock())
-                self.assertTrue(gw_open_conn.called)
-                mocked_conn = gw_open_conn.return_value
-                mocked_conn.insert_ucast_macs_remote.assert_called_once()
-                discon.assert_called_once()
-
-    def test_delete_vif_from_gateway(self):
-        with contextlib.nested(
-            mock.patch.object(manager.OVSDBManager,
-                              '_open_connection'),
-            mock.patch.object(manager.OVSDBManager,
-                              '_is_valid_request',
-                              return_value=True),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'delete_ucast_macs_remote'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'disconnect')
-        ) as (gw_open_conn, valid_req, del_ucast, discon):
-                self.l2gw_agent_manager.delete_vif_from_gateway(
-                    self.context, mock.Mock(), mock.Mock(), mock.Mock())
-                self.assertTrue(gw_open_conn.called)
-                mocked_conn = gw_open_conn.return_value
-                mocked_conn.delete_ucast_macs_remote.assert_called_once()
-                discon.assert_called_once()
-
-    def test_update_vif_to_gateway(self):
-        with contextlib.nested(
-            mock.patch.object(manager.OVSDBManager,
-                              '_open_connection'),
-            mock.patch.object(manager.OVSDBManager,
-                              '_is_valid_request',
-                              return_value=True),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'update_ucast_macs_remote'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'disconnect')
-        ) as (gw_open_conn, valid_req, ins_ucast, discon):
-                self.l2gw_agent_manager.update_vif_to_gateway(
-                    self.context, mock.Mock(), mock.Mock(), mock.Mock())
-                self.assertTrue(gw_open_conn.called)
-                mocked_conn = gw_open_conn.return_value
-                mocked_conn.update_ucast_macs_remote.assert_called_once()
-                discon.assert_called_once()
-
-    def test_update_connection_to_gateway(self):
-        with contextlib.nested(
-            mock.patch.object(manager.OVSDBManager,
-                              '_open_connection'),
-            mock.patch.object(manager.OVSDBManager,
-                              '_is_valid_request',
-                              return_value=True),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'update_connection_to_gateway'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'disconnect')
-        ) as (gw_open_conn, valid_req, upd_con, discon):
-                self.l2gw_agent_manager.update_connection_to_gateway(
-                    self.context, mock.Mock(), mock.Mock(), mock.Mock(),
-                    mock.Mock(), mock.Mock())
-                self.assertTrue(gw_open_conn.called)
-                mocked_conn = gw_open_conn.return_value
-                mocked_conn.update_connection_to_gateway.assert_called_once()
-                discon.assert_called_once()
-
-    def test_delete_network(self):
-        with contextlib.nested(
-            mock.patch.object(manager.OVSDBManager,
-                              '_open_connection'),
-            mock.patch.object(manager.OVSDBManager,
-                              '_is_valid_request',
-                              return_value=True),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'delete_logical_switch'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              'disconnect')
-        ) as (gw_open_conn, valid_req, del_ls, discon):
-                self.l2gw_agent_manager.delete_network(
-                    self.context, mock.Mock(), mock.Mock())
-                self.assertTrue(gw_open_conn.called)
-                mocked_conn = gw_open_conn.return_value
-                mocked_conn.delete_logical_switch.assert_called_once()
-                discon.assert_called_once()
+                self.assertEqual(1, logger_call.call_count)
+                self.assertFalse(mock_del_ls.called)
