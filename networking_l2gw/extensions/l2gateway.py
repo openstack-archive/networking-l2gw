@@ -62,11 +62,6 @@ class L2gateway(extensions.ExtensionDescriptor):
         return "Connects Neutron networks with external networks at layer 2."
 
     @classmethod
-    def get_namespace(cls):
-        return "https://review.openstack.org/#/c/144173/3/specs/kilo/"
-    "l2-gateway-api.rst"
-
-    @classmethod
     def get_updated(cls):
         return "2015-01-01T00:00:00-00:00"
 
