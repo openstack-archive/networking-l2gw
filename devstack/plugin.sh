@@ -26,7 +26,7 @@ function start_l2gw_agent {
 }
 
 function run_l2gw_alembic_migration {
-   $NEUTRON_BIN_DIR/neutron-l2gw-db-manage --config-file $NEUTRON_CONF --config-file /$Q_PLUGIN_CONF_FILE  upgrade head
+   $NEUTRON_BIN_DIR/neutron-db-manage --config-file $NEUTRON_CONF --config-file /$Q_PLUGIN_CONF_FILE upgrade head
 }
 
 function configure_l2gw_plugin {
