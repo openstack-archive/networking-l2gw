@@ -25,7 +25,7 @@ from networking_l2gw.db.l2gateway.ovsdb import lib
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway.ovsdb import data
-from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
+from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
 
 class TestL2GatewayOVSDBCallbacks():
@@ -227,11 +227,11 @@ class TestOVSDBData(base.BaseTestCase):
             mock.patch.object(ovsdb_schema, 'LogicalSwitch'),
             mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
             mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
-            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+            mock.patch.object(agent_api.L2gatewayAgentApi,
                               'add_vif_to_gateway'),
-            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+            mock.patch.object(agent_api.L2gatewayAgentApi,
                               'update_vif_to_gateway'),
-            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+            mock.patch.object(agent_api.L2gatewayAgentApi,
                               'delete_vif_from_gateway')
         ) as (mock_get_pend_recs, mock_del_pend_recs,
               mock_ls, mock_pl, mock_ucmr, mock_add_vif,
@@ -388,7 +388,7 @@ class TestOVSDBData(base.BaseTestCase):
                               return_value=False),
             mock.patch.object(lib, 'get_all_logical_switches_by_ovsdb_id',
                               return_value=fake_ls_list),
-            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+            mock.patch.object(agent_api.L2gatewayAgentApi,
                               'delete_network')) as (
                 delete_ps, get_ps, get_ls, del_network):
             self.ovsdb_data._process_deleted_physical_switches(
