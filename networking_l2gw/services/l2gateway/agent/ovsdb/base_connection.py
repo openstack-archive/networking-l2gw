@@ -18,6 +18,8 @@ import socket
 import ssl
 import time
 
+import eventlet
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
@@ -41,41 +43,81 @@ class BaseConnection(object):
     def __init__(self, conf, gw_config):
         self.responses = []
         self.connected = False
-        self.gw_config = gw_config
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if gw_config.use_ssl:
-            ssl_sock = ssl.wrap_socket(
-                self.socket,
-                server_side=False,
-                keyfile=gw_config.private_key,
-                certfile=gw_config.certificate,
-                cert_reqs=ssl.CERT_REQUIRED,
-                ssl_version=ssl.PROTOCOL_TLSv1,
-                ca_certs=gw_config.ca_cert)
-            self.socket = ssl_sock
+        self.enable_manager = cfg.CONF.ovsdb.enable_manager
+        if self.enable_manager:
+            self.s = None
+            self.c_sock = None
+            self.addr = None
+            self.check_c_sock = None
+            eventlet.greenthread.spawn(self._rcv_socket)
+        else:
+            self.gw_config = gw_config
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            if gw_config.use_ssl:
+                ssl_sock = ssl.wrap_socket(
+                    self.socket,
+                    server_side=False,
+                    keyfile=gw_config.private_key,
+                    certfile=gw_config.certificate,
+                    cert_reqs=ssl.CERT_REQUIRED,
+                    ssl_version=ssl.PROTOCOL_TLSv1,
+                    ca_certs=gw_config.ca_cert)
+                self.socket = ssl_sock
+            retryCount = 0
+            while True:
+                try:
+                    self.socket.connect((str(gw_config.ovsdb_ip),
+                                         int(gw_config.ovsdb_port)))
+                    break
+                except (socket.error, socket.timeout):
+                    LOG.warning(OVSDB_UNREACHABLE_MSG, gw_config.ovsdb_ip)
+                    if retryCount == conf.max_connection_retries:
+                        # Retried for max_connection_retries times.
+                        # Give up and return so that it can be tried in
+                        # the next periodic interval.
+                        with excutils.save_and_reraise_exception(reraise=True):
+                            LOG.exception(_LE("Socket error in connecting to "
+                                              "the OVSDB server"))
+                    else:
+                        time.sleep(1)
+                        retryCount += 1
 
-        retryCount = 0
+            # Successfully connected to the socket
+            LOG.debug(OVSDB_CONNECTED_MSG, gw_config.ovsdb_ip)
+            self.connected = True
+
+    def _rcv_socket(self):
+        # Create a socket object.
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        host = ''                  # Get local machine name
+        port = 6632                # Reserve a port for your service.
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.s.bind((host, port))        # Bind to the port
+        self.s.listen(5)                 # Now wait for client connection.
+        while True:
+            # Establish connection with client.
+            self.c_sock, ip_addr = self.s.accept()
+            self.addr = ip_addr[0]
+            self.c_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            LOG.debug("Got connection from %s ", self.addr)
+            self.connected = True
+
+    def _echo_response(self):
         while True:
             try:
-                self.socket.connect((str(gw_config.ovsdb_ip),
-                                     int(gw_config.ovsdb_port)))
-                break
-            except (socket.error, socket.timeout):
-                LOG.warning(OVSDB_UNREACHABLE_MSG, gw_config.ovsdb_ip)
-                if retryCount == conf.max_connection_retries:
-                    # Retried for max_connection_retries times.
-                    # Give up and return so that it can be tried in
-                    # the next periodic interval.
-                    with excutils.save_and_reraise_exception(reraise=True):
-                        LOG.exception(_LE("Socket error in connecting to "
-                                          "the OVSDB server"))
-                else:
-                    time.sleep(1)
-                    retryCount += 1
-
-        # Successfully connected to the socket
-        LOG.debug(OVSDB_CONNECTED_MSG, gw_config.ovsdb_ip)
-        self.connected = True
+                if self.enable_manager:
+                    eventlet.greenthread.sleep(0)
+                    response = self.c_sock.recv(n_const.BUFFER_SIZE)
+                    sock_json_m = jsonutils.loads(response)
+                    sock_handler_method = sock_json_m.get('method', None)
+                    if sock_handler_method == 'echo':
+                        self.check_c_sock = True
+                        self.c_sock.send(jsonutils.dumps(
+                            {"result": sock_json_m.get("params", None),
+                             "error": None, "id": sock_json_m['id']}))
+                        break
+            except Exception:
+                continue
 
     def send(self, message, callback=None):
         """Sends a message to the OVSDB server."""
@@ -85,7 +127,10 @@ class BaseConnection(object):
         bytes_sent = 0
         while retry_count <= n_const.MAX_RETRIES:
             try:
-                bytes_sent = self.socket.send(jsonutils.dumps(message))
+                if self.enable_manager:
+                    bytes_sent = self.c_sock.send(jsonutils.dumps(message))
+                else:
+                    bytes_sent = self.socket.send(jsonutils.dumps(message))
                 if bytes_sent:
                     return True
             except Exception as ex:
@@ -100,7 +145,10 @@ class BaseConnection(object):
 
     def disconnect(self):
         """disconnects the connection from the OVSDB server."""
-        self.socket.close()
+        if self.enable_manager:
+            self.c_sock.close()
+        else:
+            self.socket.close()
         self.connected = False
 
     def _response(self, operation_id):

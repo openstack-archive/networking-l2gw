@@ -25,6 +25,7 @@ from oslo_service import loopingcall
 
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
+from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_common_class
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_monitor
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_writer
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -41,8 +42,12 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
     def __init__(self, conf=None):
         super(OVSDBManager, self).__init__(conf)
         self._extract_ovsdb_config(conf)
-        self.looping_task = loopingcall.FixedIntervalLoopingCall(
-            self._connect_to_ovsdb_server)
+        self.enable_manager = cfg.CONF.ovsdb.enable_manager
+        if self.enable_manager:
+            self.ovsdb_fd = None
+        else:
+            self.looping_task = loopingcall.FixedIntervalLoopingCall(
+                self._connect_to_ovsdb_server)
 
     def _extract_ovsdb_config(self, conf):
         self.conf = conf or cfg.CONF
@@ -110,8 +115,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                             self.agent_to_plugin_rpc)
                     except Exception:
                         ovsdb_states[key] = 'disconnected'
-                        # Log a warning and continue so that it can be retried
-                        # in the next iteration.
+                        # Log a warning and continue so that it can be
+                        # retried in the next iteration.
                         LOG.error(_LE("OVSDB server %s is not "
                                       "reachable"), gateway.ovsdb_ip)
                         # Continue processing the next element in the list.
@@ -139,8 +144,9 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             self.l2gw_agent_type = ''
             self.agent_state.get('configurations')[n_const.L2GW_AGENT_TYPE
                                                    ] = self.l2gw_agent_type
-            self._stop_looping_task()
-            self._disconnect_all_ovsdb_servers()
+            if not self.enable_manager:
+                self._stop_looping_task()
+                self._disconnect_all_ovsdb_servers()
 
     def _disconnect_all_ovsdb_servers(self):
         if self.gateways:
@@ -159,9 +165,15 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
 
         # If set to Monitor, then let us start monitoring the OVSDB
         # servers without any further delay.
-        if self.l2gw_agent_type == n_const.MONITOR:
+        if ((self.l2gw_agent_type == n_const.MONITOR) and not (
+                self.enable_manager)):
             self._start_looping_task()
-        else:
+        elif self.enable_manager and self.l2gw_agent_type == n_const.MONITOR:
+            if self.ovsdb_fd is None:
+                self._sock_open_connection()
+            elif self.ovsdb_fd and not self.ovsdb_fd.check_monitor_thread:
+                self.ovsdb_fd._spawn_monitor_thread()
+        elif not self.enable_manager:
             # Otherwise, stop monitoring the OVSDB servers
             # and close the open connections if any.
             self._stop_looping_task()
@@ -175,6 +187,14 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         if not self.looping_task._running:
             self.looping_task.start(interval=self.conf.ovsdb.
                                     periodic_interval)
+
+    def _sock_open_connection(self):
+        gateway = ''
+        if self.ovsdb_fd is None:
+            self.ovsdb_fd = ovsdb_common_class.OVSDB_commom_class(
+                self.conf.ovsdb,
+                gateway,
+                self.agent_to_plugin_rpc)
 
     @contextmanager
     def _open_connection(self, ovsdb_identifier):
@@ -197,26 +217,62 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
 
     def delete_network(self, context, ovsdb_identifier, logical_switch_uuid):
         """Handle RPC cast from plugin to delete a network."""
-        if self._is_valid_request(ovsdb_identifier):
-            with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.delete_logical_switch(logical_switch_uuid)
+        if self.enable_manager and self.l2gw_agent_type == n_const.MONITOR:
+            self.ovsdb_fd.delete_logical_switch(logical_switch_uuid, False)
+        elif ((self.enable_manager) and (
+                not self.l2gw_agent_type == n_const.MONITOR)):
+            self._sock_open_connection()
+            self.ovsdb_fd._echo_response()
+            if self.ovsdb_fd.check_c_sock:
+                self.ovsdb_fd.delete_logical_switch(logical_switch_uuid,
+                                                    False)
+        elif not self.enable_manager:
+            if self._is_valid_request(ovsdb_identifier):
+                with self._open_connection(ovsdb_identifier) as ovsdb_fd:
+                    ovsdb_fd.delete_logical_switch(logical_switch_uuid)
 
     def add_vif_to_gateway(self, context, ovsdb_identifier,
                            logical_switch_dict, locator_dict,
                            mac_dict):
         """Handle RPC cast from plugin to insert neutron port MACs."""
-        if self._is_valid_request(ovsdb_identifier):
-            with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.insert_ucast_macs_remote(logical_switch_dict,
-                                                  locator_dict,
-                                                  mac_dict)
+        if self.enable_manager and self.l2gw_agent_type == n_const.MONITOR:
+            self.ovsdb_fd.insert_ucast_macs_remote(logical_switch_dict,
+                                                   locator_dict,
+                                                   mac_dict, False)
+        elif ((self.enable_manager) and (
+                not self.l2gw_agent_type == n_const.MONITOR)):
+            self._sock_open_connection()
+            self.ovsdb_fd._echo_response()
+            if self.ovsdb_fd.check_c_sock:
+                self.ovsdb_fd.insert_ucast_macs_remote(
+                    logical_switch_dict,
+                    locator_dict,
+                    mac_dict)
+        elif not self.enable_manager:
+            if self._is_valid_request(ovsdb_identifier):
+                with self._open_connection(ovsdb_identifier) as ovsdb_fd:
+                    ovsdb_fd.insert_ucast_macs_remote(logical_switch_dict,
+                                                      locator_dict,
+                                                      mac_dict)
 
     def delete_vif_from_gateway(self, context, ovsdb_identifier,
                                 logical_switch_uuid, mac):
         """Handle RPC cast from plugin to delete neutron port MACs."""
-        if self._is_valid_request(ovsdb_identifier):
-            with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.delete_ucast_macs_remote(logical_switch_uuid, mac)
+        if self.enable_manager and self.l2gw_agent_type == n_const.MONITOR:
+            self.ovsdb_fd.delete_ucast_macs_remote(logical_switch_uuid, mac,
+                                                   False)
+        elif ((self.enable_manager) and (
+                not self.l2gw_agent_type == n_const.MONITOR)):
+            self._sock_open_connection()
+            self.ovsdb_fd._echo_response()
+            if self.ovsdb_fd.check_c_sock:
+                self.ovsdb_fd.delete_ucast_macs_remote(
+                    logical_switch_uuid,
+                    mac)
+        elif not self.enable_manager:
+            if self._is_valid_request(ovsdb_identifier):
+                with self._open_connection(ovsdb_identifier) as ovsdb_fd:
+                    ovsdb_fd.delete_ucast_macs_remote(logical_switch_uuid, mac)
 
     def update_vif_to_gateway(self, context, ovsdb_identifier,
                               locator_dict, mac_dict):
@@ -224,10 +280,21 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
 
         for VM migration.
         """
-        if self._is_valid_request(ovsdb_identifier):
-            with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.update_ucast_macs_remote(locator_dict,
-                                                  mac_dict)
+        if self.enable_manager and self.l2gw_agent_type == n_const.MONITOR:
+            self.ovsdb_fd.update_ucast_macs_remote(locator_dict,
+                                                   mac_dict, False)
+        elif ((self.enable_manager) and (
+                not self.l2gw_agent_type == n_const.MONITOR)):
+            self._sock_open_connection()
+            self.ovsdb_fd._echo_response()
+            if self.ovsdb_fd.check_c_sock:
+                self.ovsdb_fd.update_ucast_macs_remote(locator_dict,
+                                                       mac_dict)
+        elif not self.enable_manager:
+            if self._is_valid_request(ovsdb_identifier):
+                with self._open_connection(ovsdb_identifier) as ovsdb_fd:
+                    ovsdb_fd.update_ucast_macs_remote(locator_dict,
+                                                      mac_dict)
 
     def update_connection_to_gateway(self, context, ovsdb_identifier,
                                      logical_switch_dict, locator_dicts,
@@ -237,12 +304,28 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         Handle RPC cast from plugin to connect/disconnect a network
         to/from an L2 gateway.
         """
-        if self._is_valid_request(ovsdb_identifier):
-            with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                ovsdb_fd.update_connection_to_gateway(logical_switch_dict,
-                                                      locator_dicts,
-                                                      mac_dicts,
-                                                      port_dicts)
+        if self.enable_manager and self.l2gw_agent_type == n_const.MONITOR:
+            self.ovsdb_fd.update_connection_to_gateway(logical_switch_dict,
+                                                       locator_dicts,
+                                                       mac_dicts,
+                                                       port_dicts, False)
+        elif ((self.enable_manager) and (
+                not self.l2gw_agent_type == n_const.MONITOR)):
+            self._sock_open_connection()
+            self.ovsdb_fd._echo_response()
+            if self.ovsdb_fd.check_c_sock:
+                self.ovsdb_fd.update_connection_to_gateway(
+                    logical_switch_dict,
+                    locator_dicts,
+                    mac_dicts,
+                    port_dicts)
+        elif not self.enable_manager:
+            if self._is_valid_request(ovsdb_identifier):
+                with self._open_connection(ovsdb_identifier) as ovsdb_fd:
+                    ovsdb_fd.update_connection_to_gateway(logical_switch_dict,
+                                                          locator_dicts,
+                                                          mac_dicts,
+                                                          port_dicts)
 
     def agent_to_plugin_rpc(self, ovsdb_data):
         self.plugin_rpc.update_ovsdb_changes(ctx.get_admin_context(),

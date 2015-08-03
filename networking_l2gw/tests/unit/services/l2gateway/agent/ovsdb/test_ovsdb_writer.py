@@ -135,9 +135,21 @@ class TestOVSDBWriter(base.BaseTestCase):
             with mock.patch.object(ovsdb_writer.OVSDBWriter,
                                    '_get_reply') as mock_reply:
                 self.l2gw_ovsdb._send_and_receive('some_query',
-                                                  self.op_id)
+                                                  self.op_id, True)
                 mock_send.assert_called_with('some_query')
                 mock_reply.assert_called_with(self.op_id)
+
+    def test_send_and_receive_with_rcv_required_false(self):
+        """Test case to test _send_and_receive."""
+        with mock.patch.object(base_connection.BaseConnection,
+                               'send', return_value=True
+                               ) as mock_send:
+            with mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                   '_get_reply') as mock_reply:
+                self.l2gw_ovsdb._send_and_receive('some_query',
+                                                  self.op_id, False)
+                mock_send.assert_called_with('some_query')
+                mock_reply.assert_not_called()
 
     def test_delete_logical_switch(self):
         """Test case to test delete_logical_switch."""
@@ -163,7 +175,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                     self.l2gw_ovsdb.delete_logical_switch(
                         'fake_logical_switch_uuid')
                     get_rand.assert_called_with(128)
-                    send_n_receive.assert_called_with(query, self.op_id)
+                    send_n_receive.assert_called_with(query, self.op_id, True)
 
     def test_insert_ucast_macs_remote(self):
         """Test case to test insert ucast_macs_remote."""
@@ -194,7 +206,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                                                          mock.MagicMock())
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id)
+                                                  self.op_id, True)
 
                 self.assertTrue(get_ucast_mac_remote.called)
 
@@ -267,7 +279,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                                                          mock.MagicMock())
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id)
+                                                  self.op_id, True)
 
                 self.assertTrue(get_update_ucast_mac_remote.called)
 
@@ -324,7 +336,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                                                          mock.MagicMock())
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id)
+                                                  self.op_id, True)
 
     def test_update_connection_to_gateway(self):
         """Test case to test update_connection_to_gateway."""
@@ -348,7 +360,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                     mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock())
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id)
+                                                  self.op_id, True)
                 self.assertTrue(get_bindings.called)
 
     def test_get_bindings_to_update1(self):
