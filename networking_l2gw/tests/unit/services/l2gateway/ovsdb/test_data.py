@@ -380,13 +380,27 @@ class TestOVSDBData(base.BaseTestCase):
     def test_process_deleted_physical_switches(self):
         fake_dict = {}
         fake_deleted_physical_switches = [fake_dict]
-        with mock.patch.object(lib, 'delete_physical_switch') as delete_ps:
+        fake_ls_dict = {'uuid': 'ls-uuid'}
+        fake_ls_list = [fake_ls_dict]
+        with contextlib.nested(
+            mock.patch.object(lib, 'delete_physical_switch'),
+            mock.patch.object(lib, 'get_all_physical_switches_by_ovsdb_id',
+                              return_value=False),
+            mock.patch.object(lib, 'get_all_logical_switches_by_ovsdb_id',
+                              return_value=fake_ls_list),
+            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+                              'delete_network')) as (
+                delete_ps, get_ps, get_ls, del_network):
             self.ovsdb_data._process_deleted_physical_switches(
                 self.context, fake_deleted_physical_switches)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
             self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
                              'fake_ovsdb_id')
             delete_ps.assert_called_with(self.context, fake_dict)
+            get_ps.assert_called_with(self.context, 'fake_ovsdb_id')
+            get_ls.assert_called_with(self.context, 'fake_ovsdb_id')
+            del_network.assert_called_with(self.context, 'fake_ovsdb_id',
+                                           'ls-uuid')
 
     def test_process_deleted_physical_ports(self):
         fake_dict = {'name': 'fake_uuid', 'uuid': 'fake_name'}
