@@ -496,3 +496,12 @@ def get_all_pending_remote_macs_in_asc_order(context, ovsdb_identifier):
             ).filter_by(ovsdb_identifier=ovsdb_identifier
                         ).order_by(
                             asc(models.PendingUcastMacsRemote.timestamp)).all()
+
+
+def get_all_ucast_mac_remote_by_ls(context, record_dict):
+    """Get ucast macs remote that matches ls_id and ovsdb_identifier."""
+    session = context.session
+    with session.begin():
+        return session.query(models.UcastMacsRemotes).filter_by(
+            ovsdb_identifier=record_dict['ovsdb_identifier'],
+            logical_switch_id=record_dict['logical_switch_id']).all()

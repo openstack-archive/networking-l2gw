@@ -345,9 +345,47 @@ class OVSDBData(object):
                                                                   l2gw_id)
             vlan_bindings = db.get_all_vlan_bindings_by_physical_port(
                 context, pp_dict)
+            ls_set = set()
             for vlan_binding in vlan_bindings:
+                vlan_binding['logical_switch_id'] = vlan_binding.get(
+                    'logical_switch_uuid')
+                if vlan_binding.get('logical_switch_uuid') in ls_set:
+                    db.delete_vlan_binding(context, vlan_binding)
+                    continue
+                bindings = db.get_all_vlan_bindings_by_logical_switch(
+                    context, vlan_binding)
+                if bindings and len(bindings) == 1:
+                    self._delete_macs_from_ovsdb(
+                        context,
+                        vlan_binding.get('logical_switch_uuid'),
+                        self.ovsdb_identifier)
+                elif bindings and len(bindings) > 1:
+                    flag = True
+                    for binding in bindings:
+                        if binding[
+                           'ovsdb_identifier'] == self.ovsdb_identifier:
+                            flag = False
+                            break
+                    if flag:
+                        self._delete_macs_from_ovsdb(
+                            context,
+                            vlan_binding.get('logical_switch_uuid'),
+                            self.ovsdb_identifier)
+                ls_set.add(vlan_binding.get('logical_switch_uuid'))
                 db.delete_vlan_binding(context, vlan_binding)
             db.delete_physical_port(context, pp_dict)
+
+    def _delete_macs_from_ovsdb(self, context, logical_switch_id,
+                                ovsdb_identifier):
+        mac_list = []
+        ls_dict = {'logical_switch_id': logical_switch_id,
+                   'ovsdb_identifier': ovsdb_identifier}
+        macs = db.get_all_ucast_mac_remote_by_ls(context, ls_dict)
+        for mac in macs:
+            mac_list.append(mac.get('mac'))
+        self.agent_rpc.delete_vif_from_gateway(
+            context, ovsdb_identifier,
+            logical_switch_id, mac_list)
 
     def _process_deleted_physical_locators(self,
                                            context,

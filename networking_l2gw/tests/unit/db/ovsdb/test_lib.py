@@ -532,3 +532,14 @@ class OvsdbLibTestCase(testlib_api.SqlTestCase):
                                             record_dict['mac'])
         count = self.ctx.session.query(models.UcastMacsRemotes).count()
         self.assertEqual(count, 0)
+
+    def test_get_all_ucast_mac_remote_by_ls(self):
+        record_dict = self._get_ucast_mac_remote_dict()
+        record_dict1 = self._create_ucast_mac_remote(record_dict)
+        record_dict = self._get_ucast_mac_remote_dict()
+        record_dict['mac'] = '00:11:22:33:44:55:66'
+        record_dict['logical_switch_id'] = record_dict1.get(
+            'logical_switch_id')
+        self._create_ucast_mac_remote(record_dict)
+        mac_list = lib.get_all_ucast_mac_remote_by_ls(self.ctx, record_dict)
+        self.assertEqual(2, len(mac_list))

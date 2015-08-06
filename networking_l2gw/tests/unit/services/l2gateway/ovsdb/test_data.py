@@ -418,6 +418,61 @@ class TestOVSDBData(base.BaseTestCase):
             l2gw_conn_del.assert_called_with(self.context, 'fake_uuid')
             delete_pp.assert_called_with(self.context, fake_dict)
 
+    def test_process_deleted_physical_ports_with_delete_macs(self):
+        fake_dict = {'uuid': 'fake_uuid', 'name': 'fake_name',
+                     'logical_switch_id': 'fake_ls_id',
+                     'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_deleted_physical_ports = [fake_dict]
+        fake_physical_port = {'uuid': 'fake_uuid',
+                              'name': 'fake_name',
+                              'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_physical_switch = {'uuid': 'fake_uuid',
+                                'ovsdb_identifier': 'fake_ovsdb_id',
+                                'name': 'fake_switch'}
+        vlan_binding_dict = {'logical_switch_uuid': 'fake_ls_id',
+                             'ovsdb_identifier': 'fake_ovsdb_id',
+                             'port_uuid': 'fake_uuid',
+                             'vlan': 'fake_vlan',
+                             'logical_switch_id': 'fake_ls_id'}
+        fake_vlan_binding_list = [vlan_binding_dict]
+        fake_binding_list = [vlan_binding_dict]
+        with contextlib.nested(
+            mock.patch.object(lib,
+                              'delete_physical_port'),
+            mock.patch.object(lib,
+                              'get_physical_port',
+                              return_value=fake_physical_port),
+            mock.patch.object(lib, 'get_physical_switch',
+                              return_vaue=fake_physical_switch),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_get_l2gw_ids_by_interface_switch',
+                              return_value=['fake_uuid']),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              '_delete_connection_by_l2gw_id'),
+            mock.patch.object(lib,
+                              'get_all_vlan_bindings_by_physical_port',
+                              return_value=fake_vlan_binding_list),
+            mock.patch.object(lib,
+                              'get_all_vlan_bindings_by_logical_switch',
+                              return_value=fake_binding_list),
+            mock.patch.object(data.OVSDBData, '_delete_macs_from_ovsdb'),
+            mock.patch.object(lib, 'delete_vlan_binding')
+        ) as (delete_pp, get_pp, get_ps, get_l2gw, l2gw_conn_del,
+              get_vlan_by_pp, get_vlan_by_ls, del_macs, del_vlan):
+            self.ovsdb_data._process_deleted_physical_ports(
+                self.context, fake_deleted_physical_ports)
+            self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
+            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
+                             'fake_ovsdb_id')
+            l2gw_conn_del.assert_called_with(self.context, 'fake_uuid')
+            get_vlan_by_pp.assert_called_with(self.context, fake_dict)
+            del_vlan.assert_called_with(self.context, vlan_binding_dict)
+            get_vlan_by_ls.assert_called_with(self.context, vlan_binding_dict)
+            del_macs.assert_called_with(self.context,
+                                        'fake_ls_id', 'fake_ovsdb_id')
+            del_vlan.assert_called_with(self.context, vlan_binding_dict)
+            delete_pp.assert_called_with(self.context, fake_dict)
+
     def test_process_deleted_physical_locators(self):
         """Test case to test _process_deleted_physical_locators.
 
