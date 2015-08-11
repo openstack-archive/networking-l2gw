@@ -17,12 +17,14 @@ import mock
 
 from neutron.callbacks import events
 from neutron.callbacks import resources
+from neutron.common import exceptions as exc
 from neutron import context
 from neutron import manager
 from neutron.tests.unit import testlib_api
 
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import constants
+from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway import exceptions
 
 from oslo_log import log as logging
@@ -89,6 +91,14 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                                 {"name": "port1"}],
                                  "device_name": device_name}]}}
         return data
+
+    def _get_l2_gw_invalid_seg_id_data(self, name,
+                                       device_name):
+        """Get l2 gateway data helper method with invalid seg id."""
+        data = {"interfaces": [{"name": "port1",
+                                "segmentation_id": ["test"]}],
+                "device_name": device_name}
+        return [data]
 
     def _get_nw_data(self):
         return {'network': {'id': 'fake-id',
@@ -264,6 +274,14 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                                                       dev_name)
         self.assertRaises(exceptions.L2GatewaySegmentationRequired,
                           self._create_l2gateway, data)
+
+    def test_l2_gateway_create_with_invalid_seg_id(self):
+        """Test l2 gateway create with invalid seg-id."""
+        name = "l2gw_1"
+        dev_name = "device1"
+        data = self._get_l2_gw_invalid_seg_id_data(name, dev_name)
+        self.assertRaises(exc.InvalidInput,
+                          l2gw_validators.validate_gwdevice_list, data)
 
     def test_l2_gateway_create_with_multiple_segid(self):
         """Test l2 gateway create with multiple seg id."""
