@@ -31,9 +31,9 @@ from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway.common import topics
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 
-from oslo import messaging
 from oslo_config import cfg
 from oslo_log import log as logging
+import oslo_messaging as messaging
 from oslo_utils import importutils
 
 LOG = logging.getLogger(__name__)

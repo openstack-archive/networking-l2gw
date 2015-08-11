@@ -15,7 +15,7 @@
 
 from neutron.common import rpc as n_rpc
 
-from oslo import messaging
+import oslo_messaging as messaging
 
 
 class L2GatewayAgentApi(object):

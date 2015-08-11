@@ -30,7 +30,7 @@ from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway.ovsdb import data
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
-from oslo import messaging
+import oslo_messaging as messaging
 from oslo_utils import importutils
 
 
