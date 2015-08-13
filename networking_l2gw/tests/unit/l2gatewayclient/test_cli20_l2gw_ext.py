@@ -16,17 +16,46 @@
 
 import sys
 
-from networking_l2gw.l2gatewayclient.l2gateway.v2_0 import l2gateway
+import mock
+
+from networking_l2gw.l2gatewayclient.l2gw_client_ext import (
+    _l2_gateway as l2_gateway)
 from networking_l2gw.tests.unit.l2gatewayclient import test_cli20
 
+from neutronclient import shell
 
-class CLITestV20L2gatewayJSON(test_cli20.CLITestV20Base):
+
+class CLITestV20ExtensionL2GWJSON(test_cli20.CLITestV20Base):
     def setUp(self):
-        super(CLITestV20L2gatewayJSON, self).setUp(plurals={'tags': 'tag'})
+        # need to mock before super because extensions loaded on instantiation
+        self._mock_extension_loading()
+        super(CLITestV20ExtensionL2GWJSON, self).setUp(plurals={'tags': 'tag'})
+
+    def _create_patch(self, name, func=None):
+        patcher = mock.patch(name)
+        thing = patcher.start()
+        self.addCleanup(patcher.stop)
+        return thing
+
+    def _mock_extension_loading(self):
+        ext_pkg = 'neutronclient.common.extension'
+        contrib = self._create_patch(ext_pkg + '._discover_via_entry_points')
+        contrib.return_value = [("_l2_gateway", l2_gateway)]
+        return contrib
+
+    def test_ext_cmd_loaded(self):
+        """Tests l2gw  commands loaded."""
+        shell.NeutronShell('2.0')
+        ext_cmd = {'l2-gateway-list': l2_gateway.L2GatewayList,
+                   'l2-gateway-create': l2_gateway.L2GatewayCreate,
+                   'l2-gateway-update': l2_gateway.L2GatewayUpdate,
+                   'l2-gateway-delete': l2_gateway.L2GatewayDelete,
+                   'l2-gateway-show': l2_gateway.L2GatewayShow}
+        self.assertDictContainsSubset(ext_cmd, shell.COMMANDS['2.0'])
 
     def _create_l2_gateway(self, args, name, device):
         resource = 'l2_gateway'
-        cmd = l2gateway.Createl2gateway(test_cli20.MyApp(sys.stdout), None)
+        cmd = l2_gateway.L2GatewayCreate(test_cli20.MyApp(sys.stdout), None)
         position_names = ['name', 'devices']
         position_values = [name, device]
         self._test_create_resource(resource, cmd, name, 'myid', args,
@@ -34,7 +63,7 @@ class CLITestV20L2gatewayJSON(test_cli20.CLITestV20Base):
 
     def _update_l2gateway(self, args, values):
         resource = 'l2_gateway'
-        cmd = l2gateway.Updatel2gateway(test_cli20.MyApp(sys.stdout), None)
+        cmd = l2_gateway.L2GatewayUpdate(test_cli20.MyApp(sys.stdout), None)
         self._test_update_resource(resource, cmd, 'myid',
                                    args, values)
 
@@ -84,17 +113,17 @@ class CLITestV20L2gatewayJSON(test_cli20.CLITestV20Base):
         self._create_l2_gateway(args, name, device)
 
     def test_list_l2gateway(self):
-        """Test List l2gateway."""
+        """Test List l2gateways."""
 
         resources = "l2_gateways"
-        cmd = l2gateway.Listl2gateway(test_cli20.MyApp(sys.stdout), None)
+        cmd = l2_gateway.L2GatewayList(test_cli20.MyApp(sys.stdout), None)
         self._test_list_resources(resources, cmd, True)
 
     def test_delete_l2gateway(self):
         """Test Delete l2gateway."""
 
         resource = 'l2_gateway'
-        cmd = l2gateway.Deletel2gateway(test_cli20.MyApp(sys.stdout), None)
+        cmd = l2_gateway.L2GatewayDelete(test_cli20.MyApp(sys.stdout), None)
         my_id = 'my-id'
         args = [my_id]
         self._test_delete_resource(resource, cmd, my_id, args)
@@ -103,7 +132,7 @@ class CLITestV20L2gatewayJSON(test_cli20.CLITestV20Base):
         """Test Show l2gateway: --fields id --fields name myid."""
 
         resource = 'l2_gateway'
-        cmd = l2gateway.Showl2gateway(test_cli20.MyApp(sys.stdout), None)
+        cmd = l2_gateway.L2GatewayShow(test_cli20.MyApp(sys.stdout), None)
         args = ['--fields', 'id', '--fields', 'name', self.test_id]
         self._test_show_resource(resource, cmd, self.test_id, args,
                                  ['id', 'name'])

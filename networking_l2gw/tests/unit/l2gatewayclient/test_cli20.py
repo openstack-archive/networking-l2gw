@@ -12,12 +12,10 @@
 #
 
 from mox3 import mox
-
-from networking_l2gw.l2gatewayclient.l2gateway import v2_0 as l2gatewayV2_0
-from networking_l2gw.l2gatewayclient.v2_0 import client as l2gatewayclient
-
+from neutronclient.neutron import v2_0 as l2gatewayV2_0
 from neutronclient import shell as neutronshell
 from neutronclient.tests.unit import test_cli20 as neutron_test_cli20
+from neutronclient.v2_0 import client as l2gatewayclient
 
 TOKEN = neutron_test_cli20.TOKEN
 end_url = neutron_test_cli20.end_url
