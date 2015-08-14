@@ -316,6 +316,16 @@ class OVSDBData(object):
             ps_dict = physical_switch
             ps_dict[n_const.OVSDB_IDENTIFIER] = self.ovsdb_identifier
             db.delete_physical_switch(context, ps_dict)
+        physical_switches = db.get_all_physical_switches_by_ovsdb_id(
+            context, self.ovsdb_identifier)
+        if not physical_switches:
+            logical_switches = db.get_all_logical_switches_by_ovsdb_id(
+                context, self.ovsdb_identifier)
+            if logical_switches:
+                for logical_switch in logical_switches:
+                    self.agent_rpc.delete_network(
+                        context, self.ovsdb_identifier,
+                        logical_switch.get('uuid'))
 
     def _process_deleted_physical_ports(self,
                                         context,
