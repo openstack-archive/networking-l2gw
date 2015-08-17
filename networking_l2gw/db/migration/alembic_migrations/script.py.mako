@@ -1,4 +1,4 @@
-# Copyright 2015 OpenStack Foundation
+# Copyright ${create_date.year} <PUT YOUR NAME/COMPANY HERE>
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,17 +13,24 @@
 #    under the License.
 #
 
-from neutron.db.migration.cli import alembic_config
-from neutron.db.migration.cli import CONF
-import os
+"""${message}
 
+Revision ID: ${up_revision}
+Revises: ${down_revision}
+Create Date: ${create_date}
 
-def main():
-    config = alembic_config.Config(
-        os.path.join(os.path.dirname(__file__), 'alembic.ini'))
-    config.set_main_option(
-        'script_location',
-        'networking_l2gw.db.migration:alembic_migrations')
-    config.neutron_config = CONF
-    CONF()
-    CONF.command.func(config, CONF.command.name)
+"""
+
+# revision identifiers, used by Alembic.
+revision = ${repr(up_revision)}
+down_revision = ${repr(down_revision)}
+% if branch_labels:
+branch_labels = ${repr(branch_labels)}
+%endif
+
+from alembic import op
+import sqlalchemy as sa
+${imports if imports else ""}
+
+def upgrade():
+    ${upgrades if upgrades else "pass"}
