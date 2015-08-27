@@ -95,12 +95,11 @@ def validate_network_mapping_list(network_mapping, check_vlan):
 
 
 def is_valid_vlan_id(seg_id):
-    msg = None
     try:
         int_seg_id = int(seg_id)
     except ValueError:
-        msg = _("segmentation_id must be a valid integer")
+        msg = _("Segmentation id must be a valid integer")
+        raise exceptions.InvalidInput(error_message=msg)
     if int_seg_id < 0 or int_seg_id >= 4095:
         msg = _("Segmentation id is out of range")
-    if msg:
         raise exceptions.InvalidInput(error_message=msg)
