@@ -14,39 +14,25 @@
 #    under the License.
 #
 
+from neutronclient.common import extension
 from neutronclient.i18n import _
 from neutronclient.neutron import v2_0 as l2gatewayV20
 
-L2_GW_CONNECTION = 'l2_gateway_connection'
+
+class L2GatewayConnection(extension.NeutronClientExtension):
+    resource = 'l2_gateway_connection'
+    resource_plural = 'l2_gateway_connections'
+    path = 'l2-gateway-connections'
+    object_path = '/%s' % path
+    resource_path = '/%s/%%s' % path
+    versions = ['2.0']
 
 
-class Listl2gatewayConnection(l2gatewayV20.ListCommand):
-    """List l2gateway-connections."""
-
-    resource = L2_GW_CONNECTION
-    list_columns = ['id', 'l2_gateway_id', 'network_id', 'segmentation_id']
-    pagination_support = True
-    sorting_support = True
-
-
-class Showl2gatewayConnection(l2gatewayV20.ShowCommand):
-    """Show information of a given l2gateway-connection."""
-
-    resource = L2_GW_CONNECTION
-    allow_names = False
-
-
-class Deletel2gatewayConnection(l2gatewayV20.DeleteCommand):
-    """Delete a given l2gateway-connection."""
-
-    resource = L2_GW_CONNECTION
-    allow_names = False
-
-
-class Createl2gatewayConnection(l2gatewayV20.CreateCommand):
+class L2GatewayConnectionCreate(extension.ClientExtensionCreate,
+                                L2GatewayConnection):
     """Create l2gateway-connection information."""
 
-    resource = L2_GW_CONNECTION
+    shell_command = 'l2-gateway-connection-create'
 
     def retrieve_ids(self, client, args):
         gateway_id = l2gatewayV20.find_resourceid_by_name_or_id(
@@ -86,3 +72,29 @@ class Createl2gatewayConnection(l2gatewayV20.CreateCommand):
             body['l2_gateway_connection']['segmentation_id'] = args.seg_id
 
         return body
+
+
+class L2GatewayConnectionList(extension.ClientExtensionList,
+                              L2GatewayConnection):
+    """List l2gateway-connections."""
+
+    shell_command = 'l2-gateway-connection-list'
+    list_columns = ['id', 'l2_gateway_id', 'network_id', 'segmentation_id']
+    pagination_support = True
+    sorting_support = True
+
+
+class L2GatewayConnectionShow(extension.ClientExtensionShow,
+                              L2GatewayConnection):
+    """Show information of a given l2gateway-connection."""
+
+    shell_command = 'l2-gateway-connection-show'
+    allow_names = False
+
+
+class L2GatewayConnectionDelete(extension.ClientExtensionDelete,
+                                L2GatewayConnection):
+    """Delete a given l2gateway-connection."""
+
+    shell_command = 'l2-gateway-connection-delete'
+    allow_names = False

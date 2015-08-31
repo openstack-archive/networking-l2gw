@@ -14,12 +14,11 @@
 #    under the License.
 #
 
+from neutronclient.common import extension
 from neutronclient.common import utils
 from neutronclient.i18n import _
-from neutronclient.neutron import v2_0 as l2gatewayV20
 from oslo_serialization import jsonutils
 
-L2_GW = 'l2_gateway'
 INTERFACE_DELIMITER = ";"
 SEGMENTATION_ID_DELIMITER = "#"
 INTERFACE_SEG_ID_DELIMITER = "|"
@@ -31,6 +30,15 @@ def _format_devices(l2_gateway):
                           l2_gateway['devices']])
     except (TypeError, KeyError):
         return ''
+
+
+class L2Gateway(extension.NeutronClientExtension):
+    resource = 'l2_gateway'
+    resource_plural = 'l2_gateways'
+    path = 'l2-gateways'
+    object_path = '/%s' % path
+    resource_path = '/%s/%%s' % path
+    versions = ['2.0']
 
 
 def get_interface(interfaces):
@@ -63,61 +71,39 @@ def add_known_arguments(self, parser):
 
 
 def args2body(self, parsed_args):
-    if parsed_args.devices:
-        devices = parsed_args.devices
-        interfaces = []
-    else:
-        devices = []
-    device_dict = []
-    for device in devices:
-        if 'interface_names' in device.keys():
-            interface = device['interface_names']
-            if INTERFACE_DELIMITER in interface:
-                interface_dict = interface.split(INTERFACE_DELIMITER)
-                interfaces = get_interface(interface_dict)
-            else:
-                interfaces = get_interface([interface])
-        if 'name' in device.keys():
-            device = {'device_name': device['name'],
-                      'interfaces': interfaces}
+        if parsed_args.devices:
+            devices = parsed_args.devices
+            interfaces = []
         else:
-            device = {'interfaces': interfaces}
-        device_dict.append(device)
-    if parsed_args.name:
-        l2gw_name = parsed_args.name
-        body = {'l2_gateway': {'name': l2gw_name,
-                               'devices': device_dict}, }
-    else:
-        body = {'l2_gateway': {'devices': device_dict}, }
-    return body
+            devices = []
+        device_dict = []
+        for device in devices:
+            if 'interface_names' in device.keys():
+                interface = device['interface_names']
+                if INTERFACE_DELIMITER in interface:
+                    interface_dict = interface.split(INTERFACE_DELIMITER)
+                    interfaces = get_interface(interface_dict)
+                else:
+                    interfaces = get_interface([interface])
+            if 'name' in device.keys():
+                device = {'device_name': device['name'],
+                          'interfaces': interfaces}
+            else:
+                device = {'interfaces': interfaces}
+            device_dict.append(device)
+        if parsed_args.name:
+            l2gw_name = parsed_args.name
+            body = {'l2_gateway': {'name': l2gw_name,
+                                   'devices': device_dict}, }
+        else:
+            body = {'l2_gateway': {'devices': device_dict}, }
+        return body
 
 
-class Listl2gateway(l2gatewayV20.ListCommand):
-    """List l2gateway that belongs to a given tenant."""
-
-    resource = L2_GW
-    _formatters = {'devices': _format_devices, }
-    list_columns = ['id', 'name', 'devices']
-    pagination_support = True
-    sorting_support = True
-
-
-class Showl2gateway(l2gatewayV20.ShowCommand):
-    """Show information of a given l2gateway."""
-
-    resource = L2_GW
-
-
-class Deletel2gateway(l2gatewayV20.DeleteCommand):
-    """Delete a given l2gateway."""
-
-    resource = L2_GW
-
-
-class Createl2gateway(l2gatewayV20.CreateCommand):
+class L2GatewayCreate(extension.ClientExtensionCreate, L2Gateway):
     """Create l2gateway information."""
 
-    resource = L2_GW
+    shell_command = 'l2-gateway-create'
 
     def add_known_arguments(self, parser):
         parser.add_argument(
@@ -132,10 +118,32 @@ class Createl2gateway(l2gatewayV20.CreateCommand):
         return body
 
 
-class Updatel2gateway(l2gatewayV20.UpdateCommand):
+class L2GatewayList(extension.ClientExtensionList, L2Gateway):
+    """List l2gateway that belongs to a given tenant."""
+
+    shell_command = 'l2-gateway-list'
+    _formatters = {'devices': _format_devices, }
+    list_columns = ['id', 'name', 'devices']
+    pagination_support = True
+    sorting_support = True
+
+
+class L2GatewayShow(extension.ClientExtensionShow, L2Gateway):
+    """Show information of a given l2gateway."""
+
+    shell_command = 'l2-gateway-show'
+
+
+class L2GatewayDelete(extension.ClientExtensionDelete, L2Gateway):
+    """Delete a given l2gateway."""
+
+    shell_command = 'l2-gateway-delete'
+
+
+class L2GatewayUpdate(extension.ClientExtensionUpdate, L2Gateway):
     """Update a given l2gateway."""
 
-    resource = L2_GW
+    shell_command = 'l2-gateway-update'
 
     def add_known_arguments(self, parser):
         parser.add_argument(
