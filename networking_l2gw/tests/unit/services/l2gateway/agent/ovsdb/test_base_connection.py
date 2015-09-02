@@ -13,12 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import eventlet
+
 import contextlib
 import socket
 import ssl
 import time
 
 import mock
+from oslo_serialization import jsonutils
 
 from neutron.tests import base
 
@@ -167,3 +170,55 @@ class TestBaseConnection(base.BaseTestCase):
             self.l2gw_ovsdb.disconnect()
             self.assertTrue(sock_close.called)
             self.assertFalse(self.l2gw_ovsdb.connected)
+
+
+class TestBaseConnection_with_enable_manager(base.BaseTestCase):
+    def setUp(self):
+        super(TestBaseConnection_with_enable_manager, self).setUp()
+
+        self.conf = mock.patch.object(conf, 'L2GatewayConfig').start()
+        config.register_ovsdb_opts_helper(cfg.CONF)
+        cfg.CONF.set_override('enable_manager', True, 'ovsdb')
+        self.l2gw_ovsdb_conn = base_connection.BaseConnection(mock.Mock(),
+                                                              self.conf)
+        self.l2gw_ovsdb_conn.c_sock = mock.patch('socket.socket').start()
+        self.l2gw_ovsdb_conn.s = mock.patch('socket.socket').start()
+
+    def test_init_with_enable_manager(self):
+        with mock.patch.object(eventlet.greenthread,
+                               'spawn') as (mock_thread):
+            self.l2gw_ovsdb_conn.__init__(mock.Mock(), self.conf)
+            self.assertEqual(self.l2gw_ovsdb_conn.s, mock.ANY)
+            self.assertIsNone(self.l2gw_ovsdb_conn.c_sock)
+            self.assertIsNone(self.l2gw_ovsdb_conn.addr)
+            self.assertIsNone(self.l2gw_ovsdb_conn.check_c_sock)
+            self.assertTrue(mock_thread.called)
+
+    def test_echo_response(self):
+        fake_resp = {"method": "echo",
+                     "params": "fake_params",
+                     "id": "fake_id",
+                     }
+        with contextlib.nested(
+            mock.patch.object(eventlet.greenthread, 'sleep'),
+            mock.patch.object(jsonutils, 'loads', return_value=fake_resp),
+            mock.patch.object(self.l2gw_ovsdb_conn.c_sock,
+                              'recv',
+                              return_value=fake_resp),
+            mock.patch.object(self.l2gw_ovsdb_conn.c_sock,
+                              'send')) as (
+                fake_thread, mock_loads,
+                mock_sock_rcv,
+                mock_sock_send):
+            self.l2gw_ovsdb_conn._echo_response()
+            self.assertTrue(fake_thread.called)
+            self.assertTrue(mock_sock_rcv.called)
+            mock_loads.assert_called_with(fake_resp)
+            self.assertTrue(self.l2gw_ovsdb_conn.check_c_sock)
+            self.assertTrue(mock_sock_send.called)
+
+    def test_disconnect_with_enable_manager(self):
+        with mock.patch.object(self.l2gw_ovsdb_conn.c_sock,
+                               'close') as mock_close:
+            self.l2gw_ovsdb_conn.disconnect()
+            self.assertTrue(mock_close.called)

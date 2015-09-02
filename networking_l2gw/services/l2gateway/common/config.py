@@ -36,6 +36,9 @@ OVSDB_OPTS = [
     cfg.IntOpt('periodic_interval',
                default=20,
                help=_('Seconds between periodic task runs')),
+    cfg.BoolOpt('enable_manager',
+                default=False,
+                help=_('Set to True if ovsdb Manager manages the client')),
     cfg.IntOpt('max_connection_retries',
                default=10,
                help=_('Maximum number of retries to open a socket '

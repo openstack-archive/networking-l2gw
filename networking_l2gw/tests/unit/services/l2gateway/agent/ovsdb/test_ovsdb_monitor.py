@@ -23,6 +23,7 @@ import mock
 from neutron.tests import base
 
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
+from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_monitor
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -707,3 +708,89 @@ class TestOVSDBMonitor(base.BaseTestCase):
             PhysLocatorSet = phys_loc_set.return_value
             self.assertIn(PhysLocatorSet,
                           data_dict['deleted_locator_sets'])
+
+
+class SocketClass(object):
+    def __init__(self,
+                 connect_error=None,
+                 send_error=None,
+                 recv_error=None,
+                 rcv_data=None,
+                 sock=None,
+                 ip_addr=None):
+        self.connect_error = connect_error
+        self.rcv_data = rcv_data
+        self.send_error = send_error
+        self.recv_error = recv_error
+        self.sock = sock
+        self.ip_addr = ip_addr
+
+    def connect(self, ip_port):
+        if self.connect_error:
+            raise self.connect_error
+
+    def send(self, data):
+        if self.send_error:
+            raise self.send_error
+        return len(data)
+
+    def recv(self, length):
+        if self.recv_error:
+            raise self.recv_error
+        return self.rcv_data
+
+    def bind(self, host_port):
+        pass
+
+    def listen(self, conn):
+        pass
+
+    def accept(self):
+        return self.sock, self.ip_addr
+
+    def setsockopt(self, sock_opt, sock_reuse, mode):
+        pass
+
+
+class TestOVSDBMonitor_with_enable_manager(base.BaseTestCase):
+    def setUp(self):
+        super(TestOVSDBMonitor_with_enable_manager, self).setUp()
+        config.register_ovsdb_opts_helper(cfg.CONF)
+        cfg.CONF.set_override('enable_manager', True, 'ovsdb')
+        self.conf = mock.Mock()
+        self.callback = mock.Mock()
+        self.l2gw_ovsdb = ovsdb_monitor.OVSDBMonitor(mock.Mock(),
+                                                     self.conf,
+                                                     self.callback)
+        fakesocket = SocketClass()
+        self.l2gw_ovsdb.c_sock = fakesocket
+
+    def test_init_with_enable_manager(self):
+        self.l2gw_ovsdb.__init__(mock.Mock(), self.conf,
+                                 self.callback)
+        self.assertTrue(self.l2gw_ovsdb.enable_manager)
+        self.assertFalse(self.l2gw_ovsdb.check_monitor_thread)
+        self.assertIsNone(self.l2gw_ovsdb.check_c_sock)
+
+    def test_sock_rcv_thread_none(self):
+        with contextlib.nested(
+            mock.patch.object(base_connection.BaseConnection,
+                              '_echo_response'),
+            mock.patch.object(eventlet.greenthread, 'spawn_n'),
+            mock.patch.object(eventlet.greenthread, 'sleep'),
+            mock.patch.object(self.l2gw_ovsdb.c_sock,
+                              'recv', return_value=None),
+            mock.patch.object(base_connection.BaseConnection,
+                              'disconnect')) as (
+                mock_resp, green_thrd_spawn, green_thrd_sleep,
+                mock_rcv, mock_disconnect):
+            self.l2gw_ovsdb.check_c_sock = True
+            self.l2gw_ovsdb.read_on = True
+            self.l2gw_ovsdb._sock_rcv_thread()
+            self.assertTrue(mock_resp.called)
+            self.assertTrue(green_thrd_spawn.called)
+            self.assertTrue(green_thrd_sleep.called)
+            self.assertTrue(mock_rcv.called)
+            self.assertTrue(mock_disconnect.called)
+            self.assertFalse(self.l2gw_ovsdb.connected)
+            self.assertFalse(self.l2gw_ovsdb.read_on)

@@ -62,8 +62,14 @@ class OVSDBWriter(base_connection.BaseConnection):
                 try:
                     json_m = jsonutils.loads(response)
                     self.responses.append(json_m)
-                    if self._process_response(operation_id):
-                        return True
+                    method_type = json_m.get('method', None)
+                    if method_type == "echo" and self.enable_manager:
+                        self.c_sock.send(jsonutils.dumps(
+                            {"result": json_m.get("params", None),
+                             "error": None, "id": json_m['id']}))
+                    else:
+                        if self._process_response(operation_id):
+                            return True
                 except Exception as ex:
                     with excutils.save_and_reraise_exception():
                         LOG.exception(_LE("Exception while receiving the "
@@ -74,12 +80,13 @@ class OVSDBWriter(base_connection.BaseConnection):
             LOG.error(_LE("Could not obtain response from the OVSDB server "
                           "for the request"))
 
-    def _send_and_receive(self, query, operation_id):
+    def _send_and_receive(self, query, operation_id, rcv_required):
         if not self.send(query):
             return
-        self._get_reply(operation_id)
+        if rcv_required:
+            self._get_reply(operation_id)
 
-    def delete_logical_switch(self, logical_switch_uuid):
+    def delete_logical_switch(self, logical_switch_uuid, rcv_required=True):
         """Delete an entry from Logical_Switch OVSDB table."""
         commit_dict = {"op": "commit", "durable": True}
         op_id = str(random.getrandbits(128))
@@ -92,10 +99,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                             commit_dict],
                  "id": op_id}
         LOG.debug("delete_logical_switch: query: %s", query)
-        self._send_and_receive(query, op_id)
+        self._send_and_receive(query, op_id, rcv_required)
 
     def insert_ucast_macs_remote(self, l_switch_dict, locator_dict,
-                                 mac_dict):
+                                 mac_dict, rcv_required=True):
         """Insert an entry in Ucast_Macs_Remote OVSDB table."""
         # To insert an entry in Ucast_Macs_Remote table, it requires
         # corresponding entry in Physical_Locator (Compute node VTEP IP)
@@ -139,9 +146,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": params,
                  "id": op_id}
         LOG.debug("insert_ucast_macs_remote: query: %s", query)
-        self._send_and_receive(query, op_id)
+        self._send_and_receive(query, op_id, rcv_required)
 
-    def update_ucast_macs_remote(self, locator_dict, mac_dict):
+    def update_ucast_macs_remote(self, locator_dict, mac_dict,
+                                 rcv_required=True):
         """Update an entry in Ucast_Macs_Remote OVSDB table."""
         # It is possible that the locator may not exist already.
         locator = ovsdb_schema.PhysicalLocator(locator_dict['uuid'],
@@ -173,9 +181,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": params,
                  "id": op_id}
         LOG.debug("update_ucast_macs_remote: query: %s", query)
-        self._send_and_receive(query, op_id)
+        self._send_and_receive(query, op_id, rcv_required)
 
-    def delete_ucast_macs_remote(self, logical_switch_uuid, macs):
+    def delete_ucast_macs_remote(self, logical_switch_uuid, macs,
+                                 rcv_required=True):
         """Delete entries from Ucast_Macs_Remote OVSDB table."""
         commit_dict = {"op": "commit", "durable": True}
         op_id = str(random.getrandbits(128))
@@ -196,11 +205,11 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": params,
                  "id": op_id}
         LOG.debug("delete_ucast_macs_remote: query: %s", query)
-        self._send_and_receive(query, op_id)
+        self._send_and_receive(query, op_id, rcv_required)
 
     def update_connection_to_gateway(self, logical_switch_dict,
                                      locator_dicts, mac_dicts,
-                                     port_dicts):
+                                     port_dicts, rcv_required=True):
         """Updates Physical Port's VNI to VLAN binding."""
         # Form the JSON Query so as to update the physical port with the
         # vni-vlan (logical switch uuid to vlan) binding
@@ -213,7 +222,7 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": update_dicts,
                  "id": op_id}
         LOG.debug("update_connection_to_gateway: query = %s", query)
-        self._send_and_receive(query, op_id)
+        self._send_and_receive(query, op_id, rcv_required)
 
     def _recv_data(self):
         chunks = []
@@ -221,7 +230,10 @@ class OVSDBWriter(base_connection.BaseConnection):
         prev_char = None
         while True:
             try:
-                response = self.socket.recv(n_const.BUFFER_SIZE)
+                if self.enable_manager:
+                    response = self.c_sock.recv(n_const.BUFFER_SIZE)
+                else:
+                    response = self.socket.recv(n_const.BUFFER_SIZE)
                 if response:
                     response = response.decode('utf8')
                     for i, c in enumerate(response):

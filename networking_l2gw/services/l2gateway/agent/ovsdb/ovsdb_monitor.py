@@ -40,7 +40,15 @@ class OVSDBMonitor(base_connection.BaseConnection):
         self._setup_dispatch_table()
         self.read_on = True
         self.handlers = {"echo": self._default_echo_handler}
-        eventlet.greenthread.spawn(self._rcv_thread)
+        if self.enable_manager:
+            self.check_c_sock = self.c_sock
+            self.check_monitor_thread = False
+        if not self.enable_manager:
+            eventlet.greenthread.spawn(self._rcv_thread)
+
+    def _spawn_monitor_thread(self):
+        eventlet.greenthread.spawn(self._sock_rcv_thread)
+        self.check_monitor_thread = True
 
     def _initialize_data_dict(self):
         data_dict = {'new_local_macs': [],
@@ -112,6 +120,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
                     response_result = self._process_response(op_id)
                 except exceptions.OVSDBError:
                     with excutils.save_and_reraise_exception():
+                        if self.enable_manager:
+                            self.check_monitor_thread = False
                         LOG.exception(_LE("Exception while receiving the "
                                           "response for the monitor message"))
                 self._process_monitor_msg(response_result)
@@ -188,6 +198,43 @@ class OVSDBMonitor(base_connection.BaseConnection):
             LOG.exception(_LE("Exception [%s] while handling "
                               "message"), e)
 
+    def _sock_rcv_thread(self):
+        chunks = []
+        lc = rc = 0
+        prev_char = None
+        self._echo_response()
+        if self.enable_manager and self.check_c_sock:
+            eventlet.greenthread.spawn_n(self.set_monitor_response_handler)
+            while self.read_on:
+                response = self.c_sock.recv(n_const.BUFFER_SIZE)
+                eventlet.greenthread.sleep(0)
+                if response:
+                    response = response.decode('utf8')
+                    message_mark = 0
+                    for i, c in enumerate(response):
+                        if c == '{' and not (prev_char and
+                                             prev_char == '\\'):
+                            lc += 1
+                        elif c == '}' and not (prev_char and
+                                               prev_char == '\\'):
+                            rc += 1
+                        if rc > lc:
+                            raise Exception(_LE("json string not valid"))
+                        elif lc == rc and lc is not 0:
+                            chunks.append(response[message_mark:i + 1])
+                            message = "".join(chunks)
+                            eventlet.greenthread.spawn_n(
+                                self._on_remote_message, message)
+                            eventlet.greenthread.sleep(0)
+                            lc = rc = 0
+                            message_mark = i + 1
+                            chunks = []
+                        prev_char = c
+                    chunks.append(response[message_mark:])
+                else:
+                    self.read_on = False
+                    self.disconnect()
+
     def _rcv_thread(self):
         chunks = []
         lc = rc = 0
@@ -246,7 +293,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
         return [element.__dict__ for element in resource_list]
 
     def _form_ovsdb_data(self, data_dict):
-        return {n_const.OVSDB_IDENTIFIER: self.gw_config.ovsdb_identifier,
+        return {n_const.OVSDB_IDENTIFIER: str(self.addr) if (
+                self.enable_manager) else (self.gw_config.ovsdb_identifier),
                 'new_logical_switches': self._get_list(
                     data_dict.get('new_logical_switches')),
                 'new_physical_switches': self._get_list(
