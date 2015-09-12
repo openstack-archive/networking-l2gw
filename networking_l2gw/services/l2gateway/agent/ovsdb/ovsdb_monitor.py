@@ -41,14 +41,13 @@ class OVSDBMonitor(base_connection.BaseConnection):
         self.read_on = True
         self.handlers = {"echo": self._default_echo_handler}
         if self.enable_manager:
-            self.check_c_sock = self.c_sock
-            self.check_monitor_thread = False
+            self.check_monitor_table_thread = False
         if not self.enable_manager:
             eventlet.greenthread.spawn(self._rcv_thread)
 
-    def _spawn_monitor_thread(self):
-        eventlet.greenthread.spawn(self._sock_rcv_thread)
-        self.check_monitor_thread = True
+    def _spawn_monitor_table_thread(self, addr):
+        self.set_monitor_response_handler(addr)
+        self.check_monitor_table_thread = True
 
     def _initialize_data_dict(self):
         data_dict = {'new_local_macs': [],
@@ -91,7 +90,7 @@ class OVSDBMonitor(base_connection.BaseConnection):
                                self._process_physical_locator_set
                                }
 
-    def set_monitor_response_handler(self):
+    def set_monitor_response_handler(self, addr=None):
         """Monitor OVSDB tables to receive events for any changes in OVSDB."""
         if self.connected:
                 op_id = str(random.getrandbits(128))
@@ -113,7 +112,7 @@ class OVSDBMonitor(base_connection.BaseConnection):
                                                'Physical_Locator_Set': [props]}
                                               ]}
                 self._set_handler("update", self._update_event_handler)
-                if not self.send(monitor_message):
+                if not self.send(monitor_message, addr=addr):
                     # Return so that this will retried in the next iteration
                     return
                 try:
@@ -121,15 +120,15 @@ class OVSDBMonitor(base_connection.BaseConnection):
                 except exceptions.OVSDBError:
                     with excutils.save_and_reraise_exception():
                         if self.enable_manager:
-                            self.check_monitor_thread = False
+                            self.check_monitor_table_thread = False
                         LOG.exception(_LE("Exception while receiving the "
                                           "response for the monitor message"))
-                self._process_monitor_msg(response_result)
+                self._process_monitor_msg(response_result, addr)
 
-    def _update_event_handler(self, message):
-        self._process_update_event(message)
+    def _update_event_handler(self, message, addr):
+        self._process_update_event(message, addr)
 
-    def _process_update_event(self, message):
+    def _process_update_event(self, message, addr):
         """Process update event that is triggered by the OVSDB server."""
         LOG.debug("_process_update_event: message = %s ", str(message))
         data_dict = self._initialize_data_dict()
@@ -137,7 +136,7 @@ class OVSDBMonitor(base_connection.BaseConnection):
             params_list = message.get('params')
             param_dict = params_list[1]
             self._process_tables(param_dict, data_dict)
-            self.rpc_callback(self._form_ovsdb_data(data_dict))
+            self.rpc_callback(self._form_ovsdb_data(data_dict, addr))
 
     def _process_tables(self, param_dict, data_dict):
         # Process all the tables one by one.
@@ -177,63 +176,26 @@ class OVSDBMonitor(base_connection.BaseConnection):
                 )
         return result
 
-    def _default_echo_handler(self, message):
+    def _default_echo_handler(self, message, addr):
         """Message handler for the OVSDB server's echo request."""
         self.send({"result": message.get("params", None),
-                   "error": None, "id": message['id']})
+                   "error": None, "id": message['id']}, addr=addr)
 
     def _set_handler(self, method_name, handler):
         self.handlers[method_name] = handler
 
-    def _on_remote_message(self, message):
+    def _on_remote_message(self, message, addr=None):
         """Processes the message received on the socket."""
         try:
             json_m = jsonutils.loads(message)
             handler_method = json_m.get('method', None)
             if handler_method:
-                self.handlers.get(handler_method)(json_m)
+                self.handlers.get(handler_method)(json_m, addr)
             else:
                 self.responses.append(json_m)
         except Exception as e:
             LOG.exception(_LE("Exception [%s] while handling "
                               "message"), e)
-
-    def _sock_rcv_thread(self):
-        chunks = []
-        lc = rc = 0
-        prev_char = None
-        self._echo_response()
-        if self.enable_manager and self.check_c_sock:
-            eventlet.greenthread.spawn_n(self.set_monitor_response_handler)
-            while self.read_on:
-                response = self.c_sock.recv(n_const.BUFFER_SIZE)
-                eventlet.greenthread.sleep(0)
-                if response:
-                    response = response.decode('utf8')
-                    message_mark = 0
-                    for i, c in enumerate(response):
-                        if c == '{' and not (prev_char and
-                                             prev_char == '\\'):
-                            lc += 1
-                        elif c == '}' and not (prev_char and
-                                               prev_char == '\\'):
-                            rc += 1
-                        if rc > lc:
-                            raise Exception(_LE("json string not valid"))
-                        elif lc == rc and lc is not 0:
-                            chunks.append(response[message_mark:i + 1])
-                            message = "".join(chunks)
-                            eventlet.greenthread.spawn_n(
-                                self._on_remote_message, message)
-                            eventlet.greenthread.sleep(0)
-                            lc = rc = 0
-                            message_mark = i + 1
-                            chunks = []
-                        prev_char = c
-                    chunks.append(response[message_mark:])
-                else:
-                    self.read_on = False
-                    self.disconnect()
 
     def _rcv_thread(self):
         chunks = []
@@ -274,26 +236,26 @@ class OVSDBMonitor(base_connection.BaseConnection):
                 LOG.exception(_LE("Exception [%s] occurred while receiving"
                                   "message from the OVSDB server"), ex)
 
-    def disconnect(self):
+    def disconnect(self, addr=None):
         """disconnects the connection from the OVSDB server."""
         self.read_on = False
-        super(OVSDBMonitor, self).disconnect()
+        super(OVSDBMonitor, self).disconnect(addr)
 
-    def _process_monitor_msg(self, message):
+    def _process_monitor_msg(self, message, addr=None):
         """Process initial set of records in the OVSDB at startup."""
         result_dict = message.get('result')
         data_dict = self._initialize_data_dict()
         try:
             self._process_tables(result_dict, data_dict)
-            self.rpc_callback(self._form_ovsdb_data(data_dict))
+            self.rpc_callback(self._form_ovsdb_data(data_dict, addr))
         except Exception as e:
             LOG.exception(_LE("_process_monitor_msg:ERROR %s "), e)
 
     def _get_list(self, resource_list):
         return [element.__dict__ for element in resource_list]
 
-    def _form_ovsdb_data(self, data_dict):
-        return {n_const.OVSDB_IDENTIFIER: str(self.addr) if (
+    def _form_ovsdb_data(self, data_dict, addr):
+        return {n_const.OVSDB_IDENTIFIER: str(addr) if (
                 self.enable_manager) else (self.gw_config.ovsdb_identifier),
                 'new_logical_switches': self._get_list(
                     data_dict.get('new_logical_switches')),

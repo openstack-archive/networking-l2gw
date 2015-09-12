@@ -75,6 +75,9 @@ class SocketClass(object):
             raise self.recv_error
         return self.rcv_data
 
+    def close(self):
+        pass
+
 
 class TestBaseConnection(base.BaseTestCase):
     def setUp(self):
@@ -181,17 +184,22 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
         cfg.CONF.set_override('enable_manager', True, 'ovsdb')
         self.l2gw_ovsdb_conn = base_connection.BaseConnection(mock.Mock(),
                                                               self.conf)
-        self.l2gw_ovsdb_conn.c_sock = mock.patch('socket.socket').start()
+        self.mock_sock = mock.patch('socket.socket').start()
         self.l2gw_ovsdb_conn.s = mock.patch('socket.socket').start()
+        self.fakesocket = SocketClass()
+        self.fake_ip = 'fake_ip'
+        self.l2gw_ovsdb_conn.ovsdb_dicts = {'fake_ip': self.fakesocket}
 
     def test_init_with_enable_manager(self):
+        fake_dict = {}
         with mock.patch.object(eventlet.greenthread,
                                'spawn') as (mock_thread):
             self.l2gw_ovsdb_conn.__init__(mock.Mock(), self.conf)
             self.assertEqual(self.l2gw_ovsdb_conn.s, mock.ANY)
-            self.assertIsNone(self.l2gw_ovsdb_conn.c_sock)
-            self.assertIsNone(self.l2gw_ovsdb_conn.addr)
+            self.assertFalse(self.l2gw_ovsdb_conn.check_sock_rcv)
             self.assertIsNone(self.l2gw_ovsdb_conn.check_c_sock)
+            self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_dicts, fake_dict)
+            self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_fd_states, fake_dict)
             self.assertTrue(mock_thread.called)
 
     def test_echo_response(self):
@@ -202,23 +210,45 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
         with contextlib.nested(
             mock.patch.object(eventlet.greenthread, 'sleep'),
             mock.patch.object(jsonutils, 'loads', return_value=fake_resp),
-            mock.patch.object(self.l2gw_ovsdb_conn.c_sock,
+            mock.patch.object(self.fakesocket,
                               'recv',
                               return_value=fake_resp),
-            mock.patch.object(self.l2gw_ovsdb_conn.c_sock,
-                              'send')) as (
+            mock.patch.object(self.fakesocket,
+                              'send')
+            ) as (
                 fake_thread, mock_loads,
                 mock_sock_rcv,
                 mock_sock_send):
-            self.l2gw_ovsdb_conn._echo_response()
+            self.l2gw_ovsdb_conn._echo_response(self.fake_ip)
             self.assertTrue(fake_thread.called)
             self.assertTrue(mock_sock_rcv.called)
             mock_loads.assert_called_with(fake_resp)
             self.assertTrue(self.l2gw_ovsdb_conn.check_c_sock)
             self.assertTrue(mock_sock_send.called)
 
+    def test_common_sock_rcv_thread_none(self):
+        with contextlib.nested(
+            mock.patch.object(base_connection.BaseConnection,
+                              '_echo_response'),
+            mock.patch.object(eventlet.greenthread, 'sleep'),
+            mock.patch.object(self.fakesocket,
+                              'recv', return_value=None),
+            mock.patch.object(base_connection.BaseConnection,
+                              'disconnect')) as (
+                mock_resp, green_thrd_sleep,
+                mock_rcv, mock_disconnect):
+            self.l2gw_ovsdb_conn.check_c_sock = True
+            self.l2gw_ovsdb_conn.read_on = True
+            self.l2gw_ovsdb_conn._common_sock_rcv_thread(self.fake_ip)
+            self.assertTrue(mock_resp.called)
+            self.assertTrue(green_thrd_sleep.called)
+            self.assertTrue(mock_rcv.called)
+            self.assertTrue(mock_disconnect.called)
+            self.assertFalse(self.l2gw_ovsdb_conn.connected)
+            self.assertFalse(self.l2gw_ovsdb_conn.read_on)
+
     def test_disconnect_with_enable_manager(self):
-        with mock.patch.object(self.l2gw_ovsdb_conn.c_sock,
-                               'close') as mock_close:
-            self.l2gw_ovsdb_conn.disconnect()
+        with mock.patch.object(self.fakesocket,
+                               'close') as (mock_close):
+            self.l2gw_ovsdb_conn.disconnect(self.fake_ip)
             self.assertTrue(mock_close.called)

@@ -123,7 +123,7 @@ class TestOVSDBWriter(base.BaseTestCase):
             mock.patch.object(ovsdb_writer.LOG,
                               'debug')
         ) as (recv_data, proc_response, debug):
-            self.l2gw_ovsdb._get_reply(self.op_id)
+            self.l2gw_ovsdb._get_reply(self.op_id, mock.ANY)
             self.assertTrue(recv_data.called)
             self.assertTrue(proc_response.called)
 
@@ -135,9 +135,9 @@ class TestOVSDBWriter(base.BaseTestCase):
             with mock.patch.object(ovsdb_writer.OVSDBWriter,
                                    '_get_reply') as mock_reply:
                 self.l2gw_ovsdb._send_and_receive('some_query',
-                                                  self.op_id, True)
-                mock_send.assert_called_with('some_query')
-                mock_reply.assert_called_with(self.op_id)
+                                                  self.op_id, mock.ANY, True)
+                mock_send.assert_called_with('some_query', addr=mock.ANY)
+                mock_reply.assert_called_with(self.op_id, mock.ANY)
 
     def test_send_and_receive_with_rcv_required_false(self):
         """Test case to test _send_and_receive."""
@@ -147,8 +147,8 @@ class TestOVSDBWriter(base.BaseTestCase):
             with mock.patch.object(ovsdb_writer.OVSDBWriter,
                                    '_get_reply') as mock_reply:
                 self.l2gw_ovsdb._send_and_receive('some_query',
-                                                  self.op_id, False)
-                mock_send.assert_called_with('some_query')
+                                                  self.op_id, mock.ANY, False)
+                mock_send.assert_called_with('some_query', addr=mock.ANY)
                 mock_reply.assert_not_called()
 
     def test_delete_logical_switch(self):
@@ -173,9 +173,10 @@ class TestOVSDBWriter(base.BaseTestCase):
                 with mock.patch.object(ovsdb_writer.LOG,
                                        'debug'):
                     self.l2gw_ovsdb.delete_logical_switch(
-                        'fake_logical_switch_uuid')
+                        'fake_logical_switch_uuid', mock.ANY)
                     get_rand.assert_called_with(128)
-                    send_n_receive.assert_called_with(query, self.op_id, True)
+                    send_n_receive.assert_called_with(query, self.op_id,
+                                                      mock.ANY, True)
 
     def test_insert_ucast_macs_remote(self):
         """Test case to test insert ucast_macs_remote."""
@@ -203,10 +204,11 @@ class TestOVSDBWriter(base.BaseTestCase):
               mock_ucmr):
                 self.l2gw_ovsdb.insert_ucast_macs_remote(mock.MagicMock(),
                                                          mock.MagicMock(),
-                                                         mock.MagicMock())
+                                                         mock.MagicMock(),
+                                                         mock.ANY)
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, True)
+                                                  self.op_id, mock.ANY, True)
 
                 self.assertTrue(get_ucast_mac_remote.called)
 
@@ -248,7 +250,8 @@ class TestOVSDBWriter(base.BaseTestCase):
             ls.name = 'ab-cd'
             self.l2gw_ovsdb.insert_ucast_macs_remote(mock.MagicMock(),
                                                      mock.MagicMock(),
-                                                     mock.MagicMock())
+                                                     mock.MagicMock(),
+                                                     mock.ANY)
             self.assertTrue(get_ucast_mac_remote.called)
             self.assertTrue(get_physical_locator_dict.called)
             self.assertTrue(get_logical_switch_dict.called)
@@ -276,10 +279,11 @@ class TestOVSDBWriter(base.BaseTestCase):
               mock_pl,
               mock_ucmr):
                 self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
-                                                         mock.MagicMock())
+                                                         mock.MagicMock(),
+                                                         mock.ANY)
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, True)
+                                                  self.op_id, mock.ANY, True)
 
                 self.assertTrue(get_update_ucast_mac_remote.called)
 
@@ -313,7 +317,8 @@ class TestOVSDBWriter(base.BaseTestCase):
             locator = mock_pl.return_value
             locator.uuid = None
             self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
-                                                     mock.MagicMock())
+                                                     mock.MagicMock(),
+                                                     mock.ANY)
             self.assertTrue(get_update_ucast_mac_remote.called)
             self.assertTrue(get_physical_locator_dict.called)
 
@@ -333,10 +338,11 @@ class TestOVSDBWriter(base.BaseTestCase):
               send_n_receive,
               mock_log):
                 self.l2gw_ovsdb.delete_ucast_macs_remote(mock.Mock(),
-                                                         mock.MagicMock())
+                                                         mock.MagicMock(),
+                                                         mock.ANY)
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, True)
+                                                  self.op_id, mock.ANY, True)
 
     def test_update_connection_to_gateway(self):
         """Test case to test update_connection_to_gateway."""
@@ -357,10 +363,11 @@ class TestOVSDBWriter(base.BaseTestCase):
               send_n_receive,
               mock_log):
                 self.l2gw_ovsdb.update_connection_to_gateway(
-                    mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock())
+                    mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock(),
+                    mock.ANY, mock.ANY)
                 get_rand.assert_called_with(128)
                 send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, True)
+                                                  self.op_id, mock.ANY, True)
                 self.assertTrue(get_bindings.called)
 
     def test_get_bindings_to_update1(self):
@@ -473,7 +480,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 ovsdb_conf = base_test.FakeConf()
                 l2gw_obj = ovsdb_writer.OVSDBWriter(
                     cfg.CONF.ovsdb, ovsdb_conf)
-                result = l2gw_obj._recv_data()
+                result = l2gw_obj._recv_data(mock.ANY)
                 self.assertEqual(jsonutils.dumps(fake_data), result)
 
     def test_recv_data_with_empty_data(self):
@@ -490,7 +497,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 ovsdb_conf = base_test.FakeConf()
                 l2gw_obj = ovsdb_writer.OVSDBWriter(
                     cfg.CONF.ovsdb, ovsdb_conf)
-                result = l2gw_obj._recv_data()
+                result = l2gw_obj._recv_data(mock.ANY)
                 self.assertEqual(None, result)
 
     def test_recv_data_with_socket_error(self):
@@ -507,7 +514,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 ovsdb_conf = base_test.FakeConf()
                 l2gw_obj = ovsdb_writer.OVSDBWriter(
                     cfg.CONF.ovsdb, ovsdb_conf)
-                result = l2gw_obj._recv_data()
+                result = l2gw_obj._recv_data(mock.ANY)
                 self.assertEqual(None, result)
                 fake_warn.assert_called_with(
                     _LW("Did not receive any reply from the OVSDB "

@@ -23,7 +23,6 @@ import mock
 from neutron.tests import base
 
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
-from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_monitor
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -169,8 +168,8 @@ class TestOVSDBMonitor(base.BaseTestCase):
         with mock.patch.object(ovsdb_monitor.OVSDBMonitor,
                                '_process_update_event'
                                ) as process_update_event:
-            self.l2gw_ovsdb._update_event_handler(self.msg)
-            process_update_event.assert_called_once_with(self.msg)
+            self.l2gw_ovsdb._update_event_handler(self.msg, mock.ANY)
+            process_update_event.assert_called_once_with(self.msg, mock.ANY)
 
     def test_process_update_event(self):
         """Test case to test _process_update_event."""
@@ -200,7 +199,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
               proc_mcast_mac_local,
               proc_phys_loc_set):
                 self.l2gw_ovsdb._setup_dispatch_table()
-                self.l2gw_ovsdb._process_update_event(self.msg2)
+                self.l2gw_ovsdb._process_update_event(self.msg2, mock.ANY)
                 self.assertTrue(proc_phy_port.called)
                 self.assertTrue(proc_phy_switch.called)
                 self.assertTrue(proc_logic_switch.called)
@@ -238,7 +237,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
                      'id': 'fake_id'}
         with mock.patch.object(ovsdb_monitor.OVSDBMonitor,
                                'send') as send:
-            self.l2gw_ovsdb._default_echo_handler(dummy_msg)
+            self.l2gw_ovsdb._default_echo_handler(dummy_msg, mock.ANY)
             self.assertTrue(send.called)
 
     def test_set_handler(self):
@@ -321,7 +320,7 @@ class TestOVSDBMonitor(base.BaseTestCase):
                                '_get_list',
                                return_value=some_value
                                ):
-            result = self.l2gw_ovsdb._form_ovsdb_data(mock.Mock())
+            result = self.l2gw_ovsdb._form_ovsdb_data(mock.Mock(), mock.ANY)
             self.assertEqual(expect, result)
 
     def test_process_physical_port(self):
@@ -762,35 +761,9 @@ class TestOVSDBMonitor_with_enable_manager(base.BaseTestCase):
         self.l2gw_ovsdb = ovsdb_monitor.OVSDBMonitor(mock.Mock(),
                                                      self.conf,
                                                      self.callback)
-        fakesocket = SocketClass()
-        self.l2gw_ovsdb.c_sock = fakesocket
 
     def test_init_with_enable_manager(self):
         self.l2gw_ovsdb.__init__(mock.Mock(), self.conf,
                                  self.callback)
         self.assertTrue(self.l2gw_ovsdb.enable_manager)
-        self.assertFalse(self.l2gw_ovsdb.check_monitor_thread)
-        self.assertIsNone(self.l2gw_ovsdb.check_c_sock)
-
-    def test_sock_rcv_thread_none(self):
-        with contextlib.nested(
-            mock.patch.object(base_connection.BaseConnection,
-                              '_echo_response'),
-            mock.patch.object(eventlet.greenthread, 'spawn_n'),
-            mock.patch.object(eventlet.greenthread, 'sleep'),
-            mock.patch.object(self.l2gw_ovsdb.c_sock,
-                              'recv', return_value=None),
-            mock.patch.object(base_connection.BaseConnection,
-                              'disconnect')) as (
-                mock_resp, green_thrd_spawn, green_thrd_sleep,
-                mock_rcv, mock_disconnect):
-            self.l2gw_ovsdb.check_c_sock = True
-            self.l2gw_ovsdb.read_on = True
-            self.l2gw_ovsdb._sock_rcv_thread()
-            self.assertTrue(mock_resp.called)
-            self.assertTrue(green_thrd_spawn.called)
-            self.assertTrue(green_thrd_sleep.called)
-            self.assertTrue(mock_rcv.called)
-            self.assertTrue(mock_disconnect.called)
-            self.assertFalse(self.l2gw_ovsdb.connected)
-            self.assertFalse(self.l2gw_ovsdb.read_on)
+        self.assertFalse(self.l2gw_ovsdb.check_monitor_table_thread)
