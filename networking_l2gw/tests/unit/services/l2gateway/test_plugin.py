@@ -566,14 +566,10 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_conn_dict = {'id': 'fake_conn_id',
                           'l2_gateway_id': 'fake_gateway_id'}
         fake_conn_list = [fake_conn_dict]
-        fake_device_dict = {'device_name': 'fake_name'}
-        fake_device_list = [fake_device_dict]
-        fake_ls_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
-                        'logical_switch_name': 'fake_network_id'}
-        fake_physical_switch = {'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_logical_switch = {'ovsdb_identifier': 'fake_ovsdb_id',
                                'uuid': 'fake_network_id',
                                'description': 'fake_name'}
+        fake_logical_switch_list = [fake_logical_switch]
         fake_locator_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
                              'uuid': 'fake_locator_id',
                              'dst_ip': 'fake_ip2'}
@@ -603,15 +599,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'get_l2_gateway_connections',
                               return_value=fake_conn_list),
-            mock.patch.object(l2gateway_db.L2GatewayMixin,
-                              'get_l2gateway_devices_by_gateway_id',
-                              return_value=fake_device_list),
-            mock.patch.object(db,
-                              'get_physical_switch_by_name',
-                              return_value=fake_physical_switch),
-            mock.patch.object(self.plugin,
-                              '_form_logical_switch_schema',
-                              return_value=fake_logical_switch),
             mock.patch.object(self.plugin,
                               '_form_physical_locator_schema',
                               return_value=fake_locator_dict),
@@ -626,10 +613,13 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
                               'add_vif_to_gateway'),
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
-                              'update_vif_to_gateway')) as (
-                get_ip, get_network, get_l2gw_conn, get_device, get_ps,
-                get_ls, get_pl, mock_ucmr, get_dict, get_ucast_mac, add_rpc,
-                update_rpc):
+                              'update_vif_to_gateway'),
+            mock.patch.object(db,
+                              'get_all_logical_switches_by_name',
+                              return_value=fake_logical_switch_list)) as (
+                get_ip, get_network, get_l2gw_conn,
+                get_pl, mock_ucmr, get_dict, get_ucast_mac, add_rpc,
+                update_rpc, get_all_ls):
             remote_mac = ovsdb_schema.UcastMacsRemote(
                 None, fake_dict['mac'], fake_logical_switch['uuid'],
                 fake_locator_dict['uuid'],
@@ -639,11 +629,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw_conn.assert_called_with(
                 self.context, filters={'network_id': ['fake_network_id']})
-            get_device.assert_called_with(self.context, 'fake_gateway_id')
-            get_ps.assert_called_with(self.context, 'fake_name')
-            get_ls.assert_called_with(self.context,
-                                      fake_network_dict,
-                                      fake_ls_dict)
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
             get_dict.assert_called_with(remote_mac)
@@ -658,6 +643,50 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                 fake_logical_switch, fake_locator_dict, fake_dict)
             self.assertFalse(update_rpc.called)
 
+    def test_delete_port_mac_for_multiple_vlan_bindings(self):
+        network_id = 'fake_network_id'
+        fake_port_list = [{'network_id': 'fake_network_id',
+                           'device_owner': 'fake_owner',
+                           'mac_address': 'fake_mac',
+                           'ovsdb_identifier': 'fake_ovsdb_id'}]
+        fake_logical_switch_dict = {'uuid': 'fake_uuid',
+                                    'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_logical_switch_list = [fake_logical_switch_dict]
+        lg_dict = {'logical_switch_name': 'fake_network_id',
+                   'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_dict = {'mac': 'fake_mac',
+                     'logical_switch_uuid': 'fake_uuid',
+                     'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_rec_dict = {'logical_switch_id': 'fake_uuid',
+                         'ovsdb_identifier': 'fake_ovsdb_id'}
+        with contextlib.nested(
+            mock.patch.object(db,
+                              'get_all_logical_switches_by_name',
+                              return_value=fake_logical_switch_list),
+            mock.patch.object(db,
+                              'get_ucast_mac_remote_by_mac_and_ls',
+                              return_value=True),
+            mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
+                              'delete_vif_from_gateway'),
+            mock.patch.object(db,
+                              'get_logical_switch_by_name',
+                              return_value=fake_logical_switch_dict),
+            mock.patch.object(db,
+                              'get_all_vlan_bindings_by_logical_switch',
+                              return_value=[1, 2]),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'get_l2_gateway_connections',
+                              return_value=[1, 2])) as (
+                get_all_ls, get_mac, delete_rpc, get_ls, get_vlan_binding,
+                get_l2gw_conn):
+            self.plugin.delete_port_mac(self.context, fake_port_list)
+            get_all_ls.assert_not_called_with(self.context, network_id)
+            get_ls.assert_called_with(self.context, lg_dict)
+            get_vlan_binding.assert_called_with(self.context, fake_rec_dict)
+            get_mac.assert_not_called_with(self.context, fake_dict)
+            delete_rpc.assert_not_called_with(
+                self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
+
     def test_add_port_mac_with_ovsdb_server_down(self):
         "Test case to test add_port_mac when the OVSDB server is down."
         fake_ip1 = "fake_ip1"
@@ -668,14 +697,10 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_conn_dict = {'id': 'fake_conn_id',
                           'l2_gateway_id': 'fake_gateway_id'}
         fake_conn_list = [fake_conn_dict]
-        fake_device_dict = {'device_name': 'fake_name'}
-        fake_device_list = [fake_device_dict]
-        fake_ls_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
-                        'logical_switch_name': 'fake_network_id'}
-        fake_physical_switch = {'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_logical_switch = {'ovsdb_identifier': 'fake_ovsdb_id',
                                'uuid': 'fake_network_id',
                                'description': 'fake_name'}
+        fake_logical_switch_list = [fake_logical_switch]
         fake_locator_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
                              'uuid': 'fake_locator_id',
                              'dst_ip': 'fake_ip2'}
@@ -705,15 +730,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'get_l2_gateway_connections',
                               return_value=fake_conn_list),
-            mock.patch.object(l2gateway_db.L2GatewayMixin,
-                              'get_l2gateway_devices_by_gateway_id',
-                              return_value=fake_device_list),
-            mock.patch.object(db,
-                              'get_physical_switch_by_name',
-                              return_value=fake_physical_switch),
-            mock.patch.object(self.plugin,
-                              '_form_logical_switch_schema',
-                              return_value=fake_logical_switch),
             mock.patch.object(self.plugin,
                               '_form_physical_locator_schema',
                               return_value=fake_locator_dict),
@@ -730,10 +746,12 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               side_effect=RuntimeError),
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
                               'update_vif_to_gateway'),
-            mock.patch.object(db, 'add_pending_ucast_mac_remote')
-        ) as (get_ip, get_network, get_l2gw_conn, get_device, get_ps,
-              get_ls, get_pl, mock_ucmr, get_dict, get_ucast_mac, add_rpc,
-              update_rpc, add_pending_mac):
+            mock.patch.object(db, 'add_pending_ucast_mac_remote'),
+            mock.patch.object(db, 'get_all_logical_switches_by_name',
+                              return_value=fake_logical_switch_list)
+        ) as (get_ip, get_network, get_l2gw_conn,
+              get_pl, mock_ucmr, get_dict, get_ucast_mac, add_rpc,
+              update_rpc, add_pending_mac, get_all_ls):
             remote_mac = ovsdb_schema.UcastMacsRemote(
                 None, fake_dict['mac'], fake_logical_switch['uuid'],
                 fake_locator_dict['uuid'],
@@ -743,11 +761,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw_conn.assert_called_with(
                 self.context, filters={'network_id': ['fake_network_id']})
-            get_device.assert_called_with(self.context, 'fake_gateway_id')
-            get_ps.assert_called_with(self.context, 'fake_name')
-            get_ls.assert_called_with(self.context,
-                                      fake_network_dict,
-                                      fake_ls_dict)
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
             get_dict.assert_called_with(remote_mac)
@@ -772,14 +785,10 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_conn_dict = {'id': 'fake_conn_id',
                           'l2_gateway_id': 'fake_gateway_id'}
         fake_conn_list = [fake_conn_dict]
-        fake_device_dict = {'device_name': 'fake_name'}
-        fake_device_list = [fake_device_dict]
-        fake_ls_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
-                        'logical_switch_name': 'fake_network_id'}
-        fake_physical_switch = {'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_logical_switch = {'ovsdb_identifier': 'fake_ovsdb_id',
                                'uuid': 'fake_network_id',
                                'description': 'fake_name'}
+        fake_logical_switch_list = [fake_logical_switch]
         fake_locator_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
                              'uuid': 'fake_locator_id',
                              'dst_ip': 'fake_ip2'}
@@ -811,15 +820,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'get_l2_gateway_connections',
                               return_value=fake_conn_list),
-            mock.patch.object(l2gateway_db.L2GatewayMixin,
-                              'get_l2gateway_devices_by_gateway_id',
-                              return_value=fake_device_list),
-            mock.patch.object(db,
-                              'get_physical_switch_by_name',
-                              return_value=fake_physical_switch),
-            mock.patch.object(self.plugin,
-                              '_form_logical_switch_schema',
-                              return_value=fake_logical_switch),
             mock.patch.object(self.plugin,
                               '_form_physical_locator_schema',
                               return_value=fake_locator_dict),
@@ -832,18 +832,17 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
                               'add_vif_to_gateway'),
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
-                              'update_vif_to_gateway')) as (
-                get_ip, get_network, get_l2gw_conn, get_device, get_ps,
-                get_ls, get_pl, get_dict, get_ucast_mac, add_rpc, update_rpc):
+                              'update_vif_to_gateway'),
+            mock.patch.object(db,
+                              'get_all_logical_switches_by_name',
+                              return_value=fake_logical_switch_list)) as (
+                get_ip, get_network, get_l2gw_conn,
+                get_pl, get_dict, get_ucast_mac, add_rpc, update_rpc,
+                get_all_ls):
             self.plugin.add_port_mac(self.context, fake_dict)
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw_conn.assert_called_with(
                 self.context, filters={'network_id': ['fake_network_id']})
-            get_device.assert_called_with(self.context, 'fake_gateway_id')
-            get_ps.assert_called_with(self.context, 'fake_name')
-            get_ls.assert_called_with(self.context,
-                                      fake_network_dict,
-                                      fake_ls_dict)
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
             self.assertFalse(add_rpc.called)
@@ -861,14 +860,10 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_conn_dict = {'id': 'fake_conn_id',
                           'l2_gateway_id': 'fake_gateway_id'}
         fake_conn_list = [fake_conn_dict]
-        fake_device_dict = {'device_name': 'fake_name'}
-        fake_device_list = [fake_device_dict]
-        fake_ls_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
-                        'logical_switch_name': 'fake_network_id'}
-        fake_physical_switch = {'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_logical_switch = {'ovsdb_identifier': 'fake_ovsdb_id',
                                'uuid': 'fake_network_id',
                                'description': 'fake_name'}
+        fake_logical_switch_list = [fake_logical_switch]
         fake_locator_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
                              'uuid': 'fake_locator_id',
                              'dst_ip': 'fake_ip2'}
@@ -899,15 +894,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'get_l2_gateway_connections',
                               return_value=fake_conn_list),
-            mock.patch.object(l2gateway_db.L2GatewayMixin,
-                              'get_l2gateway_devices_by_gateway_id',
-                              return_value=fake_device_list),
-            mock.patch.object(db,
-                              'get_physical_switch_by_name',
-                              return_value=fake_physical_switch),
-            mock.patch.object(self.plugin,
-                              '_form_logical_switch_schema',
-                              return_value=fake_logical_switch),
             mock.patch.object(self.plugin,
                               '_form_physical_locator_schema',
                               return_value=fake_locator_dict),
@@ -922,19 +908,16 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
                               'update_vif_to_gateway',
                               side_effect=RuntimeError),
-            mock.patch.object(db, 'add_pending_ucast_mac_remote')
-        ) as (get_ip, get_network, get_l2gw_conn, get_device, get_ps,
-              get_ls, get_pl, get_dict, get_ucast_mac, add_rpc, update_rpc,
-              add_pending_mac):
+            mock.patch.object(db, 'add_pending_ucast_mac_remote'),
+            mock.patch.object(db, 'get_all_logical_switches_by_name',
+                              return_value=fake_logical_switch_list)
+        ) as (get_ip, get_network, get_l2gw_conn,
+              get_pl, get_dict, get_ucast_mac, add_rpc, update_rpc,
+              add_pending_mac, get_all_ls):
             self.plugin.add_port_mac(self.context, fake_dict)
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw_conn.assert_called_with(
                 self.context, filters={'network_id': ['fake_network_id']})
-            get_device.assert_called_with(self.context, 'fake_gateway_id')
-            get_ps.assert_called_with(self.context, 'fake_name')
-            get_ls.assert_called_with(self.context,
-                                      fake_network_dict,
-                                      fake_ls_dict)
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
             self.assertFalse(add_rpc.called)
@@ -952,14 +935,10 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_conn_dict = {'id': 'fake_conn_id',
                           'l2_gateway_id': 'fake_gateway_id'}
         fake_conn_list = [fake_conn_dict]
-        fake_device_dict = {'device_name': 'fake_name'}
-        fake_device_list = [fake_device_dict]
-        fake_ls_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
-                        'logical_switch_name': 'fake_network_id'}
-        fake_physical_switch = {'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_logical_switch = {'ovsdb_identifier': 'fake_ovsdb_id',
                                'uuid': 'fake_network_id',
                                'description': 'fake_name'}
+        fake_logical_switch_list = [fake_logical_switch]
         fake_locator_dict = {'ovsdb_identifier': 'fake_ovsdb_id',
                              'uuid': 'fake_locator_id',
                              'dst_ip': 'fake_ip2'}
@@ -990,15 +969,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'get_l2_gateway_connections',
                               return_value=fake_conn_list),
-            mock.patch.object(l2gateway_db.L2GatewayMixin,
-                              'get_l2gateway_devices_by_gateway_id',
-                              return_value=fake_device_list),
-            mock.patch.object(db,
-                              'get_physical_switch_by_name',
-                              return_value=fake_physical_switch),
-            mock.patch.object(self.plugin,
-                              '_form_logical_switch_schema',
-                              return_value=fake_logical_switch),
             mock.patch.object(self.plugin,
                               '_form_physical_locator_schema',
                               return_value=fake_locator_dict),
@@ -1012,19 +982,17 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               'add_vif_to_gateway'),
             mock.patch.object(data.L2GatewayOVSDBCallbacks,
                               'get_ovsdbdata_object'),
-            mock.patch.object(self.ovsdb_data, '_handle_l2pop')) as (
-                get_ip, get_network, get_l2gw_conn, get_device, get_ps,
-                get_ls, get_pl, get_dict, get_ucast_mac, add_rpc,
-                get_ovsdbdata_obj, handle_l2pop):
+            mock.patch.object(self.ovsdb_data, '_handle_l2pop'),
+            mock.patch.object(db,
+                              'get_all_logical_switches_by_name',
+                              return_value=fake_logical_switch_list)) as (
+                get_ip, get_network, get_l2gw_conn,
+                get_pl, get_dict, get_ucast_mac, add_rpc,
+                get_ovsdbdata_obj, handle_l2pop, get_all_ls):
             self.plugin.add_port_mac(self.context, fake_dict)
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw_conn.assert_called_with(
                 self.context, filters={'network_id': ['fake_network_id']})
-            get_device.assert_called_with(self.context, 'fake_gateway_id')
-            get_ps.assert_called_with(self.context, 'fake_name')
-            get_ls.assert_called_with(self.context,
-                                      fake_network_dict,
-                                      fake_ls_dict)
             get_pl.assert_called_with(self.context, fake_pl_dict)
             get_ucast_mac.assert_called_with(self.context, fake_dict)
             self.assertFalse(add_rpc.called)
@@ -1043,6 +1011,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_dict = {'mac': 'fake_mac',
                      'logical_switch_uuid': 'fake_uuid',
                      'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_rec_dict = {'logical_switch_id': 'fake_uuid',
+                         'ovsdb_identifier': 'fake_ovsdb_id'}
         with contextlib.nested(
             mock.patch.object(db,
                               'get_all_logical_switches_by_name',
@@ -1051,11 +1021,18 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               'get_ucast_mac_remote_by_mac_and_ls',
                               return_value=True),
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
-                              'delete_vif_from_gateway')) as (
-                get_ls, get_mac, delete_rpc):
+                              'delete_vif_from_gateway'),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'get_l2_gateway_connections',
+                              return_value=True),
+            mock.patch.object(db,
+                              'get_all_vlan_bindings_by_logical_switch',
+                              return_value=[1])) as (
+                get_ls, get_mac, delete_rpc, get_l2gw_conn, get_vlan_binding):
             self.plugin.delete_port_mac(self.context, fake_port_dict)
             get_ls.assert_called_with(self.context, network_id)
             get_mac.assert_called_with(self.context, fake_dict)
+            get_vlan_binding.assert_called_with(self.context, fake_rec_dict)
             delete_rpc.assert_called_with(
                 self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
 
@@ -1067,23 +1044,34 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                            'ovsdb_identifier': 'fake_ovsdb_id'}]
         fake_logical_switch_dict = {'uuid': 'fake_uuid',
                                     'ovsdb_identifier': 'fake_ovsdb_id'}
-        fake_logical_switch_list = [fake_logical_switch_dict]
+        lg_dict = {'logical_switch_name': 'fake_network_id',
+                   'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_dict = {'mac': 'fake_mac',
                      'logical_switch_uuid': 'fake_uuid',
                      'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_rec_dict = {'logical_switch_id': 'fake_uuid',
+                         'ovsdb_identifier': 'fake_ovsdb_id'}
         with contextlib.nested(
             mock.patch.object(db,
                               'get_all_logical_switches_by_name',
-                              return_value=fake_logical_switch_list),
+                              return_value=fake_logical_switch_dict),
             mock.patch.object(db,
                               'get_ucast_mac_remote_by_mac_and_ls',
                               return_value=True),
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
-                              'delete_vif_from_gateway')) as (
-                get_ls, get_mac, delete_rpc):
+                              'delete_vif_from_gateway'),
+            mock.patch.object(db,
+                              'get_all_vlan_bindings_by_logical_switch',
+                              return_value=[1]),
+            mock.patch.object(db,
+                              'get_logical_switch_by_name',
+                              return_value=fake_logical_switch_dict)) as (
+                get_all_ls, get_mac, delete_rpc, get_vlan_binding, get_ls):
             self.plugin.delete_port_mac(self.context, fake_port_list)
-            get_ls.assert_called_with(self.context, network_id)
+            get_all_ls.assert_not_called_with(self.context, network_id)
+            get_ls.assert_called_with(self.context, lg_dict)
             get_mac.assert_called_with(self.context, fake_dict)
+            get_vlan_binding.assert_called_with(self.context, fake_rec_dict)
             delete_rpc.assert_called_with(
                 self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
 
@@ -1095,25 +1083,32 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                            'mac_address': 'fake_mac',
                            'ovsdb_identifier': 'fake_ovsdb_id'}]
         fake_logical_switch_dict = {'uuid': 'fake_uuid',
-                                    'ovsdb_identifier': 'fake_ovsdb_id'}
-        fake_logical_switch_list = [fake_logical_switch_dict]
+                                    'ovsdb_identifieir': 'fake_ovsdb_id'}
+        lg_dict = {'logical_switch_name': 'fake_network_id',
+                   'ovsdb_identifier': 'fake_ovsdb_id'}
         fake_dict = {'mac': 'fake_mac',
                      'logical_switch_uuid': 'fake_uuid',
                      'ovsdb_identifier': 'fake_ovsdb_id'}
         with contextlib.nested(
             mock.patch.object(db,
                               'get_all_logical_switches_by_name',
-                              return_value=fake_logical_switch_list),
+                              return_value=fake_logical_switch_dict),
             mock.patch.object(db,
                               'get_ucast_mac_remote_by_mac_and_ls',
                               return_value=True),
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
                               'delete_vif_from_gateway'),
             mock.patch.object(db, 'add_pending_ucast_mac_remote',
-                              side_effect=RuntimeError)
-        ) as (get_ls, get_mac, delete_rpc, add_pending_mac):
+                              side_effect=RuntimeError),
+            mock.patch.object(db, 'get_logical_switch_by_name',
+                              return_value=fake_logical_switch_dict),
+            mock.patch.object(db,
+                              'get_all_vlan_bindings_by_logical_switch')
+        ) as (get_all_ls, get_mac, delete_rpc, add_pending_mac, get_ls,
+              get_vlan_binding):
             self.plugin.delete_port_mac(self.context, fake_port_list)
-            get_ls.assert_called_with(self.context, network_id)
+            get_all_ls.assert_not_called_with(self.context, network_id)
+            get_ls.assert_called_with(self.context, lg_dict)
             get_mac.assert_called_with(self.context, fake_dict)
             delete_rpc.assert_called_with(
                 self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
@@ -1156,9 +1151,13 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gw_plugin.L2gatewayAgentApi,
                               'update_connection_to_gateway'),
             mock.patch.object(l2gateway_db.L2GatewayMixin,
-                              'delete_l2_gateway_connection')
+                              'delete_l2_gateway_connection'),
+            mock.patch.object(db,
+                              'get_all_vlan_bindings_by_logical_switch',
+                              return_value=1)
             ) as (admin_check, get_con, get_id_list, get_ovsdb_id, rm_mac,
-                  get_devices, port_list, update_rpc, del_conn):
+                  get_devices, port_list, update_rpc, del_conn,
+                  get_vlan_binding):
             self.plugin.delete_l2_gateway_connection(self.db_context,
                                                      fake_conn_dict)
             admin_check.assert_called_with(self.db_context, 'DELETE')
@@ -1295,7 +1294,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         fake_port_list = [fake_port]
         fake_conn_dict = fake_l2gw_conn_dict.get('l2_gateway_connection')
         ovsdb_id = 'fake_ovsdb_id'
-        logical_switch = 'fake_ls'
+        logical_switch = {'uuid': 'fake_id'}
         fake_device_dict = {'device_name': 'fake_device_name'}
         fake_device_list = [fake_device_dict]
         fake_ls_dict = {'logical_switch_name': 'fake_network_id',
@@ -1328,6 +1327,7 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                               '_get_ip_details',
                               return_value=('fake_ip1', 'fake_ip2')),
             mock.patch.object(self.plugin, '_get_dict', return_value=mock.ANY),
+            mock.patch.object(db, 'get_ucast_mac_remote_by_mac_and_ls'),
             mock.patch.object(self.plugin,
                               '_get_locator_list',
                               return_value=fake_pl_list),
@@ -1336,7 +1336,8 @@ class TestL2GatewayPlugin(base.BaseTestCase):
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               'create_l2_gateway_connection')) as (
                 admin_check, validate, get_devices, port_list, get_ls,
-                get_port, get_ip, get_dict, get_pl, update_rpc, create_conn):
+                get_port, get_ip, get_ucast_mac, get_dict, get_pl, update_rpc,
+                create_conn):
             self.plugin.create_l2_gateway_connection(self.db_context,
                                                      fake_l2gw_conn_dict)
             admin_check.assert_called_with(self.db_context, 'CREATE')
@@ -1345,11 +1346,12 @@ class TestL2GatewayPlugin(base.BaseTestCase):
                 self.db_context, fake_device_dict,
                 fake_conn_dict, "CREATE")
             get_ls.assert_called_with(self.db_context,
-                                      'fake_ls',
+                                      logical_switch,
                                       fake_conn_dict)
             get_port.assert_called_with(self.db_context, 'fake_network_id')
             self.assertTrue(get_ip.called)
             self.assertTrue(get_dict.called)
+            self.assertTrue(get_ucast_mac.called)
             self.assertTrue(get_pl.called)
             self.assertTrue(update_rpc.called)
             create_conn.assert_called_with(self.db_context,
