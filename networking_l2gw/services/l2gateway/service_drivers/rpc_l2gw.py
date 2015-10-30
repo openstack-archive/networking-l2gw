@@ -177,19 +177,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                         physical_locator,
                         [mac_remote])
 
-    def _form_logical_switch_schema(self, context, network, ls_dict):
-        logical_switch_uuid = None
-        logical_switch = db.get_logical_switch_by_name(
-            context, ls_dict)
-        if logical_switch:
-            logical_switch_uuid = logical_switch.get('uuid')
-        logical_switch = self._get_dict(ovsdb_schema.LogicalSwitch(
-            uuid=logical_switch_uuid,
-            name=network['id'],
-            key=network['provider:segmentation_id'],
-            description=network['name']))
-        return logical_switch
-
     def _form_physical_locator_schema(self, context, pl_dict):
         locator_uuid = None
         locator = db.get_physical_locator_by_dst_ip(
@@ -359,10 +346,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         nw_map['l2_gateway_id'] = l2_gw_id
         if seg_id:
             nw_map[constants.SEG_ID] = gw_connection.get(constants.SEG_ID)
-        net_segments_list = self.service_plugin._get_network_segments(
-            context, network_id)
-        if len(net_segments_list) > 1:
-            raise l2gw_exc.MultipleSegmentsFound(network_id=network_id)
         if not self.service_plugin._get_network(context, network_id):
             raise exceptions.NetworkNotFound(net_id=network_id)
         if self.service_plugin._retrieve_gateway_connections(context,
@@ -515,12 +498,29 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             uuid = logical_switch.get('uuid')
         else:
             uuid = None
+        network_id = gw_connection.get('network_id')
         ls_dict = {'uuid': uuid,
-                   'name': gw_connection.get('network_id')}
+                   'name': network_id}
         network = self._get_network_details(context,
-                                            gw_connection.get('network_id'))
+                                            network_id)
         ls_dict['description'] = network.get('name')
-        ls_dict['key'] = network.get('provider:segmentation_id')
+        logical_segments = network.get('segments')
+        if logical_segments:
+            vxlan_seg_id = None
+            for seg in logical_segments:
+                if seg.get('provider:network_type') == constants.VXLAN:
+                    if vxlan_seg_id:
+                        raise l2gw_exc.MultipleVxlanSegmentsFound(
+                            network_id=network_id)
+                    vxlan_seg_id = seg.get('provider:segmentation_id')
+                    ls_dict['key'] = vxlan_seg_id
+            if not vxlan_seg_id:
+                raise l2gw_exc.VxlanSegmentationIDNotFound(
+                    network_id=network_id)
+        elif network.get('provider:network_type') == constants.VXLAN:
+            ls_dict['key'] = network.get('provider:segmentation_id')
+        else:
+            raise l2gw_exc.VxlanSegmentationIDNotFound(network_id=network_id)
         return ls_dict
 
     def _get_physical_locator_dict(self, dst_ip,
