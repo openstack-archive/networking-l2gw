@@ -3,6 +3,7 @@ L2GW_DIR=$DEST/networking-l2gw
 L2GW_AGENT_BINARY="$NEUTRON_BIN_DIR/neutron-l2gateway-agent"
 L2GW_PLUGIN=${L2GW_PLUGIN:-"networking_l2gw.services.l2gateway.plugin.L2GatewayPlugin"}
 L2GW_CONF_FILE=/etc/neutron/l2gateway_agent.ini
+L2GW_PLUGIN_CONF_FILE=/etc/neutron/l2gw_plugin.ini
 #
 # Each service you enable has the following meaning:
 # l2gw-plugin - Add this config flag to  enable l2gw service plugin

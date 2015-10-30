@@ -17,7 +17,7 @@ function install_l2gw {
 }
 
 function configure_agent_conf {
-    cp  $L2GW_DIR/etc/l2gateway_agent.ini $L2GW_CONF_FILE
+    cp $L2GW_DIR/etc/l2gateway_agent.ini $L2GW_CONF_FILE
     iniset $L2GW_CONF_FILE ovsdb ovsdb_hosts $OVSDB_HOSTS
 }
 
@@ -30,6 +30,7 @@ function run_l2gw_alembic_migration {
 }
 
 function configure_l2gw_plugin {
+    cp $L2GW_DIR/etc/l2gw_plugin.ini $L2GW_PLUGIN_CONF_FILE
    _neutron_service_plugin_class_add $L2GW_PLUGIN
 }
 
