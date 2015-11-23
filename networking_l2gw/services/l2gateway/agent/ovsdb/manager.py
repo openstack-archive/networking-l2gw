@@ -358,7 +358,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                     ovsdb_fd.update_connection_to_gateway(logical_switch_dict,
                                                           locator_dicts,
                                                           mac_dicts,
-                                                          port_dicts)
+                                                          port_dicts,
+                                                          ovsdb_identifier)
 
     def agent_to_plugin_rpc(self, ovsdb_data):
         self.plugin_rpc.update_ovsdb_changes(ctx.get_admin_context(),
