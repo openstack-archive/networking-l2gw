@@ -46,10 +46,11 @@ class BaseConnection(object):
         self.enable_manager = cfg.CONF.ovsdb.enable_manager
         if self.enable_manager:
             self.s = None
-            self.c_sock = None
-            self.addr = None
             self.check_c_sock = None
+            self.check_sock_rcv = False
             eventlet.greenthread.spawn(self._rcv_socket)
+            self.ovsdb_dicts = {}
+            self.ovsdb_fd_states = {}
         else:
             self.gw_config = gw_config
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -96,30 +97,72 @@ class BaseConnection(object):
         self.s.listen(5)                 # Now wait for client connection.
         while True:
             # Establish connection with client.
-            self.c_sock, ip_addr = self.s.accept()
-            self.addr = ip_addr[0]
-            self.c_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            LOG.debug("Got connection from %s ", self.addr)
+            c_sock, ip_addr = self.s.accept()
+            addr = ip_addr[0]
+            c_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            LOG.debug("Got connection from %s ", addr)
             self.connected = True
+            self.ovsdb_dicts[addr] = c_sock
+            eventlet.greenthread.spawn(self._common_sock_rcv_thread, addr)
 
-    def _echo_response(self):
+    def _common_sock_rcv_thread(self, addr):
+        chunks = []
+        lc = rc = 0
+        prev_char = None
+        self._echo_response(addr)
+        if self.enable_manager and self.check_c_sock:
+            while self.read_on:
+                response = self.ovsdb_dicts.get(addr).recv(n_const.BUFFER_SIZE)
+                self.ovsdb_fd_states[addr] = 'connected'
+                eventlet.greenthread.sleep(0)
+                self.check_sock_rcv = True
+                if response:
+                    response = response.decode('utf8')
+                    message_mark = 0
+                    for i, c in enumerate(response):
+                        if c == '{' and not (prev_char and
+                                             prev_char == '\\'):
+                            lc += 1
+                        elif c == '}' and not (prev_char and
+                                               prev_char == '\\'):
+                            rc += 1
+                        if rc > lc:
+                            raise Exception(_LE("json string not valid"))
+                        elif lc == rc and lc is not 0:
+                            chunks.append(response[message_mark:i + 1])
+                            message = "".join(chunks)
+                            eventlet.greenthread.spawn_n(
+                                self._on_remote_message, message, addr)
+                            eventlet.greenthread.sleep(0)
+                            lc = rc = 0
+                            message_mark = i + 1
+                            chunks = []
+                        prev_char = c
+                    chunks.append(response[message_mark:])
+                else:
+                    self.read_on = False
+                    self.disconnect(addr)
+                    self.ovsdb_fd_states[addr] = 'disconnected'
+
+    def _echo_response(self, addr):
         while True:
             try:
                 if self.enable_manager:
                     eventlet.greenthread.sleep(0)
-                    response = self.c_sock.recv(n_const.BUFFER_SIZE)
+                    response = self.ovsdb_dicts.get(addr).recv(
+                        n_const.BUFFER_SIZE)
                     sock_json_m = jsonutils.loads(response)
                     sock_handler_method = sock_json_m.get('method', None)
                     if sock_handler_method == 'echo':
                         self.check_c_sock = True
-                        self.c_sock.send(jsonutils.dumps(
+                        self.ovsdb_dicts.get(addr).send(jsonutils.dumps(
                             {"result": sock_json_m.get("params", None),
                              "error": None, "id": sock_json_m['id']}))
                         break
             except Exception:
                 continue
 
-    def send(self, message, callback=None):
+    def send(self, message, callback=None, addr=None):
         """Sends a message to the OVSDB server."""
         if callback:
             self.callbacks[message['id']] = callback
@@ -128,7 +171,8 @@ class BaseConnection(object):
         while retry_count <= n_const.MAX_RETRIES:
             try:
                 if self.enable_manager:
-                    bytes_sent = self.c_sock.send(jsonutils.dumps(message))
+                    bytes_sent = self.ovsdb_dicts.get(addr).send(
+                        jsonutils.dumps(message))
                 else:
                     bytes_sent = self.socket.send(jsonutils.dumps(message))
                 if bytes_sent:
@@ -140,13 +184,14 @@ class BaseConnection(object):
 
         LOG.warning(_LW("Could not send message to the "
                         "OVSDB server."))
-        self.disconnect()
+        self.disconnect(addr)
         return False
 
-    def disconnect(self):
+    def disconnect(self, addr=None):
         """disconnects the connection from the OVSDB server."""
         if self.enable_manager:
-            self.c_sock.close()
+            self.ovsdb_dicts.get(addr).close()
+            del self.ovsdb_dicts[addr]
         else:
             self.socket.close()
         self.connected = False

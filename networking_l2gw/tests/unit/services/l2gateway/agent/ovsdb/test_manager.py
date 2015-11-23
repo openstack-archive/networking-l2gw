@@ -225,8 +225,14 @@ class TestManager(base.BaseTestCase):
 
     def test_init_with_enable_manager(self):
         cfg.CONF.set_override('enable_manager', True, 'ovsdb')
-        self.l2gw_agent_manager.__init__()
-        self.assertIsNone(self.l2gw_agent_manager.ovsdb_fd)
+        with contextlib.nested(
+            mock.patch.object(manager.OVSDBManager,
+                              '_sock_open_connection'),
+            mock.patch.object(loopingcall, 'FixedIntervalLoopingCall')) as (
+                mock_sock_open_conn, mock_loop):
+            self.l2gw_agent_manager.__init__()
+            self.assertTrue(mock_sock_open_conn.called)
+            self.assertTrue(mock_loop.called)
 
     def test_sock_open_connection(self):
         cfg.CONF.set_override('enable_manager', True, 'ovsdb')
@@ -253,14 +259,23 @@ class TestManager(base.BaseTestCase):
         self.l2gw_agent_manager.conf.host = 'fake_host'
         self.l2gw_agent_manager.__init__()
         self.l2gw_agent_manager.l2gw_agent_type = n_const.MONITOR
-        with mock.patch.object(ovsdb_common_class,
-                               'OVSDB_commom_class') as mock_ovsdb_common:
+        with contextlib.nested(
+            mock.patch.object(ovsdb_common_class,
+                              'OVSDB_commom_class'),
+            mock.patch.object(eventlet.greenthread,
+                              'spawn_n'),
+            mock.patch.object(self.l2gw_agent_manager,
+                              '_start_looping_task_ovsdb_states')) as (
+                mock_ovsdb_common, mock_thread, mock_looping):
             self.l2gw_agent_manager.ovsdb_fd = mock_ovsdb_common.return_value
-            self.l2gw_agent_manager.ovsdb_fd.check_monitor_thread = False
+            self.l2gw_agent_manager.ovsdb_fd.check_monitor_table_thread = False
+            self.l2gw_agent_manager.ovsdb_fd.check_sock_rcv = True
+            self.l2gw_agent_manager.ovsdb_fd.ovsdb_dicts = {
+                "fake_ip": "fake_sock"}
             self.l2gw_agent_manager.set_monitor_agent(self.context,
                                                       'fake_host')
-            (self.l2gw_agent_manager.ovsdb_fd._spawn_monitor_thread.
-             assert_called_with())
+            self.assertTrue(mock_thread.called)
+            self.assertTrue(mock_looping.called)
 
     def test_update_connection_to_gateway_for_monitor_agent(self):
         """Test case to test update_connection_to_gateway for
@@ -277,7 +292,8 @@ class TestManager(base.BaseTestCase):
                 self.context, mock.Mock(), mock.Mock(), mock.Mock(),
                 mock.Mock(), mock.Mock())
             (self.l2gw_agent_manager.ovsdb_fd.update_connection_to_gateway.
-             assert_called_with(mock.ANY, mock.ANY, mock.ANY, mock.ANY, False))
+             assert_called_with(mock.ANY, mock.ANY, mock.ANY, mock.ANY,
+                                mock.ANY, False))
 
     def test_update_connection_to_gateway_for_transact_agent(self):
         """Test case to test update_connection_to_gateway
@@ -298,10 +314,11 @@ class TestManager(base.BaseTestCase):
                 self.context, mock.Mock(), mock.Mock(), mock.Mock(),
                 mock.Mock(), mock.Mock())
             (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with())
+             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.update_connection_to_gateway.
-             assert_called_with(mock.ANY, mock.ANY, mock.ANY, mock.ANY))
+             assert_called_with(mock.ANY, mock.ANY, mock.ANY, mock.ANY,
+                                mock.ANY))
 
     def test_delete_network_for_monitor_agent(self):
         """Test case to test delete_network with enable_manager."""
@@ -314,7 +331,7 @@ class TestManager(base.BaseTestCase):
             self.l2gw_agent_manager.delete_network(
                 self.context, mock.Mock(), "fake_logical_switch_uuid")
             (self.l2gw_agent_manager.ovsdb_fd.delete_logical_switch.
-             assert_called_with("fake_logical_switch_uuid", False))
+             assert_called_with("fake_logical_switch_uuid", mock.ANY, False))
 
     def test_delete_network_for_transact_agent(self):
         """Test case to test delete_network with enable_manager."""
@@ -331,10 +348,10 @@ class TestManager(base.BaseTestCase):
             self.l2gw_agent_manager.delete_network(
                 self.context, mock.Mock(), "fake_logical_switch_uuid")
             (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with())
+             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.delete_logical_switch.
-             assert_called_with("fake_logical_switch_uuid", False))
+             assert_called_with("fake_logical_switch_uuid", mock.ANY, False))
 
     def test_add_vif_to_gateway_for_monitor_agent(self):
         """Test case to test add_vif_to_gateway with enable_manager."""
@@ -349,7 +366,8 @@ class TestManager(base.BaseTestCase):
                 "fake_locator_dict", "fake_mac_dict")
             (self.l2gw_agent_manager.ovsdb_fd.insert_ucast_macs_remote.
              assert_called_with("fake_logical_switch_dict",
-                                "fake_locator_dict", "fake_mac_dict", False))
+                                "fake_locator_dict", "fake_mac_dict",
+                                mock.ANY, False))
 
     def test_add_vif_to_gateway_for_transact_agent(self):
         """Test case to test add_vif_to_gateway with enable_manager."""
@@ -367,11 +385,12 @@ class TestManager(base.BaseTestCase):
                 self.context, mock.Mock(), "fake_logical_switch_dict",
                 "fake_locator_dict", "fake_mac_dict")
             (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with())
+             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.insert_ucast_macs_remote.
              assert_called_with("fake_logical_switch_dict",
-                                "fake_locator_dict", "fake_mac_dict"))
+                                "fake_locator_dict", "fake_mac_dict",
+                                mock.ANY))
 
     def test_delete_vif_from_gateway_for_monitor_agent(self):
         """Test case to test delete_vif_to_gateway with enable_manager."""
@@ -385,7 +404,8 @@ class TestManager(base.BaseTestCase):
                 self.context, mock.Mock(), "fake_logical_switch_uuid",
                 "fake_mac")
             (self.l2gw_agent_manager.ovsdb_fd.delete_ucast_macs_remote.
-             assert_called_with("fake_logical_switch_uuid", "fake_mac", False))
+             assert_called_with("fake_logical_switch_uuid", "fake_mac",
+                                mock.ANY, False))
 
     def test_delete_vif_to_gateway_for_transact_agent(self):
         """Test case to test delete_vif_to_gateway with enable_manager."""
@@ -403,10 +423,11 @@ class TestManager(base.BaseTestCase):
                 self.context, mock.Mock(), "fake_logical_switch_uuid",
                 "fake_mac")
             (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with())
+             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.delete_ucast_macs_remote.
-             assert_called_with("fake_logical_switch_uuid", "fake_mac"))
+             assert_called_with("fake_logical_switch_uuid", "fake_mac",
+                                mock.ANY))
 
     def test_update_vif_from_gateway_for_monitor_agent(self):
         """Test case to test update_vif_to_gateway with enable_manager."""
@@ -421,7 +442,7 @@ class TestManager(base.BaseTestCase):
                 "fake_logical_switch_uuid", "fake_mac")
             (self.l2gw_agent_manager.ovsdb_fd.update_ucast_macs_remote.
              assert_called_with(
-                 "fake_logical_switch_uuid", "fake_mac", False))
+                 "fake_logical_switch_uuid", "fake_mac", mock.ANY, False))
 
     def test_update_vif_to_gateway_for_transact_agent(self):
         """Test case to test update_vif_to_gateway
@@ -442,7 +463,8 @@ class TestManager(base.BaseTestCase):
                 self.context, mock.Mock(), "fake_logical_switch_uuid",
                 "fake_mac")
             (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with())
+             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.update_ucast_macs_remote.
-             assert_called_with("fake_logical_switch_uuid", "fake_mac"))
+             assert_called_with("fake_logical_switch_uuid", "fake_mac",
+                                mock.ANY))

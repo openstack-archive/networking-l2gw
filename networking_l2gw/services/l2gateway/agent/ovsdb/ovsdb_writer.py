@@ -53,10 +53,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                         message="Error from the OVSDB server: %s" % error)
         return result
 
-    def _get_reply(self, operation_id):
+    def _get_reply(self, operation_id, ovsdb_identifier):
         count = 0
         while count <= n_const.MAX_RETRIES:
-            response = self._recv_data()
+            response = self._recv_data(ovsdb_identifier)
             LOG.debug("Response from OVSDB server = %s", str(response))
             if response:
                 try:
@@ -64,9 +64,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                     self.responses.append(json_m)
                     method_type = json_m.get('method', None)
                     if method_type == "echo" and self.enable_manager:
-                        self.c_sock.send(jsonutils.dumps(
-                            {"result": json_m.get("params", None),
-                             "error": None, "id": json_m['id']}))
+                        self.ovsdb_dicts.get(ovsdb_identifier).send(
+                            jsonutils.dumps(
+                                {"result": json_m.get("params", None),
+                                 "error": None, "id": json_m['id']}))
                     else:
                         if self._process_response(operation_id):
                             return True
@@ -80,13 +81,15 @@ class OVSDBWriter(base_connection.BaseConnection):
             LOG.error(_LE("Could not obtain response from the OVSDB server "
                           "for the request"))
 
-    def _send_and_receive(self, query, operation_id, rcv_required):
-        if not self.send(query):
+    def _send_and_receive(self, query, operation_id, ovsdb_identifier,
+                          rcv_required):
+        if not self.send(query, addr=ovsdb_identifier):
             return
         if rcv_required:
-            self._get_reply(operation_id)
+            self._get_reply(operation_id, ovsdb_identifier)
 
-    def delete_logical_switch(self, logical_switch_uuid, rcv_required=True):
+    def delete_logical_switch(self, logical_switch_uuid, ovsdb_identifier,
+                              rcv_required=True):
         """Delete an entry from Logical_Switch OVSDB table."""
         commit_dict = {"op": "commit", "durable": True}
         op_id = str(random.getrandbits(128))
@@ -99,10 +102,11 @@ class OVSDBWriter(base_connection.BaseConnection):
                             commit_dict],
                  "id": op_id}
         LOG.debug("delete_logical_switch: query: %s", query)
-        self._send_and_receive(query, op_id, rcv_required)
+        self._send_and_receive(query, op_id, ovsdb_identifier, rcv_required)
 
     def insert_ucast_macs_remote(self, l_switch_dict, locator_dict,
-                                 mac_dict, rcv_required=True):
+                                 mac_dict, ovsdb_identifier,
+                                 rcv_required=True):
         """Insert an entry in Ucast_Macs_Remote OVSDB table."""
         # To insert an entry in Ucast_Macs_Remote table, it requires
         # corresponding entry in Physical_Locator (Compute node VTEP IP)
@@ -146,9 +150,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": params,
                  "id": op_id}
         LOG.debug("insert_ucast_macs_remote: query: %s", query)
-        self._send_and_receive(query, op_id, rcv_required)
+        self._send_and_receive(query, op_id, ovsdb_identifier, rcv_required)
 
     def update_ucast_macs_remote(self, locator_dict, mac_dict,
+                                 ovsdb_identifier,
                                  rcv_required=True):
         """Update an entry in Ucast_Macs_Remote OVSDB table."""
         # It is possible that the locator may not exist already.
@@ -181,9 +186,10 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": params,
                  "id": op_id}
         LOG.debug("update_ucast_macs_remote: query: %s", query)
-        self._send_and_receive(query, op_id, rcv_required)
+        self._send_and_receive(query, op_id, ovsdb_identifier, rcv_required)
 
     def delete_ucast_macs_remote(self, logical_switch_uuid, macs,
+                                 ovsdb_identifier,
                                  rcv_required=True):
         """Delete entries from Ucast_Macs_Remote OVSDB table."""
         commit_dict = {"op": "commit", "durable": True}
@@ -205,11 +211,12 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": params,
                  "id": op_id}
         LOG.debug("delete_ucast_macs_remote: query: %s", query)
-        self._send_and_receive(query, op_id, rcv_required)
+        self._send_and_receive(query, op_id, ovsdb_identifier, rcv_required)
 
     def update_connection_to_gateway(self, logical_switch_dict,
                                      locator_dicts, mac_dicts,
-                                     port_dicts, rcv_required=True):
+                                     port_dicts, ovsdb_identifier,
+                                     rcv_required=True):
         """Updates Physical Port's VNI to VLAN binding."""
         # Form the JSON Query so as to update the physical port with the
         # vni-vlan (logical switch uuid to vlan) binding
@@ -222,16 +229,17 @@ class OVSDBWriter(base_connection.BaseConnection):
                  "params": update_dicts,
                  "id": op_id}
         LOG.debug("update_connection_to_gateway: query = %s", query)
-        self._send_and_receive(query, op_id, rcv_required)
+        self._send_and_receive(query, op_id, ovsdb_identifier, rcv_required)
 
-    def _recv_data(self):
+    def _recv_data(self, ovsdb_identifier):
         chunks = []
         lc = rc = 0
         prev_char = None
         while True:
             try:
                 if self.enable_manager:
-                    response = self.c_sock.recv(n_const.BUFFER_SIZE)
+                    response = self.ovsdb_dicts.get(ovsdb_identifier).recv(
+                        n_const.BUFFER_SIZE)
                 else:
                     response = self.socket.recv(n_const.BUFFER_SIZE)
                 if response:
