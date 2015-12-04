@@ -121,7 +121,7 @@ class TestL2GatewayBasic(base.BaseAdminNetworkTest):
                 serverstatus = '/'.join((server_status, str(task_state)))
                 waitsec = (time.time() - start_time)
                 LOG.info(
-                    _LI('State transtion %(oldstatus)s => %(serverstatus)s'
+                    _LI('State transition %(oldstatus)s => %(serverstatus)s'
                         'after %(waitsec)d second wait') %
                     {'oldstatus': oldstatus, 'serverstatus': serverstatus,
                      'waitsec': waitsec}
