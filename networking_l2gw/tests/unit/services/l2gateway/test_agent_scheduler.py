@@ -32,6 +32,8 @@ from neutron.tests import base
 
 from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import constants as srv_const
+from networking_l2gw.services.l2gateway.common import topics as l2gw_topics
+from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
 
 def make_active_agent(fake_id, fake_agent_type, config=None):
@@ -70,10 +72,13 @@ class TestAgentScheduler(base.BaseTestCase):
         cfg.CONF.set_override('core_plugin',
                               "neutron.plugins.ml2.plugin.Ml2Plugin")
         self.plugin = FakePlugin()
+        self.agent_rpc = agent_api.L2gatewayAgentApi(
+            l2gw_topics.L2GATEWAY_AGENT, cfg.CONF.host)
         self.context = neutron_context.get_admin_context()
         cfg.CONF.set_override('agent_down_time', 10)
         cfg.CONF.set_override('periodic_monitoring_interval', 5)
-        self.agentsch = agent_scheduler.L2GatewayAgentScheduler(cfg.CONF)
+        self.agentsch = agent_scheduler.L2GatewayAgentScheduler(self.agent_rpc,
+                                                                cfg.CONF)
         self.agentsch._plugin = self.plugin
         self.agentsch.context = self.context
         self.agentsch.agent_ext_support = True

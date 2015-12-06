@@ -24,7 +24,7 @@ from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway.common import topics
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
-from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
+from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -67,7 +67,7 @@ class OVSDBData(object):
     def __init__(self, ovsdb_identifier=None):
         self.ovsdb_identifier = ovsdb_identifier
         self._setup_entry_table()
-        self.agent_rpc = l2gw_plugin.L2gatewayAgentApi(
+        self.agent_rpc = agent_api.L2gatewayAgentApi(
             topics.L2GATEWAY_AGENT, cfg.CONF.host)
         self.l2gw_mixin = l2gateway_db.L2GatewayMixin()
 

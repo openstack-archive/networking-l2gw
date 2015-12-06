@@ -39,11 +39,12 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
     _plugin = None
     _l2gwplugin = None
 
-    def __init__(self, notifier=None):
+    def __init__(self, agent_rpc, notifier=None):
         super(L2GatewayAgentScheduler, self).__init__()
         self.notifier = notifier
         config.register_l2gw_opts_helper()
         self.monitor_interval = cfg.CONF.periodic_monitoring_interval
+        self.agent_rpc = agent_rpc
 
     @property
     def l2gwplugin(self):
@@ -109,8 +110,7 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
             sorted_active_agents = sorted(agents_to_process,
                                           key=lambda k: k['started_at'])
             chosen_agent = sorted_active_agents[0]
-        self.l2gwplugin.agent_rpc.set_monitor_agent(context,
-                                                    chosen_agent['host'])
+        self.agent_rpc.set_monitor_agent(context, chosen_agent['host'])
 
     def monitor_agent_state(self):
         """Represents L2gateway agent scheduler thread.

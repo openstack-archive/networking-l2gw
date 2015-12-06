@@ -14,6 +14,7 @@
 # under the License.
 # service type constants:
 L2GW = "L2GW"
+l2gw = "l2gw"
 
 AGENT_TYPE_L2GATEWAY = 'L2 Gateway agent'
 
