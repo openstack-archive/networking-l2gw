@@ -53,9 +53,9 @@ class L2GatewayConnectionCreate(extension.ClientExtensionCreate,
         parser.add_argument(
             '--default-segmentation-id',
             dest='seg_id',
-            help=_('default segmentation-id that will'
-                   'be applied to the interfaces for which'
-                   'segmentation id was not specified'
+            help=_('default segmentation-id that will '
+                   'be applied to the interfaces for which '
+                   'segmentation id was not specified '
                    'in l2-gateway-create command.'))
         return parser
 
