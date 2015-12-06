@@ -305,9 +305,7 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         self.assertRaises(exceptions.L2GatewayDeviceNotFound,
                           self._update_l2_gateway, l2gw_id, data_l2gw_update)
 
-    @mock.patch('eventlet.greenthread.spawn_n')
-    def test_l2gw_callback_update_port(self, spawn_n):
-        spawn_n.side_effect = lambda x, y, z: x(y, z)
+    def test_l2gw_callback_update_port(self):
         service_plugins = {constants.L2GW: mock.Mock()}
         fake_context = mock.Mock()
         fake_port = mock.Mock()

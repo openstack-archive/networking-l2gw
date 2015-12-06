@@ -13,7 +13,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from eventlet import greenthread
 from oslo_utils import uuidutils
 
 from neutron.callbacks import events
@@ -509,8 +508,7 @@ def l2gw_callback(resource, event, trigger, **kwargs):
     port_dict = kwargs.get('port')
     if l2gwservice:
         if event == events.AFTER_UPDATE:
-            greenthread.spawn_n(l2gwservice.add_port_mac,
-                                context, port_dict)
+            l2gwservice.add_port_mac(context, port_dict)
         elif event == events.AFTER_DELETE:
             l2gwservice.delete_port_mac(context, port_dict)
 
