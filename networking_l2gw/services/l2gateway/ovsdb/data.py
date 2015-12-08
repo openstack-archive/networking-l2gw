@@ -14,10 +14,10 @@
 # limitations under the License.
 
 from neutron.common import constants
-from neutron.i18n import _LE
 from neutron import manager
 from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import constants as n_const

@@ -24,9 +24,7 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
-from neutron.i18n import _LE
-from neutron.i18n import _LW
-
+from networking_l2gw._i18n import _LE, _LW
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 LOG = logging.getLogger(__name__)

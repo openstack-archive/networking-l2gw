@@ -14,11 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from networking_l2gw._i18n import _LI
 from networking_l2gw.tests.api import base_l2gw
 from networking_l2gw.tests.scenario import ovsdb_connections
 from networking_l2gw.tests.tempest import config
 
-from neutron.i18n import _LI
 from neutron.tests.api import base
 from neutron.tests.tempest import exceptions
 from neutron.tests.tempest import manager

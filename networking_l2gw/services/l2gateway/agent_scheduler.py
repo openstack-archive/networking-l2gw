@@ -21,9 +21,9 @@ from oslo_service import loopingcall
 
 from neutron import context as neutron_context
 from neutron.db import agents_db
-from neutron.i18n import _LE
 from neutron import manager
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants as srv_const
 
