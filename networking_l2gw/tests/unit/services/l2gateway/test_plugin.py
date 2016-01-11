@@ -1,4 +1,4 @@
-# Copyright (c) 2015 OpenStack Foundation
+# Copyright (c) 2016 Openstack Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,30 +27,167 @@ class TestL2GatewayPlugin(base.BaseTestCase):
 
     def setUp(self):
         super(TestL2GatewayPlugin, self).setUp()
-        load_driver = mock.MagicMock()
-        self.plugin = mock.MagicMock()
-        self.plugin._load_drivers.return_value = load_driver
-        self.plugin._get_driver_for_provider.return_value = load_driver
+        mock.patch.object(config, 'register_l2gw_opts_helper')
+        self.driver = mock.MagicMock()
+        mock.patch('neutron.services.service_base.load_drivers',
+                   return_value=({'dummyprovider': self.driver},
+                                 'dummyprovider')).start()
+        mock.patch.object(l2gateway_db.L2GatewayMixin, '__init__'),
+        mock.patch.object(l2gateway_db, 'subscribe')
+        mock.patch('neutron.db.servicetype_db.ServiceTypeManager.get_instance',
+                   return_value=mock.MagicMock()).start()
+        self.context = mock.MagicMock()
+        self.plugin = l2gw_plugin.L2GatewayPlugin()
         self.ovsdb_identifier = 'fake_ovsdb_id'
         self.ovsdb_data = data.OVSDBData(self.ovsdb_identifier)
-        self.context = mock.ANY
 
-    def test_l2gatewayplugin_init(self):
+    def _get_fake_l2_gateway(self):
+        fake_l2_gateway_id = "5227c228-6bba-4bbe-bdb8-6942768ff0f1"
+        fake_l2_gateway = {
+            "tenant_id": "de0a7495-05c4-4be0-b796-1412835c6820",
+            "id": "5227c228-6bba-4bbe-bdb8-6942768ff0f1",
+            "name": "test-gateway",
+            "devices": [
+                {
+                    "device_name": "switch1",
+                    "interfaces": [
+                        {
+                            "name": "port1",
+                            "segmentation_id": [100]
+                        },
+                        {
+                            "name": "port2",
+                            "segmentation_id": [151, 152]
+                        }
+                    ]
+                }
+            ]
+        }
+        return fake_l2_gateway_id, fake_l2_gateway
+
+    def _get_fake_l2_gateway_connection(self):
+        fake_l2_gateway_conn_id = "5227c228-6bba-4bbe-bdb8-6942768ff02f"
+        fake_l2_gateway_conn = {
+            "tenant_id": "de0a7495-05c4-4be0-b796-1412835c6820",
+            "id": "5227c228-6bba-4bbe-bdb8-6942768ff02f",
+            "default_segmentation_id": 77,
+            "network_id": "5227c228-6bba-4bbe-bdb8-6942768ff077",
+            "l2_gateway_id": "4227c228-6bba-4bbe-bdb8-6942768ff088"
+        }
+        return fake_l2_gateway_conn_id, fake_l2_gateway_conn
+
+    def test_add_port_mac(self):
+        self.plugin.add_port_mac(self.context, {})
+        self.driver.add_port_mac.assert_called_once_with(self.context, {})
+
+    def test_delete_port_mac(self):
+        self.plugin.delete_port_mac(self.context, {})
+        self.driver.delete_port_mac.assert_called_once_with(self.context, {})
+
+    def test_create_l2_gateway(self):
+        fake_l2gw_id, fake_l2gw = self._get_fake_l2_gateway()
         with contextlib.nested(
-            mock.patch.object(config,
-                              'register_l2gw_opts_helper'),
-            mock.patch.object(l2gw_plugin.L2GatewayPlugin,
-                              '_load_drivers'),
             mock.patch.object(l2gateway_db.L2GatewayMixin,
-                              '__init__'),
-            mock.patch.object(l2gateway_db,
-                              'subscribe')
-        ) as (reg_l2gw_opts,
-              load_drivers,
-              super_init,
-              subscribe):
-            l2gw_plugin.L2GatewayPlugin()
-            self.assertTrue(reg_l2gw_opts.called)
-            self.assertTrue(load_drivers.called)
-            self.assertTrue(super_init.called)
-            self.assertTrue(subscribe.called)
+                              'validate_l2_gateway_for_create'),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'create_l2_gateway',
+                              return_value=fake_l2gw)
+        ) as (mock_validate_for_create, mock_create_l2gw_db):
+            self.plugin.create_l2_gateway(self.context, fake_l2gw)
+            mock_validate_for_create.assert_called_with(self.context,
+                                                        fake_l2gw)
+            mock_create_l2gw_db.assert_called_with(self.context, fake_l2gw)
+            self.driver.create_l2_gateway.assert_called_once_with(self.context,
+                                                                  fake_l2gw)
+            self.driver.create_l2_gateway_precommit.assert_called_once_with(
+                self.context, fake_l2gw)
+            self.driver.create_l2_gateway_postcommit.assert_called_once_with(
+                self.context, fake_l2gw)
+
+    def test_delete_l2_gateway(self):
+        fake_l2gw_id, fake_l2gw = self._get_fake_l2_gateway()
+        with contextlib.nested(
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'validate_l2_gateway_for_delete'),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'delete_l2_gateway')
+        ) as (mock_validate_for_delete, mock_delete_l2gw_db):
+            self.plugin.delete_l2_gateway(self.context, fake_l2gw_id)
+            mock_validate_for_delete.assert_called_with(self.context,
+                                                        fake_l2gw_id)
+            mock_delete_l2gw_db.assert_called_with(self.context, fake_l2gw_id)
+            self.driver.delete_l2_gateway.assert_called_once_with(self.context,
+                                                                  fake_l2gw_id)
+            self.driver.delete_l2_gateway_precommit.assert_called_once_with(
+                self.context, fake_l2gw_id)
+            self.driver.delete_l2_gateway_postcommit.assert_called_once_with(
+                self.context, fake_l2gw_id)
+
+    def test_update_l2_gateway(self):
+        fake_l2gw_id, fake_l2gw = self._get_fake_l2_gateway()
+        with contextlib.nested(
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'validate_l2_gateway_for_update'),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'update_l2_gateway', return_value=fake_l2gw)
+        ) as (mock_validate_for_update, mock_update_l2gw_db):
+            self.plugin.update_l2_gateway(self.context,
+                                          fake_l2gw_id,
+                                          fake_l2gw)
+            mock_validate_for_update.assert_called_with(self.context,
+                                                        fake_l2gw_id,
+                                                        fake_l2gw)
+            mock_update_l2gw_db.assert_called_with(self.context, fake_l2gw_id,
+                                                   fake_l2gw)
+            self.driver.update_l2_gateway.assert_called_once_with(self.context,
+                                                                  fake_l2gw_id,
+                                                                  fake_l2gw)
+            self.driver.update_l2_gateway_precommit.assert_called_once_with(
+                self.context, fake_l2gw)
+            self.driver.update_l2_gateway_postcommit.assert_called_once_with(
+                self.context, fake_l2gw)
+
+    def test_create_l2_gateway_connection(self):
+        fake_l2gw_conn_id, fake_l2gw_conn = (
+            self._get_fake_l2_gateway_connection())
+        with contextlib.nested(
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'validate_l2_gateway_connection_for_create'),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'create_l2_gateway_connection',
+                              return_value=fake_l2gw_conn)
+        ) as (mock_validate_for_conn_create, mock_conn_create_l2gw_db):
+            self.plugin.create_l2_gateway_connection(self.context,
+                                                     fake_l2gw_conn)
+            mock_validate_for_conn_create.assert_called_with(self.context,
+                                                             fake_l2gw_conn)
+            mock_conn_create_l2gw_db.assert_called_with(self.context,
+                                                        fake_l2gw_conn)
+            self.driver.create_l2_gateway_connection.assert_called_once_with(
+                self.context, fake_l2gw_conn)
+            (self.driver.create_l2_gateway_connection_precommit.
+                assert_called_once_with(self.context, fake_l2gw_conn))
+            (self.driver.create_l2_gateway_connection_postcommit.
+                assert_called_once_with(self.context, fake_l2gw_conn))
+
+    def test_delete_l2_gateway_connection(self):
+        fake_l2gw_conn_id, fake_l2gw_conn = (
+            self._get_fake_l2_gateway_connection())
+        with contextlib.nested(
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'validate_l2_gateway_connection_for_delete'),
+            mock.patch.object(l2gateway_db.L2GatewayMixin,
+                              'delete_l2_gateway_connection')
+        ) as (mock_validate_for_conn_delete, mock_conn_delete_l2gw_db):
+            self.plugin.delete_l2_gateway_connection(self.context,
+                                                     fake_l2gw_conn_id)
+            mock_validate_for_conn_delete.assert_called_with(self.context,
+                                                             fake_l2gw_conn_id)
+            mock_conn_delete_l2gw_db.assert_called_with(self.context,
+                                                        fake_l2gw_conn_id)
+            self.driver.delete_l2_gateway_connection.assert_called_once_with(
+                self.context, fake_l2gw_conn_id)
+            (self.driver.delete_l2_gateway_connection_precommit.
+                assert_called_once_with(self.context, fake_l2gw_conn_id))
+            (self.driver.delete_l2_gateway_connection_postcommit.
+                assert_called_once_with(self.context, fake_l2gw_conn_id))

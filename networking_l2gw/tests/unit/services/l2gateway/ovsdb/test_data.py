@@ -28,7 +28,7 @@ from networking_l2gw.services.l2gateway.ovsdb import data
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
 
-class TestL2GatewayOVSDBCallbacks():
+class TestL2GatewayOVSDBCallbacks(object):
 
     def setUp(self):
         super(TestL2GatewayOVSDBCallbacks, self).setUp()

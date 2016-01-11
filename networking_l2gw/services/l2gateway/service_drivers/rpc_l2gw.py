@@ -19,6 +19,7 @@ from neutron.db import agents_db
 from neutron.extensions import portbindings
 
 from networking_l2gw._i18n import _LE
+from networking_l2gw.db.l2gateway import l2gateway_db as l2_gw_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import constants
@@ -62,6 +63,8 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         self.create_rpc_conn()
         LOG.debug("starting l2gateway agent scheduler")
         self.start_l2gateway_agent_scheduler()
+        self.gateway_resource = constants.GATEWAY_RESOURCE_NAME
+        self.l2gateway_db = l2_gw_db.L2GatewayMixin()
 
     @property
     def service_type(self):
@@ -556,6 +559,33 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         locator_list.append(pl_dict)
         return locator_list
 
+    def create_l2_gateway(self, context, l2_gateway):
+        pass
+
+    def create_l2_gateway_postcommit(self, context, l2_gateway):
+        pass
+
+    def update_l2_gateway(self, context, l2_gateway_id, l2_gateway):
+        """Update l2 gateway."""
+        pass
+
+    def update_l2_gateway_postcommit(self, context, l2_gateway):
+        pass
+
+    def delete_l2_gateway(self, context, id):
+        """delete the l2 gateway by id."""
+        self.l2gateway_db._admin_check(context, 'DELETE')
+        with context.session.begin(subtransactions=True):
+            gw_db = self.l2gateway_db._get_l2_gateway(context, id)
+            if gw_db is None:
+                raise l2gw_exc.L2GatewayNotFound(gateway_id=id)
+            if gw_db.network_connections:
+                raise l2gw_exc.L2GatewayInUse(gateway_id=id)
+            return gw_db
+
+    def delete_l2_gateway_postcommit(self, context, l2_gateway_id):
+        pass
+
     def create_l2_gateway_connection(self, context, l2_gateway_connection):
         """Process the call from the CLI and trigger the RPC,
 
@@ -656,6 +686,10 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                     port['ovsdb_identifier'] = ovsdb_id
                 self.delete_port_mac(context, ports)
 
+    def create_l2_gateway_connection_postcommit(self, context,
+                                                l2_gateway_connection):
+        pass
+
     def delete_l2_gateway_connection(self, context, l2_gateway_connection):
         """Process the call from the CLI and trigger the RPC,
 
@@ -691,3 +725,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                 port_dict)
         # call delete vif_from_gateway for ovsdb_id_set
         self._remove_vm_macs(context, network_id, ovsdb_id_set)
+
+    def delete_l2_gateway_connection_postcommit(self, context,
+                                                l2_gateway_connection):
+        pass

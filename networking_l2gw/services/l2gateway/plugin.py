@@ -13,26 +13,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_utils import excutils
+
 from neutron.db import servicetype_db as st_db
 from neutron import manager
 from neutron.services import provider_configuration as pconf
 from neutron.services import service_base
 
 from networking_l2gw._i18n import _LE
+from networking_l2gw._i18n import _LI
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants
+from networking_l2gw.services.l2gateway import exceptions as exc
 
 from neutron_lib import exceptions as n_exc
 from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
-
-
-def add_provider_configuration(type_manager, service_type):
-    type_manager.add_provider_configuration(
-        service_type,
-        pconf.ProviderConfiguration('networking_l2gw'))
 
 
 class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
@@ -49,8 +47,16 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         """Do the initialization for the l2 gateway service plugin here."""
         config.register_l2gw_opts_helper()
         self.service_type_manager = st_db.ServiceTypeManager.get_instance()
-        add_provider_configuration(self.service_type_manager, constants.L2GW)
+        self.service_type_manager.add_provider_configuration(
+            constants.L2GW, pconf.ProviderConfiguration('networking_l2gw'))
         self._load_drivers()
+        LOG.info(_LI("L2Gateway Service Plugin using Service Driver: %s"),
+                 self.default_provider)
+        self.driver = self.drivers[self.default_provider]
+        if len(self.drivers) > 1:
+            LOG.warning(_LI("Multiple drivers configured for L2Gateway, "
+                            "although running multiple drivers in parallel"
+                            " is not yet supported"))
         super(L2GatewayPlugin, self).__init__()
         l2gateway_db.subscribe()
 
@@ -79,43 +85,117 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         return constants.L2_GATEWAY_SERVICE_PLUGIN
 
     def add_port_mac(self, context, port_dict):
-        """Process the created port and trigger the RPC
-
-        to add to the gateway.
-        """
-        self._get_driver_for_provider(constants.l2gw
-                                      ).add_port_mac(context, port_dict)
+        """Process a created Neutron port."""
+        self.driver.add_port_mac(context, port_dict)
 
     def delete_port_mac(self, context, port):
-        """Process the deleted port and trigger the RPC
+        """Process a deleted Neutron port."""
+        self.driver.delete_port_mac(context, port)
 
-        to delete from the gateway.
+    def create_l2_gateway(self, context, l2_gateway):
+        """Create the L2Gateway."""
+        self.validate_l2_gateway_for_create(context, l2_gateway)
+        self.driver.create_l2_gateway(context, l2_gateway)
+        with context.session.begin(subtransactions=True):
+            l2_gateway_instance = super(L2GatewayPlugin,
+                                        self).create_l2_gateway(context,
+                                                                l2_gateway)
+            self.driver.create_l2_gateway_precommit(context,
+                                                    l2_gateway_instance)
+        try:
+            self.driver.create_l2_gateway_postcommit(
+                context, l2_gateway_instance)
+        except exc.L2GatewayServiceDriverError:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE("L2GatewayPlugin.create_l2_gateway_postcommit "
+                              "failed, deleting l2gateway '%s'"),
+                          l2_gateway_instance['id'])
+                self.delete_l2_gateway(context, l2_gateway_instance['id'])
+        return l2_gateway_instance
 
-        When the ML2 plugin invokes this call, the argument port is
-        a single port dict, whereas the L2gateway service plugin
-        sends it as a list of port dicts.
-        """
-        self._get_driver_for_provider(constants.l2gw
-                                      ).delete_port_mac(context, port)
+    def update_l2_gateway(self, context, l2_gateway_id, l2_gateway):
+        """Update the L2Gateway."""
+        self.validate_l2_gateway_for_update(context, l2_gateway_id, l2_gateway)
+        self.driver.update_l2_gateway(context, l2_gateway_id, l2_gateway)
+        with context.session.begin(subtransactions=True):
+            l2_gateway_instance = super(L2GatewayPlugin,
+                                        self).update_l2_gateway(context,
+                                                                l2_gateway_id,
+                                                                l2_gateway)
+            self.driver.update_l2_gateway_precommit(context,
+                                                    l2_gateway_instance)
+        try:
+            self.driver.update_l2_gateway_postcommit(
+                context, l2_gateway_instance)
+        except exc.L2GatewayServiceDriverError:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE("L2GatewayPlugin.update_l2_gateway_postcommit"
+                              " failed for l2gateway %s"), l2_gateway_id)
+        return l2_gateway_instance
+
+    def delete_l2_gateway(self, context, l2_gateway_id):
+        """Delete the L2Gateway."""
+        self.validate_l2_gateway_for_delete(context, l2_gateway_id)
+        self.driver.delete_l2_gateway(context, l2_gateway_id)
+        with context.session.begin(subtransactions=True):
+            super(L2GatewayPlugin, self).delete_l2_gateway(context,
+                                                           l2_gateway_id)
+            self.driver.delete_l2_gateway_precommit(context, l2_gateway_id)
+        try:
+            self.driver.delete_l2_gateway_postcommit(context, l2_gateway_id)
+        except exc.L2GatewayServiceDriverError:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE("L2GatewayPlugin.delete_l2_gateway_postcommit"
+                              " failed for l2gateway %s"), l2_gateway_id)
 
     def create_l2_gateway_connection(self, context, l2_gateway_connection):
-        """Process the call from the CLI and trigger the RPC,
+        """Create an L2Gateway Connection
 
-        to update the connection to the gateway.
+        Bind a Neutron VXLAN Network to Physical Network Segment.
         """
-        self._get_driver_for_provider(constants.l2gw
-                                      ).create_l2_gateway_connection(
+        self.validate_l2_gateway_connection_for_create(
             context, l2_gateway_connection)
-        return super(L2GatewayPlugin, self).create_l2_gateway_connection(
-            context, l2_gateway_connection)
+        self.driver.create_l2_gateway_connection(context,
+                                                 l2_gateway_connection)
+        with context.session.begin(subtransactions=True):
+            l2_gateway_conn_instance = super(
+                L2GatewayPlugin, self).create_l2_gateway_connection(
+                    context, l2_gateway_connection)
+            self.driver.create_l2_gateway_connection_precommit(
+                context, l2_gateway_conn_instance)
+        try:
+            self.driver.create_l2_gateway_connection_postcommit(
+                context, l2_gateway_conn_instance)
+        except exc.L2GatewayServiceDriverError:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE("L2GatewayPlugin."
+                              "create_l2_gateway_connection_postcommit "
+                              "failed, deleting connection '%s'"),
+                          l2_gateway_conn_instance['id'])
+                self.delete_l2_gateway_connection(
+                    context, l2_gateway_conn_instance['id'])
 
-    def delete_l2_gateway_connection(self, context, l2_gateway_connection):
-        """Process the call from the CLI and trigger the RPC,
+        return l2_gateway_conn_instance
 
-        to update the connection from the gateway.
+    def delete_l2_gateway_connection(self, context, l2_gateway_connection_id):
+        """Delete an L2Gateway Connection
+
+        Unbind a Neutron VXLAN Network from Physical Network Segment.
         """
-        self._get_driver_for_provider(constants.l2gw
-                                      ).delete_l2_gateway_connection(
-            context, l2_gateway_connection)
-        return super(L2GatewayPlugin, self).delete_l2_gateway_connection(
-            context, l2_gateway_connection)
+        self.validate_l2_gateway_connection_for_delete(
+            context, l2_gateway_connection_id)
+        self.driver.delete_l2_gateway_connection(
+            context, l2_gateway_connection_id)
+        with context.session.begin(subtransactions=True):
+            super(L2GatewayPlugin, self).delete_l2_gateway_connection(
+                context, l2_gateway_connection_id)
+            self.driver.delete_l2_gateway_connection_precommit(
+                context, l2_gateway_connection_id)
+        try:
+            self.driver.delete_l2_gateway_connection_postcommit(
+                context, l2_gateway_connection_id)
+        except exc.L2GatewayServiceDriverError:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_LE(
+                    "L2GatewayPlugin.delete_l2_gateway_connection_postcommit"
+                    " failed for connection %s"), l2_gateway_connection_id)
