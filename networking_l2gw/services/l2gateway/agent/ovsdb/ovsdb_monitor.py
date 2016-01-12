@@ -16,13 +16,11 @@
 import random
 
 import eventlet
-
-from neutron.i18n import _LE
-
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import ovsdb_schema

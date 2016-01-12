@@ -19,8 +19,8 @@ from neutron.common import exceptions
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
 from neutron.extensions import portbindings
-from neutron.i18n import _LE
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import constants

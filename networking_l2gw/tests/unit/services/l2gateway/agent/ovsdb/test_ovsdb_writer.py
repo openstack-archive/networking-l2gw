@@ -20,9 +20,9 @@ import ssl
 
 import mock
 
-from neutron.i18n import _LW
 from neutron.tests import base
 
+from networking_l2gw._i18n import _LW
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_writer

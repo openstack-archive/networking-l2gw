@@ -17,12 +17,12 @@ import eventlet
 
 from contextlib import contextmanager
 from neutron import context as ctx
-from neutron.i18n import _LE
 
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_common_class

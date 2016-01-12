@@ -15,14 +15,13 @@
 
 from neutron.agent import rpc as agent_rpc
 from neutron import context
-from neutron.i18n import _LE
-from neutron.i18n import _LI
 
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall
 from oslo_service import periodic_task
 
+from networking_l2gw._i18n import _LE, _LI
 from networking_l2gw.services.l2gateway.agent import agent_api
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import topics
