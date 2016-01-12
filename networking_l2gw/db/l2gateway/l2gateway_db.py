@@ -364,7 +364,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
     def _admin_check(self, context, action):
         """Admin role check helper."""
         # TODO(selva): his check should be required if the tenant_id is
-        # specified inthe request, otherwise the policy.json do a trick
+        # specified in the request, otherwise the policy.json do a trick
         # this need further revision.
         if not context.is_admin:
             reason = _('Cannot %s resource for non admin tenant') % action

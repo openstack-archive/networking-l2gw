@@ -80,7 +80,7 @@ Note: These commands/APIs can be executed only by the admin users.
    L2 gateways.
    interface-name1 and interface-name2 ... interface-nameN are interfaces on
    the gateways.
-   seg-id indicates the segementation identifier of the physical network to
+   seg-id indicates the segmentation identifier of the physical network to
    which the interfaces belong to.
 
 2. Updating a logical gateway
@@ -676,8 +676,8 @@ and port2 are disconnected, then the plugin instructs the compute node
 to destroy the VXLAN tunnel to the gateway as it is no longer needed.
 
 10. In a case where the VXLAN tunnel exists between the compute node and
-the gateway when there is atleast one virtual machine on the compute node
-on network net1 and atleast one bare metal server on the gateway, the
+the gateway when there is at least one virtual machine on the compute node
+on network net1 and at least one bare metal server on the gateway, the
 administrator may still want to destroy the VXLAN tunnel between
 the compute node and the gateway. This can be done using the below
 command.
@@ -840,7 +840,7 @@ Other alternatives:
 1. https://review.openstack.org/#/c/93613
 
 This can be achieved by the APIs proposed in the current spec by providing
-an option to specify other segementation types in future.
+an option to specify other segmentation types in future.
 
 
 2. https://review.openstack.org/#/c/136555
