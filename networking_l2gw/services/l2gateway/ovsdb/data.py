@@ -271,7 +271,7 @@ class OVSDBData(object):
             agent_ips = self._get_physical_switch_ips(context, mac)
             for agent_ip in agent_ips:
                 other_fdb_entries = self._get_fdb_entries(
-                    context, agent_ip, mac.get('logical_switch_id'))
+                    context, agent_ip, mac.get('logical_switch_id'), mac)
                 self._trigger_l2pop_sync(context, other_fdb_entries)
 
     def _process_modified_physical_ports(self,
@@ -463,13 +463,28 @@ class OVSDBData(object):
             agent_ip_dict[tunnel_ip] = agent.get('host')
         return agent_ip_dict
 
-    def _get_fdb_entries(self, context, agent_ip, logical_switch_uuid):
+    def _get_fdb_entries(self, context, agent_ip, logical_switch_uuid,
+                         mac=None):
         ls_dict = {'uuid': logical_switch_uuid,
                    n_const.OVSDB_IDENTIFIER: self.ovsdb_identifier}
         logical_switch = db.get_logical_switch(context, ls_dict)
         network_id = logical_switch.get('name')
         segment_id = logical_switch.get('key')
-        port_fdb_entries = constants.FLOODING_ENTRY
+
+        ips = db.get_all_remote_gw_ips(context)
+
+        if mac:
+            locator_ip = db.get_physical_locator_ip_by_id(
+                context,
+                mac.get('physical_locator_id'))
+            # if locator IP is of a Remote Gateway, we send the mac address
+            # to l2pop to add a specific flow, else, we send flood address
+            if locator_ip and locator_ip in ips:
+                port_fdb_entries = (mac.get('mac'), mac.get('ip_address'))
+            else:
+                port_fdb_entries = constants.FLOODING_ENTRY
+        else:
+            port_fdb_entries = constants.FLOODING_ENTRY
         other_fdb_entries = {network_id: {'segment_id': segment_id,
                                           'network_type': 'vxlan',
                                           'ports': {agent_ip:

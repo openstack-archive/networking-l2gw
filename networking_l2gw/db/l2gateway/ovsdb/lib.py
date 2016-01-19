@@ -17,6 +17,7 @@ from oslo_utils import timeutils
 from sqlalchemy import asc
 from sqlalchemy.orm import exc
 
+from networking_l2gw.db.l2gateway import l2gateway_models as l2gw_models
 from networking_l2gw.db.l2gateway.ovsdb import models
 
 LOG = logging.getLogger(__name__)
@@ -53,6 +54,9 @@ def add_physical_locator(context, record_dict):
             uuid=record_dict['uuid'],
             dst_ip=record_dict['dst_ip'],
             ovsdb_identifier=record_dict['ovsdb_identifier'])
+        # if 'tunnel_key' in record_dict:
+        if not isinstance(record_dict[u'tunnel_key'], list):
+            locator.tunnel_key = record_dict['tunnel_key']
         session.add(locator)
 
 
@@ -331,6 +335,14 @@ def get_physical_locator(context, record_dict):
     return physical_locator
 
 
+def get_physical_locator_ip_by_id(context, id):
+    query = context.session.query(models.PhysicalLocators)
+    locator = query.filter_by(uuid=id).one()
+    if locator:
+        return locator.dst_ip
+    return
+
+
 def get_physical_locator_by_dst_ip(context, record_dict):
     """Get physical locator that matches the supplied destination IP."""
     try:
@@ -505,3 +517,12 @@ def get_all_ucast_mac_remote_by_ls(context, record_dict):
         return session.query(models.UcastMacsRemotes).filter_by(
             ovsdb_identifier=record_dict['ovsdb_identifier'],
             logical_switch_id=record_dict['logical_switch_id']).all()
+
+
+def get_all_remote_gw_ips(context):
+    remote_gws = context.session.query(l2gw_models.L2RemoteGateway).all()
+    rgw_ips = []
+    if remote_gws:
+        for rgw in remote_gws:
+            rgw_ips.append(rgw.ipaddr)
+    return rgw_ips

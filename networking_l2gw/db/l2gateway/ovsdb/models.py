@@ -23,6 +23,7 @@ class PhysicalLocators(model_base.BASEV2):
     __tablename__ = 'physical_locators'
     uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
     dst_ip = sa.Column(sa.String(64), nullable=False)
+    tunnel_key = sa.Column(sa.Integer)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
     __table_args__ = (sa.UniqueConstraint(uuid,

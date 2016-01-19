@@ -26,6 +26,8 @@ from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_common_class
+from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_connection
+from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_model
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_monitor
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_writer
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -70,9 +72,13 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         try:
             host_splits = str(host).split(':')
             ovsdb_identifier = str(host_splits[0]).strip()
-            ovsdb_conf = {n_const.OVSDB_IDENTIFIER: ovsdb_identifier,
-                          'ovsdb_ip': str(host_splits[1]).strip(),
-                          'ovsdb_port': str(host_splits[2]).strip()}
+            ovsdb_ip = str(host_splits[1]).strip()
+            ovsdb_port = str(host_splits[2]).strip()
+            ovsdb_conf = {
+                n_const.OVSDB_IDENTIFIER: ovsdb_identifier,
+                'ovsdb_ip': ovsdb_ip,
+                'ovsdb_port': ovsdb_port
+            }
             priv_key_path = self.conf.ovsdb.l2_gw_agent_priv_key_base_path
             cert_path = self.conf.ovsdb.l2_gw_agent_cert_base_path
             ca_cert_path = self.conf.ovsdb.l2_gw_agent_ca_cert_base_path
@@ -97,6 +103,17 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             LOG.debug("ovsdb_conf = %s", str(ovsdb_conf))
             gateway = l2gateway_config.L2GatewayConfig(ovsdb_conf)
             self.gateways[ovsdb_identifier] = gateway
+            # IDL implementation
+            if self.enable_manager:
+                ovsdb_conn = 'ptcp:%s:%s' % (ovsdb_ip, ovsdb_port)
+            else:
+                ovsdb_conn = 'tcp:%s:%s' % (ovsdb_ip, ovsdb_port)
+            self.idl_connections[ovsdb_identifier] = (
+                ovsdb_connection.OvsdbHardwareVtepIdl(
+                    self,
+                    ovsdb_conn,
+                    3)
+            )
         except Exception as ex:
             LOG.exception(_LE("Exception %(ex)s occurred while processing "
                               "host %(host)s"), {'ex': ex, 'host': host})
@@ -358,12 +375,61 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                    ovsdb_fd.update_connection_to_gateway(logical_switch_dict,
-                                                          locator_dicts,
-                                                          mac_dicts,
-                                                          port_dicts,
-                                                          ovsdb_identifier)
+                    LOG.debug("****** 1:'%s', 2:'%s', 3:'%s', 4:'%s' ",
+                              locator_dicts,
+                              mac_dicts,
+                              port_dicts,
+                              ovsdb_identifier)
+                    ovsdb_fd.update_connection_to_gateway(
+                        logical_switch_dict,
+                        locator_dicts,
+                        mac_dicts,
+                        port_dicts,
+                        ovsdb_identifier)
+
+    def create_remote_unknown(self, context,
+                              ovsdb_identifier,
+                              network_id,
+                              ipaddr,
+                              seg_id):
+        LOG.debug("Got request to create unknown remote mac. ovsdb: '%s' "
+                  "network: '%s', ipaddr: '%s', seg_id: '%s'",
+                  ovsdb_identifier,
+                  network_id,
+                  ipaddr,
+                  seg_id)
+        idl_db_conn = self.idl_connections[ovsdb_identifier]
+        logical_sw = idl_db_conn.get_logical_switch_by_name(network_id)
+        idl_db_conn.add_mcast_macs_remote(
+            'unknown-dst', logical_sw.uuid,
+            [ovsdb_model.PhysicalLocator(None, ipaddr,
+                                         seg_id)]).execute()
 
     def agent_to_plugin_rpc(self, ovsdb_data):
         self.plugin_rpc.update_ovsdb_changes(ctx.get_admin_context(),
                                              ovsdb_data)
+
+    def status_rpc(self, ovsdb_status):
+        self.plugin_rpc.update_ovsdb_changes(ctx.get_admin_context(),
+                                             ovsdb_status)
+
+    def del_remote_connection(self, context, ovsdb_identifier,
+                              network_id, ipaddr, tunnel_key):
+        idl_db_conn = self.idl_connections[ovsdb_identifier]
+        idl_db_conn.del_remote_connection(ipaddr,
+                                          tunnel_key).execute()
+
+    def add_ucast_mac_remote(self, context, ovsdb_identifier,
+                             logical_sw_uuid, locator, mac, ipaddr):
+        LOG.debug("Adding new MAC '%s' to locator '%s' on switch '%s'",
+                  mac, locator, logical_sw_uuid)
+        idl_db_conn = self.idl_connections[ovsdb_identifier]
+        idl_db_conn.add_ucast_mac_remote(
+            logical_sw_uuid, ovsdb_model.
+            PhysicalLocator(locator, None), mac, ipaddr).execute()
+
+    def del_ucast_mac_remote(self, context, ovsdb_identifier, mac_uuid):
+        LOG.debug("Deleting UCAST MAC '%s' from OVSDB '%s'",
+                  mac_uuid, ovsdb_identifier)
+        idl_db_conn = self.idl_connections[ovsdb_identifier]
+        idl_db_conn.del_mcast_macs_remote_by_id(mac_uuid).execute()

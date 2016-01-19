@@ -368,7 +368,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                            gw_connection, method,
                            gw_connection_ovsdb_set=None):
         port_dicts = []
-        port_dict = {}
         logical_switch_uuid = None
         seg_id = gw_connection.get('segmentation_id', None)
         interfaces = self.service_plugin.get_l2gateway_interfaces_by_device_id(
@@ -681,7 +680,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             self.service_plugin.get_l2gateway_devices_by_gateway_id(
                 context, gw_connection.get('l2_gateway_id')))
         for device in l2gateway_devices:
-            port_dict = {}
             (ovsdb_identifier, logical_switch, port_dict) = (
                 self._process_port_list(
                     context, device, gw_connection,
@@ -689,5 +687,84 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             self.agent_rpc.update_connection_to_gateway(
                 context, ovsdb_identifier, ls_dict, locator_list, mac_dict,
                 port_dict)
+            # remove the logical switch
+            self.agent_rpc.delete_network(context,
+                                          ovsdb_identifier,
+                                          logical_switch.get('uuid'))
         # call delete vif_from_gateway for ovsdb_id_set
         self._remove_vm_macs(context, network_id, ovsdb_id_set)
+
+    # if flood on WAN link in enabled. we create unknown-dst MCast MAC and
+    # link the Physical_Locator(S) of the WAN ad LAN tunnels to it. This will
+    # enable switching of packets ingressing from the WAN
+    def create_remote_unknown(self, context, remote_gw_connection):
+        LOG.debug("Got request to create remote gw connection : '%s' ",
+                  remote_gw_connection)
+        l2gateway_devices = (
+            self.service_plugin.get_l2gateway_devices_by_gateway_id(
+                context, remote_gw_connection.get('gateway')))
+        for device in l2gateway_devices:
+            physical_switch = db.get_physical_switch_by_name(
+                context, device.get('device_name'))
+            ovsdb_identifier = physical_switch.get('ovsdb_identifier')
+            self.agent_rpc.create_remote_unknown(
+                context,
+                ovsdb_identifier,
+                remote_gw_connection
+            )
+
+    def delete_l2_remote_gateway_connection(self, context, id):
+
+        rgw_conn = self.service_plugin.get_l2_remote_gateway_connection(
+            context, id)
+        rgw = self.service_plugin.get_l2_remote_gateway(
+            context, rgw_conn.get('remote_gateway'))
+        l2gateway_devices = (
+            self.service_plugin.get_l2gateway_devices_by_gateway_id(
+                context, rgw_conn.get('gateway')))
+        for device in l2gateway_devices:
+            physical_switch = db.get_physical_switch_by_name(
+                context, device.get('device_name'))
+            ovsdb_identifier = physical_switch.get('ovsdb_identifier')
+            self.agent_rpc.delete_l2_remote_gateway_connection(
+                context,
+                ovsdb_identifier,
+                rgw_conn.get('network'),
+                rgw.get('ipaddr'),
+                rgw_conn.get('seg_id')
+            )
+
+    def add_ucast_mac_remote(self, context, ucast_macs):
+        identifier_list = self._get_ovsdb_identifier(context, ucast_macs.
+                                                     get('gateway'))
+        for identifier in identifier_list:
+            LOG.debug("Sending request to add MAC to OVSDB '%s'", identifier)
+            self.agent_rpc.add_ucast_mac_remote(context,
+                                                identifier,
+                                                ucast_macs['sw'],
+                                                ucast_macs['locator'],
+                                                ucast_macs['mac'],
+                                                ucast_macs['ipaddr'])
+
+    def del_ucast_mac_remote(self, context, identifier, mac_uuid):
+            LOG.debug("Sending request to delete MAC '%s' to OVSDB '%s'",
+                      mac_uuid, identifier)
+            return self.agent_rpc.del_ucast_mac_remote(
+                context,
+                identifier,
+                mac_uuid
+            )
+
+    def _get_ovsdb_identifier(self, context, gateway_id):
+        ovsdb_identifier_list = []
+        l2gateway_devices = (
+            self.service_plugin.get_l2gateway_devices_by_gateway_id(
+                context, gateway_id))
+        for device in l2gateway_devices:
+            physical_switch = db.get_physical_switch_by_name(
+                context, device.get('device_name')
+            )
+            ovsdb_identifier_list.append(
+                physical_switch.get('ovsdb_identifier')
+            )
+        return ovsdb_identifier_list

@@ -15,9 +15,10 @@
 
 
 class PhysicalLocator(object):
-    def __init__(self, uuid, dst_ip):
+    def __init__(self, uuid, dst_ip, tunnel_key=None):
         self.uuid = uuid
         self.dst_ip = dst_ip
+        self.tunnel_key = tunnel_key
 
 
 class PhysicalSwitch(object):

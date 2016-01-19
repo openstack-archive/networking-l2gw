@@ -511,7 +511,13 @@ class OVSDBMonitor(base_connection.BaseConnection):
         old_row = uuid_dict.get('old', None)
         if new_row:
             dstip = new_row['dst_ip']
-            locator = ovsdb_schema.PhysicalLocator(uuid, dstip)
+            if 'tunnel_key' in new_row:
+                locator = ovsdb_schema.PhysicalLocator(uuid,
+                                                       dstip,
+                                                       new_row['tunnel_key'])
+            else:
+                locator = ovsdb_schema.PhysicalLocator(uuid, dstip)
+
             if old_row:
                 modified_physical_locators = data_dict.get(
                     'modified_physical_locators')
