@@ -14,7 +14,7 @@
 
 import oslo_i18n
 
-DOMAIN = "networking-l2gw"
+DOMAIN = "networking_l2gw"
 
 _translators = oslo_i18n.TranslatorFactory(domain=DOMAIN)
 
