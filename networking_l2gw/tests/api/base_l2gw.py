@@ -13,10 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from networking_l2gw.tests.tempest import config
-
-
-CONF = config.CONF
 SEGMENTATION_ID_DELIMITER = "#"
 INTERFACE_SEG_ID_DELIMITER = "|"
 DEVICE_INTERFACE_DELIMITER = "::"

@@ -13,17 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest import test
+
 from neutron.tests.api import base
-from neutron.tests.tempest import test
 
 from tempest_lib.common.utils import data_utils
 
 from networking_l2gw.tests.api import base_l2gw
 from networking_l2gw.tests.tempest import config
 
+from oslo_config import cfg
+
 import random
 
-CONF = config.CONF
+CONF = cfg.CONF
 
 
 class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
@@ -45,9 +48,10 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
 
     @classmethod
     def resource_setup(cls):
+        config.register_options()
         super(L2GatewayExtensionTestJSON, cls).resource_setup()
         # At least one switch detail should be provided to run the tests
-        if (len(CONF.network.l2gw_switch) < 0):
+        if (len(CONF.L2GW.l2gw_switch) < 0):
             msg = ('At least one switch detail must be defined.')
             raise cls.skipException(msg)
         if not test.is_extension_enabled('l2gateway', 'network'):
@@ -58,7 +62,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
     def test_create_show_list_update_delete_l2gateway(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
-        devices = base_l2gw.get_l2gw_body(CONF.network.l2gw_switch)["devices"]
+        devices = base_l2gw.get_l2gw_body(CONF.L2GW.l2gw_switch)["devices"]
         body = self.admin_client.create_l2_gateway(
             name=gw_name, devices=devices)
         l2_gateway = body['l2_gateway']
@@ -91,7 +95,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
         self.addCleanup(self.admin_client.delete_network, net_id)
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
-        devices = base_l2gw.get_l2gw_body(CONF.network.l2gw_switch)["devices"]
+        devices = base_l2gw.get_l2gw_body(CONF.L2GW.l2gw_switch)["devices"]
         l2_gw_body = self.admin_client.create_l2_gateway(
             name=gw_name, devices=devices)
         l2_gw_id = l2_gw_body['l2_gateway']['id']
@@ -113,7 +117,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
     def test_create_l2gw_conn_with_segid_when_l2gw_created_without_segid(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
-        devices = base_l2gw.get_l2gw_body(CONF.network.l2gw_switch)["devices"]
+        devices = base_l2gw.get_l2gw_body(CONF.L2GW.l2gw_switch)["devices"]
         if devices[0]['interfaces'][0]['segmentation_id']:
             seg_id = devices[0]['interfaces'][0]['segmentation_id'][0]
             devices[0]['interfaces'][0].pop('segmentation_id')
