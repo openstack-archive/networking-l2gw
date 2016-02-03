@@ -31,7 +31,6 @@ function run_l2gw_alembic_migration {
 
 function configure_l2gw_plugin {
     sudo cp $L2GW_DIR/etc/l2gw_plugin.ini $L2GW_PLUGIN_CONF_FILE
-   _neutron_service_plugin_class_add $L2GW_PLUGIN
 }
 
 # main loop
@@ -41,8 +40,10 @@ if is_service_enabled l2gw-plugin; then
         :
     elif [[ "$1" == "stack" && "$2" == "install" ]]; then
         install_l2gw
-        configure_l2gw_plugin
+    elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
+        _neutron_service_plugin_class_add $L2GW_PLUGIN
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+        configure_l2gw_plugin
         run_l2gw_alembic_migration
     elif [[ "$1" == "stack" && "$2" == "post-extra" ]]; then
         # no-op
