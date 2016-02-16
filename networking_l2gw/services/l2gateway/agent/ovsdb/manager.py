@@ -256,7 +256,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                    ovsdb_fd.delete_logical_switch(logical_switch_uuid)
+                    ovsdb_fd.delete_logical_switch(logical_switch_uuid,
+                                                   ovsdb_identifier)
 
     def add_vif_to_gateway(self, context, ovsdb_identifier,
                            logical_switch_dict, locator_dict,
@@ -281,7 +282,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
                     ovsdb_fd.insert_ucast_macs_remote(logical_switch_dict,
                                                       locator_dict,
-                                                      mac_dict)
+                                                      mac_dict,
+                                                      ovsdb_identifier)
 
     def delete_vif_from_gateway(self, context, ovsdb_identifier,
                                 logical_switch_uuid, mac):
