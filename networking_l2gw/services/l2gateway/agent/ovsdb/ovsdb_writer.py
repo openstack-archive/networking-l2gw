@@ -33,8 +33,9 @@ LOG = logging.getLogger(__name__)
 
 class OVSDBWriter(base_connection.BaseConnection):
     """Performs transactions to OVSDB server tables."""
-    def __init__(self, conf, gw_config):
-        super(OVSDBWriter, self).__init__(conf, gw_config)
+    def __init__(self, conf, gw_config, mgr=None):
+        super(OVSDBWriter, self).__init__(conf, gw_config, mgr=None)
+        self.mgr = mgr
 
     def _process_response(self, op_id):
         result = self._response(op_id)
