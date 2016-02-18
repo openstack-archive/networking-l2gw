@@ -31,8 +31,9 @@ LOG = logging.getLogger(__name__)
 
 class OVSDBMonitor(base_connection.BaseConnection):
     """Monitors OVSDB servers."""
-    def __init__(self, conf, gw_config, callback):
-        super(OVSDBMonitor, self).__init__(conf, gw_config)
+    def __init__(self, conf, gw_config, callback, mgr=None):
+        super(OVSDBMonitor, self).__init__(conf, gw_config, mgr=None)
+        self.mgr = mgr
         self.rpc_callback = callback
         self.callbacks = {}
         self._setup_dispatch_table()

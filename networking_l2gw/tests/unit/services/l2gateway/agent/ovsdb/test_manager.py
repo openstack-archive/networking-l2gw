@@ -270,6 +270,7 @@ class TestManager(base.BaseTestCase):
             self.l2gw_agent_manager.ovsdb_fd = mock_ovsdb_common.return_value
             self.l2gw_agent_manager.ovsdb_fd.check_monitor_table_thread = False
             self.l2gw_agent_manager.ovsdb_fd.check_sock_rcv = True
+            self.l2gw_agent_manager.ovsdb_fd.ovsdb_conn_list = ["fake_ip"]
             self.l2gw_agent_manager.ovsdb_fd.ovsdb_dicts = {
                 "fake_ip": "fake_sock"}
             self.l2gw_agent_manager.set_monitor_agent(self.context,
@@ -309,16 +310,14 @@ class TestManager(base.BaseTestCase):
                               '_sock_open_connection')) as (
                 mock_ovsdb_common, mock_open_conn):
             self.l2gw_agent_manager.ovsdb_fd = mock_ovsdb_common.return_value
-            self.l2gw_agent_manager.ovsdb_fd.check_c_sock = True
+            self.l2gw_agent_manager.ovsdb_fd.ovsdb_conn_list = ['fake_ip']
             self.l2gw_agent_manager.update_connection_to_gateway(
-                self.context, mock.Mock(), mock.Mock(), mock.Mock(),
+                self.context, 'fake_ip', mock.Mock(), mock.Mock(),
                 mock.Mock(), mock.Mock())
-            (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.update_connection_to_gateway.
              assert_called_with(mock.ANY, mock.ANY, mock.ANY, mock.ANY,
-                                mock.ANY))
+                                'fake_ip', False))
 
     def test_delete_network_for_monitor_agent(self):
         """Test case to test delete_network with enable_manager."""
@@ -344,14 +343,12 @@ class TestManager(base.BaseTestCase):
                               '_sock_open_connection')) as (
                 mock_ovsdb_common, mock_open_conn):
             self.l2gw_agent_manager.ovsdb_fd = mock_ovsdb_common.return_value
-            self.l2gw_agent_manager.ovsdb_fd.check_c_sock = True
+            self.l2gw_agent_manager.ovsdb_fd.ovsdb_conn_list = ['fake_ip']
             self.l2gw_agent_manager.delete_network(
-                self.context, mock.Mock(), "fake_logical_switch_uuid")
-            (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with(mock.ANY))
+                self.context, 'fake_ip', "fake_logical_switch_uuid")
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.delete_logical_switch.
-             assert_called_with("fake_logical_switch_uuid", mock.ANY, False))
+             assert_called_with("fake_logical_switch_uuid", 'fake_ip', False))
 
     def test_add_vif_to_gateway_for_monitor_agent(self):
         """Test case to test add_vif_to_gateway with enable_manager."""
@@ -381,16 +378,15 @@ class TestManager(base.BaseTestCase):
                 mock_ovsdb_common, mock_open_conn):
             self.l2gw_agent_manager.ovsdb_fd = mock_ovsdb_common.return_value
             self.l2gw_agent_manager.ovsdb_fd.check_c_sock = True
+            self.l2gw_agent_manager.ovsdb_fd.ovsdb_conn_list = ['fake_ip']
             self.l2gw_agent_manager.add_vif_to_gateway(
-                self.context, mock.Mock(), "fake_logical_switch_dict",
+                self.context, 'fake_ip', "fake_logical_switch_dict",
                 "fake_locator_dict", "fake_mac_dict")
-            (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.insert_ucast_macs_remote.
              assert_called_with("fake_logical_switch_dict",
                                 "fake_locator_dict", "fake_mac_dict",
-                                mock.ANY))
+                                'fake_ip', False))
 
     def test_delete_vif_from_gateway_for_monitor_agent(self):
         """Test case to test delete_vif_to_gateway with enable_manager."""
@@ -418,16 +414,14 @@ class TestManager(base.BaseTestCase):
                               '_sock_open_connection')) as (
                 mock_ovsdb_common, mock_open_conn):
             self.l2gw_agent_manager.ovsdb_fd = mock_ovsdb_common.return_value
-            self.l2gw_agent_manager.ovsdb_fd.check_c_sock = True
+            self.l2gw_agent_manager.ovsdb_fd.ovsdb_conn_list = ['fake_ip']
             self.l2gw_agent_manager.delete_vif_from_gateway(
-                self.context, mock.Mock(), "fake_logical_switch_uuid",
+                self.context, 'fake_ip', "fake_logical_switch_uuid",
                 "fake_mac")
-            (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.delete_ucast_macs_remote.
              assert_called_with("fake_logical_switch_uuid", "fake_mac",
-                                mock.ANY))
+                                'fake_ip', False))
 
     def test_update_vif_from_gateway_for_monitor_agent(self):
         """Test case to test update_vif_to_gateway with enable_manager."""
@@ -458,13 +452,11 @@ class TestManager(base.BaseTestCase):
                               '_sock_open_connection')) as (
                 mock_ovsdb_common, mock_open_conn):
             self.l2gw_agent_manager.ovsdb_fd = mock_ovsdb_common.return_value
-            self.l2gw_agent_manager.ovsdb_fd.check_c_sock = True
+            self.l2gw_agent_manager.ovsdb_fd.ovsdb_conn_list = ['fake_ip']
             self.l2gw_agent_manager.update_vif_to_gateway(
-                self.context, mock.Mock(), "fake_logical_switch_uuid",
+                self.context, 'fake_ip', "fake_logical_switch_uuid",
                 "fake_mac")
-            (self.l2gw_agent_manager.ovsdb_fd._echo_response.
-             assert_called_with(mock.ANY))
             self.assertTrue(mock_open_conn.called)
             (self.l2gw_agent_manager.ovsdb_fd.update_ucast_macs_remote.
              assert_called_with("fake_logical_switch_uuid", "fake_mac",
-                                mock.ANY))
+                                'fake_ip', False))
