@@ -4,9 +4,8 @@
 
 1. Download DevStack
 
-2. Add this repo as an external repository:
+2. Add this repo as an external repository and configure following flags in ``local.conf``::
 
-     > cat local.conf
      [[local|localrc]]
      enable_plugin networking-l2gw https://github.com/openstack/networking-l2gw
      enable_service l2gw-plugin l2gw-agent
@@ -14,5 +13,6 @@
      Q_PLUGIN_EXTRA_CONF_PATH=/etc/neutron
      Q_PLUGIN_EXTRA_CONF_FILES=(l2gw_plugin.ini)
 
+3. Read the settings file for more details.
 
-3. run ``stack.sh``
+4. run ``stack.sh``
