@@ -14,7 +14,6 @@
 #    under the License.
 
 import abc
-from neutron.common import exceptions
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
 from neutron.extensions import portbindings
@@ -31,6 +30,7 @@ from networking_l2gw.services.l2gateway import service_drivers
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
 from neutron_lib import constants as n_const
+from neutron_lib import exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
