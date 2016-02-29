@@ -16,6 +16,7 @@
 from neutron.api.v2 import attributes
 from neutron.common import exceptions
 
+from networking_l2gw._i18n import _
 from networking_l2gw.services.l2gateway.common import constants
 
 ALLOWED_CONNECTION_ATTRIBUTES = set((constants.NETWORK_ID,
