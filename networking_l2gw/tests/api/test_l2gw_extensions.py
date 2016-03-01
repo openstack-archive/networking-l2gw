@@ -17,7 +17,7 @@ from tempest import test
 
 from neutron.tests.api import base
 
-from tempest_lib.common.utils import data_utils
+from tempest.lib.common.utils import data_utils
 
 from networking_l2gw.tests.api import base_l2gw
 from networking_l2gw.tests.tempest import config

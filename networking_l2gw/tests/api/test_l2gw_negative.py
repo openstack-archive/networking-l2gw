@@ -24,8 +24,8 @@ from oslo_config import cfg
 
 from random import randint
 
-from tempest_lib.common.utils import data_utils
-from tempest_lib import exceptions as lib_exc
+from tempest.lib.common.utils import data_utils
+from tempest.lib import exceptions as lib_exc
 
 
 CONF = cfg.CONF
