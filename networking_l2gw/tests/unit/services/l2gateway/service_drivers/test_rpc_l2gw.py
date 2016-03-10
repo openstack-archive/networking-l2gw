@@ -272,6 +272,17 @@ class TestL2gwRpcDriver(base.BaseTestCase):
             self.assertEqual(ret_dst_ip, 'fake_tun_ip')
             self.assertEqual(ret_ip_add, 'fake_ip')
 
+    def test_get_ip_details_for_no_ovs_agent(self):
+        fake_port = {'binding:host_id': 'fake_host',
+                     'fixed_ips': [{'ip_address': 'fake_ip'}]}
+        with mock.patch.object(self.plugin,
+                               '_get_agent_details',
+                               return_value=None):
+            self.assertRaises(l2gw_exc.OvsAgentNotFound,
+                              self.plugin._get_ip_details,
+                              self.context,
+                              fake_port)
+
     def test_get_network_details(self):
         fake_network = {'id': 'fake_network_id',
                         'name': 'fake_network_name',

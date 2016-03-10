@@ -470,11 +470,14 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
     def _get_ip_details(self, context, port):
         host = port[portbindings.HOST_ID]
         agent = self._get_agent_details(context, host)
-        conf_dict = agent[0].get("configurations")
-        dst_ip = conf_dict.get("tunneling_ip")
-        fixed_ip_list = port.get('fixed_ips')
-        fixed_ip_list = fixed_ip_list[0]
-        return dst_ip, fixed_ip_list.get('ip_address')
+        if agent:
+            conf_dict = agent[0].get("configurations")
+            dst_ip = conf_dict.get("tunneling_ip")
+            fixed_ip_list = port.get('fixed_ips')
+            fixed_ip_list = fixed_ip_list[0]
+            return dst_ip, fixed_ip_list.get('ip_address')
+        else:
+            raise l2gw_exc.OvsAgentNotFound(host=host)
 
     def _get_network_details(self, context, network_id):
         network = self.service_plugin._core_plugin.get_network(context,
