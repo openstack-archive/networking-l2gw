@@ -1,7 +1,7 @@
 [run]
 branch = True
-source = networking_vsphere
-omit = networking_vsphere/tests/*,networking_vsphere/openstack/*
+source = networking_l2gw
+omit = networking_l2gw/tests/*,networking_l2gw/openstack/*
 
 [report]
 ignore_errors = True

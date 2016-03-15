@@ -283,7 +283,7 @@ def get_ucast_mac_local(context, record_dict):
 
 
 def get_ucast_mac_remote_by_mac_and_ls(context, record_dict):
-    """Get ucast macs remote that matches the MAC addres and
+    """Get ucast macs remote that matches the MAC address and
 
        ovsdb_identifier.
     """

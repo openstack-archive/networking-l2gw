@@ -15,11 +15,11 @@
 
 from neutron.common import exceptions as n_exc
 from neutron.db import servicetype_db as st_db
-from neutron.i18n import _LE
 from neutron import manager
 from neutron.services import provider_configuration as pconf
 from neutron.services import service_base
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants

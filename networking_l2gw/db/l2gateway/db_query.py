@@ -16,7 +16,6 @@
 from neutron.common import exceptions
 from neutron.db import models_v2
 from neutron.plugins.ml2 import driver_api as api
-from neutron.plugins.ml2 import models
 
 import sqlalchemy as sa
 from sqlalchemy.orm import exc
@@ -93,14 +92,6 @@ class L2GatewayCommonDbMixin(object):
         if limit and page_reverse:
             items.reverse()
         return items
-
-    def _get_network_segments(self, context, network_id):
-        """Get network segments for the given network_id."""
-        with context.session.begin(subtransactions=True):
-            query = (context.session.query(models.NetworkSegment).
-                     filter_by(network_id=network_id))
-            records = query.all()
-            return [self._make_segment_dict(record) for record in records]
 
     def _make_segment_dict(self, record):
         """Make a segment dictionary out of a DB record."""

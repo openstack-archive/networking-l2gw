@@ -122,8 +122,6 @@ class TestL2gwRpcDriver(base.BaseTestCase):
             self.plugin._validate_connection(self.context, fake_connection)
             is_vlan.assert_called_with(self.context, 'fake_l2gw_id')
             val_ntwk.assert_called_with(fake_connection, False)
-            get_net_seg.assert_called_with(self.context,
-                                           'fake_network_id')
             get_network.assert_called_with(self.context, 'fake_network_id')
             get_l2gw.assert_called_with(self.context, 'fake_l2gw_id')
             check_pf_sf.assert_called_with(self.context, 'fake_l2gw_id')
@@ -274,6 +272,17 @@ class TestL2gwRpcDriver(base.BaseTestCase):
             self.assertEqual(ret_dst_ip, 'fake_tun_ip')
             self.assertEqual(ret_ip_add, 'fake_ip')
 
+    def test_get_ip_details_for_no_ovs_agent(self):
+        fake_port = {'binding:host_id': 'fake_host',
+                     'fixed_ips': [{'ip_address': 'fake_ip'}]}
+        with mock.patch.object(self.plugin,
+                               '_get_agent_details',
+                               return_value=None):
+            self.assertRaises(l2gw_exc.OvsAgentNotFound,
+                              self.plugin._get_ip_details,
+                              self.context,
+                              fake_port)
+
     def test_get_network_details(self):
         fake_network = {'id': 'fake_network_id',
                         'name': 'fake_network_name',
@@ -308,6 +317,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
                            'segmentation_id': 100L}
         fake_network = {'id': 'fake_network_id',
                         'name': 'fake_network_name',
+                        'provider:network_type': 'vxlan',
                         'provider:segmentation_id': 'fake_key'}
         fake_ls_dict = {'uuid': 'fake_uuid',
                         'name': 'fake_network_id',
@@ -327,6 +337,80 @@ class TestL2gwRpcDriver(base.BaseTestCase):
             get_network.assert_called_with(self.context, 'fake_network_id')
             self.assertEqual(ret_ls_dict, fake_ls_dict)
             self.assertEqual(ret_ls_dict_without_ls, fake_ls_dict_without_ls)
+
+    def test_get_logical_switch_dict_for_multi_segment_network(self):
+        fake_logical_switch = {'uuid': 'fake_uuid',
+                               'name': 'fake_network_id'}
+        fake_ls = None
+        fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
+                           'network_id': 'fake_network_id',
+                           'segmentation_id': 100L}
+        fake_network = {'id': 'fake_network_id',
+                        'name': 'fake_network_name',
+                        'segments': [{"provider:network_type": "vxlan",
+                                      "provider:segmentation_id": 'fake_key'},
+                                     {"provider:network_type": "vlan",
+                                      "provider:segmentation_id": 'fake_key'}]}
+        fake_ls_dict = {'uuid': 'fake_uuid',
+                        'name': 'fake_network_id',
+                        'description': 'fake_network_name',
+                        'key': 'fake_key'}
+        fake_ls_dict_without_ls = {'uuid': None,
+                                   'name': 'fake_network_id',
+                                   'description': 'fake_network_name',
+                                   'key': 'fake_key'}
+        with mock.patch.object(self.plugin,
+                               '_get_network_details',
+                               return_value=fake_network) as get_network:
+            ret_ls_dict = self.plugin._get_logical_switch_dict(
+                self.context, fake_logical_switch, fake_connection)
+            ret_ls_dict_without_ls = self.plugin._get_logical_switch_dict(
+                self.context, fake_ls, fake_connection)
+            get_network.assert_called_with(self.context, 'fake_network_id')
+            self.assertEqual(fake_ls_dict, ret_ls_dict)
+            self.assertEqual(fake_ls_dict_without_ls, ret_ls_dict_without_ls)
+
+    def test_get_logical_switch_dict_for_non_Vxlan_networks(self):
+        fake_logical_switch = {'uuid': 'fake_uuid',
+                               'name': 'fake_network_id'}
+        fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
+                           'network_id': 'fake_network_id',
+                           'segmentation_id': 100L}
+        fake_network = {'id': 'fake_network_id',
+                        'name': 'fake_network_name',
+                        'segments': [{"provider:network_type": "vlan",
+                                      "provider:segmentation_id": 'fake_key'},
+                                     {"provider:network_type": "gre",
+                                      "provider:segmentation_id": 'fake_key'}]}
+        with mock.patch.object(self.plugin,
+                               '_get_network_details',
+                               return_value=fake_network) as get_network:
+            self.assertRaises(l2gw_exc.VxlanSegmentationIDNotFound,
+                              self.plugin._get_logical_switch_dict,
+                              self.context, fake_logical_switch,
+                              fake_connection)
+            get_network.assert_called_with(self.context, 'fake_network_id')
+
+    def test_get_logical_switch_dict_for_multiple_vxlan_segments(self):
+        fake_logical_switch = {'uuid': 'fake_uuid',
+                               'name': 'fake_network_id'}
+        fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
+                           'network_id': 'fake_network_id',
+                           'segmentation_id': 100L}
+        fake_network = {'id': 'fake_network_id',
+                        'name': 'fake_network_name',
+                        'segments': [{"provider:network_type": "vxlan",
+                                      "provider:segmentation_id": 'seg_1'},
+                                     {"provider:network_type": "vxlan",
+                                      "provider:segmentation_id": 'seg_2'}]}
+        with mock.patch.object(self.plugin,
+                               '_get_network_details',
+                               return_value=fake_network) as get_network:
+            self.assertRaises(l2gw_exc.MultipleVxlanSegmentsFound,
+                              self.plugin._get_logical_switch_dict,
+                              self.context, fake_logical_switch,
+                              fake_connection)
+            get_network.assert_called_with(self.context, 'fake_network_id')
 
     def test_get_locator_list(self):
         fake_dst_ip = 'fake_tun_ip'

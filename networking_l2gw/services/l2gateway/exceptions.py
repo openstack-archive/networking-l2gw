@@ -28,6 +28,10 @@ class L2GatewayNotFound(exceptions.NotFound):
     message = _("L2 Gateway %(gateway_id)s could not be found")
 
 
+class OvsAgentNotFound(exceptions.NotFound):
+    message = _("ovs agent not found in host %(host)s")
+
+
 class L2GatewayDeviceInUse(exceptions.InUse):
     message = _("L2 Gateway Device '%(device_id)s' is still used by "
                 "one or more network gateways.")
@@ -79,8 +83,14 @@ class L2gatewaySegmentationIDNotFound(exceptions.NotFound):
                 "'%(gateway_id)s'")
 
 
-class MultipleSegmentsFound(exceptions.NeutronException):
-    message = _("Multiple segments found for the network  '%(network_id)s'")
+class MultipleVxlanSegmentsFound(exceptions.NeutronException):
+    message = _("Multiple Vxlan segments found for the network "
+                "'%(network_id)s'")
+
+
+class VxlanSegmentationIDNotFound(exceptions.NotFound):
+    message = _("vxlan segmentation id not found for the "
+                "network '%(network_id)s'")
 
 
 class L2GatewayInterfaceRequired(exceptions.NeutronException):
@@ -108,8 +118,10 @@ base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayPortInUse: web_exc.HTTPConflict,
                        L2GatewayConnectionExists: web_exc.HTTPConflict,
                        L2GatewayConnectionNotFound: web_exc.HTTPNotFound,
-                       MultipleSegmentsFound: web_exc.HTTPConflict,
+                       MultipleVxlanSegmentsFound: web_exc.HTTPConflict,
+                       VxlanSegmentationIDNotFound: web_exc.HTTPNotFound,
                        L2GatewaySegmentationRequired: web_exc.HTTPConflict,
                        L2MultipleGatewayConnections: web_exc.HTTPConflict,
                        L2GatewayDuplicateSegmentationID: web_exc.HTTPConflict,
+                       OvsAgentNotFound: web_exc.HTTPNotFound,
                        OVSDBError: web_exc.HTTPConflict})

@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from neutron.common import constants
-from neutron.i18n import _LE
 from neutron import manager
 from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -26,6 +25,7 @@ from networking_l2gw.services.l2gateway.common import topics
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
+from neutron_lib import constants
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging

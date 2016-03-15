@@ -14,13 +14,12 @@
 #    under the License.
 
 import abc
-from neutron.common import constants as n_const
 from neutron.common import exceptions
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
 from neutron.extensions import portbindings
-from neutron.i18n import _LE
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import constants
@@ -31,6 +30,7 @@ from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway import service_drivers
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
+from neutron_lib import constants as n_const
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
@@ -176,19 +176,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                         logical_switch_uuid,
                         physical_locator,
                         [mac_remote])
-
-    def _form_logical_switch_schema(self, context, network, ls_dict):
-        logical_switch_uuid = None
-        logical_switch = db.get_logical_switch_by_name(
-            context, ls_dict)
-        if logical_switch:
-            logical_switch_uuid = logical_switch.get('uuid')
-        logical_switch = self._get_dict(ovsdb_schema.LogicalSwitch(
-            uuid=logical_switch_uuid,
-            name=network['id'],
-            key=network['provider:segmentation_id'],
-            description=network['name']))
-        return logical_switch
 
     def _form_physical_locator_schema(self, context, pl_dict):
         locator_uuid = None
@@ -359,10 +346,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         nw_map['l2_gateway_id'] = l2_gw_id
         if seg_id:
             nw_map[constants.SEG_ID] = gw_connection.get(constants.SEG_ID)
-        net_segments_list = self.service_plugin._get_network_segments(
-            context, network_id)
-        if len(net_segments_list) > 1:
-            raise l2gw_exc.MultipleSegmentsFound(network_id=network_id)
         if not self.service_plugin._get_network(context, network_id):
             raise exceptions.NetworkNotFound(net_id=network_id)
         if self.service_plugin._retrieve_gateway_connections(context,
@@ -487,11 +470,14 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
     def _get_ip_details(self, context, port):
         host = port[portbindings.HOST_ID]
         agent = self._get_agent_details(context, host)
-        conf_dict = agent[0].get("configurations")
-        dst_ip = conf_dict.get("tunneling_ip")
-        fixed_ip_list = port.get('fixed_ips')
-        fixed_ip_list = fixed_ip_list[0]
-        return dst_ip, fixed_ip_list.get('ip_address')
+        if agent:
+            conf_dict = agent[0].get("configurations")
+            dst_ip = conf_dict.get("tunneling_ip")
+            fixed_ip_list = port.get('fixed_ips')
+            fixed_ip_list = fixed_ip_list[0]
+            return dst_ip, fixed_ip_list.get('ip_address')
+        else:
+            raise l2gw_exc.OvsAgentNotFound(host=host)
 
     def _get_network_details(self, context, network_id):
         network = self.service_plugin._core_plugin.get_network(context,
@@ -515,12 +501,29 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             uuid = logical_switch.get('uuid')
         else:
             uuid = None
+        network_id = gw_connection.get('network_id')
         ls_dict = {'uuid': uuid,
-                   'name': gw_connection.get('network_id')}
+                   'name': network_id}
         network = self._get_network_details(context,
-                                            gw_connection.get('network_id'))
+                                            network_id)
         ls_dict['description'] = network.get('name')
-        ls_dict['key'] = network.get('provider:segmentation_id')
+        logical_segments = network.get('segments')
+        if logical_segments:
+            vxlan_seg_id = None
+            for seg in logical_segments:
+                if seg.get('provider:network_type') == constants.VXLAN:
+                    if vxlan_seg_id:
+                        raise l2gw_exc.MultipleVxlanSegmentsFound(
+                            network_id=network_id)
+                    vxlan_seg_id = seg.get('provider:segmentation_id')
+                    ls_dict['key'] = vxlan_seg_id
+            if not vxlan_seg_id:
+                raise l2gw_exc.VxlanSegmentationIDNotFound(
+                    network_id=network_id)
+        elif network.get('provider:network_type') == constants.VXLAN:
+            ls_dict['key'] = network.get('provider:segmentation_id')
+        else:
+            raise l2gw_exc.VxlanSegmentationIDNotFound(network_id=network_id)
         return ls_dict
 
     def _get_physical_locator_dict(self, dst_ip,

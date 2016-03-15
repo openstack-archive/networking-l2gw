@@ -17,12 +17,12 @@ import eventlet
 
 from contextlib import contextmanager
 from neutron import context as ctx
-from neutron.i18n import _LE
 
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall
 
+from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_common_class
@@ -256,7 +256,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                    ovsdb_fd.delete_logical_switch(logical_switch_uuid)
+                    ovsdb_fd.delete_logical_switch(logical_switch_uuid,
+                                                   ovsdb_identifier)
 
     def add_vif_to_gateway(self, context, ovsdb_identifier,
                            logical_switch_dict, locator_dict,
@@ -281,7 +282,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
                     ovsdb_fd.insert_ucast_macs_remote(logical_switch_dict,
                                                       locator_dict,
-                                                      mac_dict)
+                                                      mac_dict,
+                                                      ovsdb_identifier)
 
     def delete_vif_from_gateway(self, context, ovsdb_identifier,
                                 logical_switch_uuid, mac):
@@ -301,7 +303,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                    ovsdb_fd.delete_ucast_macs_remote(logical_switch_uuid, mac)
+                    ovsdb_fd.delete_ucast_macs_remote(
+                        logical_switch_uuid, mac, ovsdb_identifier)
 
     def update_vif_to_gateway(self, context, ovsdb_identifier,
                               locator_dict, mac_dict):
@@ -324,8 +327,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
-                    ovsdb_fd.update_ucast_macs_remote(locator_dict,
-                                                      mac_dict)
+                    ovsdb_fd.update_ucast_macs_remote(
+                        locator_dict, mac_dict, ovsdb_identifier)
 
     def update_connection_to_gateway(self, context, ovsdb_identifier,
                                      logical_switch_dict, locator_dicts,
