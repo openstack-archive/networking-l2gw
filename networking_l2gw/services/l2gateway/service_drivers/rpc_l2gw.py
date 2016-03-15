@@ -30,7 +30,6 @@ from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway import service_drivers
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
-from neutron_lib import constants as n_const
 from neutron_lib import exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -473,14 +472,11 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
     def _get_ip_details(self, context, port):
         host = port[portbindings.HOST_ID]
         agent = self._get_agent_details(context, host)
-        if agent:
-            conf_dict = agent[0].get("configurations")
-            dst_ip = conf_dict.get("tunneling_ip")
-            fixed_ip_list = port.get('fixed_ips')
-            fixed_ip_list = fixed_ip_list[0]
-            return dst_ip, fixed_ip_list.get('ip_address')
-        else:
-            raise l2gw_exc.OvsAgentNotFound(host=host)
+        conf_dict = agent.get("configurations")
+        dst_ip = conf_dict.get("tunneling_ip")
+        fixed_ip_list = port.get('fixed_ips')
+        fixed_ip_list = fixed_ip_list[0]
+        return dst_ip, fixed_ip_list.get('ip_address')
 
     def _get_network_details(self, context, network_id):
         network = self.service_plugin._core_plugin.get_network(context,
@@ -493,11 +489,18 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         return ports
 
     def _get_agent_details(self, context, host):
-        agent = self.service_plugin._core_plugin.get_agents(
-            context,
-            filters={'agent_type': [n_const.AGENT_TYPE_OVS],
-                     'host': [host]})
-        return agent
+        l2_agent = None
+        agents = self.service_plugin._core_plugin.get_agents(
+            context, filters={'host': [host]})
+        for agent in agents:
+            agent_tunnel_type = agent['configurations'].get('tunnel_types', [])
+            if constants.VXLAN in agent_tunnel_type:
+                l2_agent = agent
+                break
+        if not l2_agent:
+            raise l2gw_exc.L2AgentNotFoundByHost(
+                host=host)
+        return l2_agent
 
     def _get_logical_switch_dict(self, context, logical_switch, gw_connection):
         if logical_switch:

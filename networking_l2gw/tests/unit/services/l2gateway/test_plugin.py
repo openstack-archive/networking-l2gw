@@ -19,7 +19,6 @@ from neutron.tests import base
 
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import config
-from networking_l2gw.services.l2gateway.ovsdb import data
 from networking_l2gw.services.l2gateway import plugin as l2gw_plugin
 
 
@@ -39,7 +38,6 @@ class TestL2GatewayPlugin(base.BaseTestCase):
         self.context = mock.MagicMock()
         self.plugin = l2gw_plugin.L2GatewayPlugin()
         self.ovsdb_identifier = 'fake_ovsdb_id'
-        self.ovsdb_data = data.OVSDBData(self.ovsdb_identifier)
 
     def _get_fake_l2_gateway(self):
         fake_l2_gateway_id = "5227c228-6bba-4bbe-bdb8-6942768ff0f1"

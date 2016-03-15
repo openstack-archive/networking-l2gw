@@ -28,13 +28,13 @@ class L2GatewayNotFound(exceptions.NotFound):
     message = _("L2 Gateway %(gateway_id)s could not be found")
 
 
-class OvsAgentNotFound(exceptions.NotFound):
-    message = _("ovs agent not found in host %(host)s")
-
-
 class L2GatewayDeviceInUse(exceptions.InUse):
     message = _("L2 Gateway Device '%(device_id)s' is still used by "
                 "one or more network gateways.")
+
+
+class L2AgentNotFoundByHost(exceptions.NotFound):
+    message = _("L2 Agent for host '%(host)s' could not be found.")
 
 
 class L2GatewayDeviceNotFound(exceptions.NotFound):
@@ -129,5 +129,5 @@ base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewaySegmentationRequired: web_exc.HTTPConflict,
                        L2MultipleGatewayConnections: web_exc.HTTPConflict,
                        L2GatewayDuplicateSegmentationID: web_exc.HTTPConflict,
-                       OvsAgentNotFound: web_exc.HTTPNotFound,
+                       L2AgentNotFoundByHost: web_exc.HTTPNotFound,
                        OVSDBError: web_exc.HTTPConflict})

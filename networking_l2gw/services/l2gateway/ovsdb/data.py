@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from neutron.extensions import portbindings
 from neutron import manager
-from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 
 from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway import l2gateway_db
@@ -22,6 +22,7 @@ from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
 from networking_l2gw.services.l2gateway.common import topics
+from networking_l2gw.services.l2gateway.common import tunnel_calls
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
@@ -70,6 +71,8 @@ class OVSDBData(object):
         self.agent_rpc = agent_api.L2gatewayAgentApi(
             topics.L2GATEWAY_AGENT, cfg.CONF.host)
         self.l2gw_mixin = l2gateway_db.L2GatewayMixin()
+        self.core_plugin = manager.NeutronManager.get_plugin()
+        self.tunnel_call = tunnel_calls.Tunnel_Calls()
 
     def update_ovsdb_changes(self, context, ovsdb_data):
         """RPC to update the changes from OVSDB in the database."""
@@ -266,13 +269,55 @@ class OVSDBData(object):
             physical_switch_ips.add(physical_switch.get('tunnel_ip'))
         return list(physical_switch_ips)
 
+    def _get_agent_by_mac(self, context, mac):
+        host = None
+        mac_addr = mac.get('mac')
+        port = self._get_port_by_mac(context, mac_addr)
+        for port_dict in port:
+            host = port_dict[portbindings.HOST_ID]
+        agent_l2_pop_enabled = self._get_agent_details_by_host(context, host)
+        return agent_l2_pop_enabled
+
+    def _get_port_by_mac(self, context, mac_addr):
+        port = self.core_plugin.get_ports(
+            context, filters={'mac_address': [mac_addr]})
+        return port
+
+    def _get_agent_details_by_host(self, context, host):
+        l2_agent = None
+        agent_l2_pop_enabled = None
+        agents = self.core_plugin.get_agents(
+            context, filters={'host': [host]})
+        for agent in agents:
+            agent_tunnel_type = agent['configurations'].get('tunnel_types', [])
+            agent_l2_pop_enabled = agent['configurations'].get('l2_population',
+                                                               None)
+            if n_const.VXLAN in agent_tunnel_type:
+                l2_agent = agent
+                break
+        if not l2_agent:
+            raise l2gw_exc.L2AgentNotFoundByHost(
+                host=host)
+        return agent_l2_pop_enabled
+
     def _handle_l2pop(self, context, new_remote_macs):
+        """handle vxlan tunnel creation based on whether l2pop is enabled or not.
+
+        if l2pop is enabled in L2 agent on a host to which port belongs, then
+        call add_fdb_entries. otherwise, call tunnel_sync.
+        """
         for mac in new_remote_macs:
-            agent_ips = self._get_physical_switch_ips(context, mac)
-            for agent_ip in agent_ips:
+            agent_l2_pop_enabled = self._get_agent_by_mac(context, mac)
+            physical_switches = self._get_physical_switch_ips(context, mac)
+            for physical_switch in physical_switches:
                 other_fdb_entries = self._get_fdb_entries(
-                    context, agent_ip, mac.get('logical_switch_id'))
-                self._trigger_l2pop_sync(context, other_fdb_entries)
+                    context, physical_switch, mac.get('logical_switch_id'))
+                if agent_l2_pop_enabled:
+                    self.tunnel_call.trigger_l2pop_sync(context,
+                                                        other_fdb_entries)
+                else:
+                    self.tunnel_call.trigger_tunnel_sync(context,
+                                                         physical_switch)
 
     def _process_modified_physical_ports(self,
                                          context,
@@ -418,13 +463,13 @@ class OVSDBData(object):
                         other_fdb_entries = self._get_fdb_entries(
                             context, physical_switch_ip, logical_switch_id)
                         agent_host = tunneling_ip_dict.get(agent_ip)
-                        self._trigger_l2pop_delete(
+                        self.tunnel_call.trigger_l2pop_delete(
                             context, other_fdb_entries, agent_host)
             else:
                 for logical_switch_id in logical_switch_ids:
                     other_fdb_entries = self._get_fdb_entries(
                         context, agent_ip, logical_switch_id)
-                    self._trigger_l2pop_delete(
+                    self.tunnel_call.trigger_l2pop_delete(
                         context, other_fdb_entries)
             db.delete_physical_locator(context, pl_dict)
 
@@ -454,13 +499,14 @@ class OVSDBData(object):
 
     def _get_agent_ips(self, context):
         agent_ip_dict = {}
-        ml2plugin = manager.NeutronManager.get_plugin()
-        agents = ml2plugin.get_agents(
-            context, filters={'agent_type': [constants.AGENT_TYPE_OVS]})
+        agents = self.core_plugin.get_agents(
+            context)
         for agent in agents:
-            conf_dict = agent.get('configurations')
-            tunnel_ip = conf_dict.get('tunneling_ip')
-            agent_ip_dict[tunnel_ip] = agent.get('host')
+            conf_dict_tunnel_type = agent['configurations'].get(
+                "tunnel_types", [])
+            if n_const.VXLAN in conf_dict_tunnel_type:
+                tunnel_ip = agent['configurations'].get('tunneling_ip')
+                agent_ip_dict[tunnel_ip] = agent.get('host')
         return agent_ip_dict
 
     def _get_fdb_entries(self, context, agent_ip, logical_switch_uuid):
@@ -476,13 +522,3 @@ class OVSDBData(object):
                                                     [port_fdb_entries]
                                                     }}}
         return other_fdb_entries
-
-    def _trigger_l2pop_sync(self, context, other_fdb_entries):
-        """Sends L2pop ADD RPC message to the neutron L2 agent."""
-        l2pop_rpc.L2populationAgentNotifyAPI(
-            ).add_fdb_entries(context, other_fdb_entries)
-
-    def _trigger_l2pop_delete(self, context, other_fdb_entries, host=None):
-        """Sends L2pop DELETE RPC message to the neutron L2 agent."""
-        l2pop_rpc.L2populationAgentNotifyAPI(
-            ).remove_fdb_entries(context, other_fdb_entries, host)

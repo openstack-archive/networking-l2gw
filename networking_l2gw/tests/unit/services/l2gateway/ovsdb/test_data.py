@@ -18,12 +18,14 @@ import mock
 import contextlib
 from neutron import context
 from neutron import manager
+from neutron.plugins.ml2 import managers
 from neutron.tests import base
 
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
+from networking_l2gw.services.l2gateway.common import tunnel_calls
 from networking_l2gw.services.l2gateway.ovsdb import data
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
@@ -67,6 +69,8 @@ class TestOVSDBData(base.BaseTestCase):
         super(TestOVSDBData, self).setUp()
         self.context = context.get_admin_context()
         self.ovsdb_identifier = 'fake_ovsdb_id'
+        mock.patch.object(manager.NeutronManager, 'get_plugin').start()
+        mock.patch.object(managers, 'TypeManager').start()
         self.ovsdb_data = data.OVSDBData(self.ovsdb_identifier)
 
     def test_init(self):
@@ -144,7 +148,9 @@ class TestOVSDBData(base.BaseTestCase):
             mock.patch.object(self.ovsdb_data,
                               '_process_deleted_local_macs'),
             mock.patch.object(self.ovsdb_data,
-                              '_process_deleted_remote_macs')
+                              '_process_deleted_remote_macs'),
+            mock.patch.object(self.ovsdb_data,
+                              '_handle_l2pop')
             ) as (process_new_logical_switches,
                   process_new_physical_ports,
                   process_new_physical_switches,
@@ -158,7 +164,8 @@ class TestOVSDBData(base.BaseTestCase):
                   process_deleted_physical_ports,
                   process_deleted_physical_locators,
                   process_deleted_local_macs,
-                  process_deleted_remote_macs):
+                  process_deleted_remote_macs,
+                  mock_handle_l2pop):
             self.ovsdb_data.entry_table = {
                 'new_logical_switches': process_new_logical_switches,
                 'new_physical_ports': process_new_physical_ports,
@@ -205,6 +212,7 @@ class TestOVSDBData(base.BaseTestCase):
                 self.context, fake_deleted_local_macs)
             process_deleted_remote_macs.assert_called_with(
                 self.context, fake_deleted_remote_macs)
+            self.assertTrue(mock_handle_l2pop.called)
 
     def test_notify_ovsdb_states(self):
         fake_ovsdb_states = {'ovsdb1': 'connected'}
@@ -377,6 +385,31 @@ class TestOVSDBData(base.BaseTestCase):
                              'fake_ovsdb_id')
             delete_ls.assert_called_with(self.context, fake_dict)
 
+    def test_get_agent_by_mac(self):
+        fake_mac = {'mac': 'fake_mac_1'}
+        fake_port = [{'binding:host_id': 'fake_host'}]
+        with contextlib.nested(
+            mock.patch.object(self.ovsdb_data, '_get_port_by_mac',
+                              return_value=fake_port),
+            mock.patch.object(self.ovsdb_data,
+                              '_get_agent_details_by_host')) as (
+                mock_get_port_mac, mock_get_agent_detail):
+            self.ovsdb_data._get_agent_by_mac(self.context, fake_mac)
+            mock_get_port_mac.assert_called_with(self.context, 'fake_mac_1')
+            mock_get_agent_detail.assert_called_with(self.context, 'fake_host')
+
+    def test_get_agent_details_by_host(self):
+        fake_agent = {'configurations': {'tunnel_types': ["vxlan"],
+                      'l2_population': True}}
+        fake_agents = [fake_agent]
+        with contextlib.nested(
+            mock.patch.object(self.ovsdb_data.core_plugin,
+                              'get_agents',
+                              return_value=fake_agents)):
+            l2pop_enabled = self.ovsdb_data._get_agent_details_by_host(
+                self.context, 'fake_host')
+            self.assertTrue(l2pop_enabled)
+
     def test_process_deleted_physical_switches(self):
         fake_dict = {}
         fake_deleted_physical_switches = [fake_dict]
@@ -509,7 +542,8 @@ class TestOVSDBData(base.BaseTestCase):
                               'delete_physical_locator'),
             mock.patch.object(data.OVSDBData, '_get_agent_ips',
                               return_value={'1.1.1.1': 'hostname'}),
-            mock.patch.object(data.OVSDBData, '_trigger_l2pop_delete')
+            mock.patch.object(tunnel_calls.Tunnel_Calls,
+                              'trigger_l2pop_delete')
         ) as (get_ls, get_all_ps, get_fdb, delete_pl, get_agent_ips,
               trig_l2pop):
             self.ovsdb_data._process_deleted_physical_locators(
@@ -547,7 +581,8 @@ class TestOVSDBData(base.BaseTestCase):
                               'delete_physical_locator'),
             mock.patch.object(data.OVSDBData, '_get_agent_ips',
                               return_value={'2.2.2.2': 'hostname'}),
-            mock.patch.object(data.OVSDBData, '_trigger_l2pop_delete')
+            mock.patch.object(tunnel_calls.Tunnel_Calls,
+                              'trigger_l2pop_delete')
         ) as (get_ls, get_all_ps, get_fdb, delete_pl, get_agent_ips,
               trig_l2pop):
             self.ovsdb_data._process_deleted_physical_locators(

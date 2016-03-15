@@ -42,7 +42,6 @@ class TestL2gwRpcDriver(base.BaseTestCase):
         self.plugin = rpc_l2gw.L2gwRpcDriver(self.service_plugin)
         self.plugin.agent_rpc = mock.MagicMock()
         self.ovsdb_identifier = 'fake_ovsdb_id'
-        self.ovsdb_data = data.OVSDBData(self.ovsdb_identifier)
         self.context = mock.ANY
 
     def test_l2rpcdriver_init(self):
@@ -262,7 +261,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
     def test_get_ip_details(self):
         fake_port = {'binding:host_id': 'fake_host',
                      'fixed_ips': [{'ip_address': 'fake_ip'}]}
-        fake_agent = [{'configurations': {'tunneling_ip': 'fake_tun_ip'}}]
+        fake_agent = {'configurations': {'tunneling_ip': 'fake_tun_ip'}}
         with mock.patch.object(self.plugin,
                                '_get_agent_details',
                                return_value=fake_agent) as get_agent:
@@ -272,16 +271,14 @@ class TestL2gwRpcDriver(base.BaseTestCase):
             self.assertEqual(ret_dst_ip, 'fake_tun_ip')
             self.assertEqual(ret_ip_add, 'fake_ip')
 
-    def test_get_ip_details_for_no_ovs_agent(self):
-        fake_port = {'binding:host_id': 'fake_host',
-                     'fixed_ips': [{'ip_address': 'fake_ip'}]}
-        with mock.patch.object(self.plugin,
-                               '_get_agent_details',
-                               return_value=None):
-            self.assertRaises(l2gw_exc.OvsAgentNotFound,
-                              self.plugin._get_ip_details,
-                              self.context,
-                              fake_port)
+    def test_get_agent_details_for_no_ovs_agent(self):
+        core_plugin = mock.PropertyMock()
+        type(self.service_plugin)._core_plugin = core_plugin
+        (self.service_plugin._core_plugin.get_agents.
+         return_value) = []
+        self.assertRaises(l2gw_exc.L2AgentNotFoundByHost,
+                          self.plugin._get_agent_details,
+                          self.context, 'fake_host')
 
     def test_get_network_details(self):
         fake_network = {'id': 'fake_network_id',
