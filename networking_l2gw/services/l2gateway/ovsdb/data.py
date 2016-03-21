@@ -55,7 +55,7 @@ class L2GatewayOVSDBCallbacks(object):
             self.ovsdb = self.get_ovsdbdata_object(ovsdb_states.keys()[0])
         if self.ovsdb:
             LOG.debug("ovsdb_states = %s", ovsdb_states)
-            self.ovsdb.notify_ovsdb_states(context, ovsdb_states)
+            self.ovsdb.notify_ovsdb_states(context, ovsdb_states, self.plugin.service_plugin)
 
     def get_ovsdbdata_object(self, ovsdb_identifier):
         return OVSDBData(ovsdb_identifier)
@@ -81,7 +81,7 @@ class OVSDBData(object):
         if ovsdb_data.get('new_remote_macs'):
             self._handle_l2pop(context, ovsdb_data.get('new_remote_macs'))
 
-    def notify_ovsdb_states(self, context, ovsdb_states):
+    def notify_ovsdb_states(self, context, ovsdb_states, service_plugin=None):
         """RPC to notify the OVSDB servers connection state."""
         for ovsdb_identifier, state in ovsdb_states.items():
             if state == 'connected':
@@ -139,6 +139,23 @@ class OVSDBData(object):
                         except Exception as ex:
                             LOG.exception(_LE("Exception occurred = %s"),
                                           str(ex))
+            else:
+                LOG.debug("**** handling HA *****")
+                switch_list = db.get_all_physical_switches_by_ovsdb_id(
+                    context,
+                    ovsdb_identifier)
+                for switch in switch_list:
+                    device = db.get_device_by_name(
+                        context,
+                        switch.name)
+                    if device:
+                        LOG.debug("** faulty device %s needs replacement **",
+                                  switch.name)
+                        service_plugin.do_failover(
+                            context,
+                            device.l2_gateway_id
+                        )
+
 
     def _setup_entry_table(self):
         self.entry_table = {'new_logical_switches':

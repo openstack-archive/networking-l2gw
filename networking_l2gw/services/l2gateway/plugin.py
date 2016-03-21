@@ -209,3 +209,43 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         self._get_driver_for_provider(
             constants.l2gw).del_ucast_mac_remote(
                 context, mac_db.ovsdb_identifier, id)
+
+    def do_failover(self, context, l2_gateway_id):
+        new_gw = self.create_new_gateway(context, l2_gateway_id)
+        self.move_connections("1", "2")
+
+    def create_new_gateway(self, context, l2_gateway_id):
+        # find available device
+        new_device = super(
+                L2GatewayPlugin,
+                self).get_unused_device(context)
+        if not new_device:
+            LOG.debug("*** There is no available device ***")
+            return
+
+        device_interface = super(
+                L2GatewayPlugin,
+                self).get_device_interface(context,new_device.uuid)
+
+        failed_l2gw = super(
+                L2GatewayPlugin,
+                self).get_l2_gateway(context,l2_gateway_id)
+
+        new_gateway = {constants.GATEWAY_RESOURCE_NAME: {
+            "name": failed_l2gw.get("name"),
+            "tenant_id": failed_l2gw.get("tenant_id"),
+            "devices": [
+                {
+                    "device_name": new_device['name'],
+                    "interfaces": [
+                        {
+                            "name": device_interface.name
+                        }
+                    ]
+                }
+            ]}
+        }
+        return self.create_l2_gateway(context, new_gateway)
+
+    def move_connections(self, old_gw_id, new_gw_id):
+        pass

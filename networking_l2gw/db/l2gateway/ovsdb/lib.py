@@ -526,3 +526,14 @@ def get_all_remote_gw_ips(context):
         for rgw in remote_gws:
             rgw_ips.append(rgw.ipaddr)
     return rgw_ips
+
+
+def get_device_by_name(context, name):
+    try:
+        query = context.session.query(l2gw_models.L2GatewayDevice)
+        device = query.filter_by(
+                device_name=name).one()
+    except exc.NoResultFound:
+        LOG.debug('no gateway device found for %s', name)
+        return
+    return device

@@ -758,6 +758,27 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         return context.session.query(models2.LogicalSwitches).filter_by(
             name=name).one()
 
+    def get_unused_device(self, context):
+        device_list = context.session.query(
+            models2.PhysicalSwitches.name).all()
+        active_devices = context.session.query(
+            models.L2GatewayDevice.device_name
+        ).all()
+        for device in device_list:
+            if device not in active_devices:
+                return context.session.query(
+                    models2.PhysicalSwitches
+                    ).filter_by(
+                        name=device.name
+                    ).one()
+        return
+
+    def get_device_interface(self, context, uuid):
+        return context.session.query(
+            models2.PhysicalPorts.name).filter_by(
+                physical_switch_id=uuid
+            ).one()
+
 
 def l2gw_callback(resource, event, trigger, **kwargs):
     l2gwservice = manager.NeutronManager.get_service_plugins().get(
