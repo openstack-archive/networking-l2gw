@@ -101,3 +101,54 @@ class L2gatewayAgentApi(object):
             msg_splits = message.split('\n')
             raise l2gw_exc.OVSDBError(message="Error on the OVSDB "
                                       "server: " + msg_splits[0])
+
+    def create_remote_unknown(self, context, ovsdb_identifier,
+                              remote_gw_connection):
+        LOG.debug("Sending create unknown to agent for ipaddr: '%s', "
+                  "seg_id: '%s'", remote_gw_connection['ipaddr'],
+                  remote_gw_connection['seg_id'])
+        cctxt = self.client.prepare()
+        return cctxt.call(context,
+                          'create_remote_unknown',
+                          ovsdb_identifier=ovsdb_identifier,
+                          network_id=remote_gw_connection['network'],
+                          ipaddr=remote_gw_connection['ipaddr'],
+                          seg_id=remote_gw_connection['seg_id']
+                          )
+
+    def delete_l2_remote_gateway_connection(self, context,
+                                            ovsdb_identifier,
+                                            network_id,
+                                            ipaddr,
+                                            tunnel_key):
+        LOG.debug("Sending delete remote connection to agent for "
+                  "network: '%s' ipaddr: '%s', tunnel_key: '%s'",
+                  network_id, ipaddr, tunnel_key)
+        cctxt = self.client.prepare()
+        return cctxt.call(context,
+                          'del_remote_connection',
+                          ovsdb_identifier=ovsdb_identifier,
+                          network_id=network_id,
+                          ipaddr=ipaddr,
+                          tunnel_key=tunnel_key)
+
+    def add_ucast_mac_remote(self, context, ovsdb_identifier,
+                             logical_sw_uuid, locator, mac, ipaddr):
+        LOG.debug("Adding UCAST MAC '%s' to locator '%s'", mac, locator)
+        cctxt = self.client.prepare()
+        return cctxt.call(context,
+                          'add_ucast_mac_remote',
+                          ovsdb_identifier=ovsdb_identifier,
+                          logical_sw_uuid=logical_sw_uuid,
+                          locator=locator,
+                          mac=mac,
+                          ipaddr=ipaddr)
+
+    def del_ucast_mac_remote(self, context, ovsdb_identifier, mac_uuid):
+        LOG.debug("Sending deleting UCAST MAC '%s' from OVSDB '%s' to agent",
+                  mac_uuid, ovsdb_identifier)
+        cctxt = self.client.prepare()
+        return cctxt.call(context,
+                          'del_ucast_mac_remote',
+                          ovsdb_identifier=ovsdb_identifier,
+                          mac_uuid=mac_uuid)

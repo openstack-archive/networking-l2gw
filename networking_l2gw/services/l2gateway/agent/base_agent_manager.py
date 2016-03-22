@@ -37,6 +37,7 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
         super(BaseAgentManager, self).__init__(conf)
         self.l2gw_agent_type = ''
         self.gateways = {}
+        self.idl_connections = {}
         self.plugin_rpc = agent_api.L2GatewayAgentApi(
             topics.L2GATEWAY_PLUGIN,
             self.conf.host

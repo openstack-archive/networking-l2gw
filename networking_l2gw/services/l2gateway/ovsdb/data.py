@@ -55,7 +55,7 @@ class L2GatewayOVSDBCallbacks(object):
             self.ovsdb = self.get_ovsdbdata_object(ovsdb_states.keys()[0])
         if self.ovsdb:
             LOG.debug("ovsdb_states = %s", ovsdb_states)
-            self.ovsdb.notify_ovsdb_states(context, ovsdb_states)
+            self.ovsdb.notify_ovsdb_states(context, ovsdb_states, self.plugin.service_plugin)
 
     def get_ovsdbdata_object(self, ovsdb_identifier):
         return OVSDBData(ovsdb_identifier)
@@ -81,7 +81,7 @@ class OVSDBData(object):
         if ovsdb_data.get('new_remote_macs'):
             self._handle_l2pop(context, ovsdb_data.get('new_remote_macs'))
 
-    def notify_ovsdb_states(self, context, ovsdb_states):
+    def notify_ovsdb_states(self, context, ovsdb_states, service_plugin=None):
         """RPC to notify the OVSDB servers connection state."""
         for ovsdb_identifier, state in ovsdb_states.items():
             if state == 'connected':
@@ -139,6 +139,23 @@ class OVSDBData(object):
                         except Exception as ex:
                             LOG.exception(_LE("Exception occurred = %s"),
                                           str(ex))
+            else:
+                LOG.debug("**** handling HA *****")
+                switch_list = db.get_all_physical_switches_by_ovsdb_id(
+                    context,
+                    ovsdb_identifier)
+                for switch in switch_list:
+                    device = db.get_device_by_name(
+                        context,
+                        switch.name)
+                    if device:
+                        LOG.debug("** faulty device %s needs replacement **",
+                                  switch.name)
+                        service_plugin.do_failover(
+                            context,
+                            device.l2_gateway_id
+                        )
+
 
     def _setup_entry_table(self):
         self.entry_table = {'new_logical_switches':
@@ -271,7 +288,7 @@ class OVSDBData(object):
             agent_ips = self._get_physical_switch_ips(context, mac)
             for agent_ip in agent_ips:
                 other_fdb_entries = self._get_fdb_entries(
-                    context, agent_ip, mac.get('logical_switch_id'))
+                    context, agent_ip, mac.get('logical_switch_id'), mac)
                 self._trigger_l2pop_sync(context, other_fdb_entries)
 
     def _process_modified_physical_ports(self,
@@ -463,13 +480,28 @@ class OVSDBData(object):
             agent_ip_dict[tunnel_ip] = agent.get('host')
         return agent_ip_dict
 
-    def _get_fdb_entries(self, context, agent_ip, logical_switch_uuid):
+    def _get_fdb_entries(self, context, agent_ip, logical_switch_uuid,
+                         mac=None):
         ls_dict = {'uuid': logical_switch_uuid,
                    n_const.OVSDB_IDENTIFIER: self.ovsdb_identifier}
         logical_switch = db.get_logical_switch(context, ls_dict)
         network_id = logical_switch.get('name')
         segment_id = logical_switch.get('key')
-        port_fdb_entries = constants.FLOODING_ENTRY
+
+        ips = db.get_all_remote_gw_ips(context)
+
+        if mac:
+            locator_ip = db.get_physical_locator_ip_by_id(
+                context,
+                mac.get('physical_locator_id'))
+            # if locator IP is of a Remote Gateway, we send the mac address
+            # to l2pop to add a specific flow, else, we send flood address
+            if locator_ip and locator_ip in ips:
+                port_fdb_entries = (mac.get('mac'), mac.get('ip_address'))
+            else:
+                port_fdb_entries = constants.FLOODING_ENTRY
+        else:
+            port_fdb_entries = constants.FLOODING_ENTRY
         other_fdb_entries = {network_id: {'segment_id': segment_id,
                                           'network_type': 'vxlan',
                                           'ports': {agent_ip:

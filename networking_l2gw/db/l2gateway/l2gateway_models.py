@@ -62,3 +62,23 @@ class L2Gateway(model_base.BASEV2, models_v2.HasId,
                                cascade='all,delete')
     network_connections = orm.relationship(L2GatewayConnection,
                                            lazy='joined')
+
+
+class L2RemoteGateway(model_base.BASEV2, models_v2.HasId):
+    name = sa.Column(sa.String(255))
+    # should have hostname instead of IP address
+    ipaddr = sa.Column(sa.String(255))
+
+
+class L2RemoteGatewayConnection(model_base.BASEV2, models_v2.HasId):
+    gateway = sa.Column(sa.String(36),
+                        sa.ForeignKey('l2gateways.id',
+                        ondelete='CASCADE'))
+    network = sa.Column(sa.String(36),
+                        sa.ForeignKey('networks.id', ondelete='CASCADE'))
+    remote_gateway = sa.Column(sa.String(36),
+                               sa.ForeignKey('l2remotegateways.id',
+                                             ondelete='CASCADE')
+                               )
+    seg_id = sa.Column(sa.String(255))
+    flood = sa.Column(sa.String(5))
