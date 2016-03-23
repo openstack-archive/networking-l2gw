@@ -233,10 +233,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         """get the l2 gateway by id."""
         self._admin_check(context, 'GET')
         gw_db = self._get_l2_gateway(context, id)
-        if gw_db:
-            return self._make_l2_gateway_dict(gw_db, fields)
-        else:
-            return []
+        return self._make_l2_gateway_dict(gw_db, fields)
 
     def delete_l2_gateway(self, context, id):
         """delete the l2 gateway  by id."""
@@ -489,8 +486,6 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
     def validate_l2_gateway_for_delete(self, context, l2gw_id):
         self._admin_check(context, 'DELETE')
         gw_db = self._get_l2_gateway(context, l2gw_id)
-        if gw_db is None:
-            raise l2gw_exc.L2GatewayNotFound(gateway_id=l2gw_id)
         if gw_db.network_connections:
             raise l2gw_exc.L2GatewayInUse(gateway_id=l2gw_id)
         return

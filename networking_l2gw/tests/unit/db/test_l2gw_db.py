@@ -159,6 +159,16 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         result2 = self._get_l2_gateways()
         self.assertIn('id', result2[0])
 
+    def test_l2gateway_show(self):
+        """Test l2 gateway show."""
+        name = "l2gw_1"
+        device_name = "device1"
+        data = self._get_l2_gateway_data(name, device_name)
+        gw = self._create_l2gateway(data)
+        l2gw_id = gw['id']
+        result = self._get_l2_gateway(l2gw_id)
+        self.assertEqual(name, result['name'])
+
     def _update_l2_gateway(self, id, l2gateway):
         """Update l2gateway helper."""
         with self.ctx.session.begin(subtransactions=True):
@@ -388,3 +398,21 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         input_seg_list = devices_input[0]['interfaces'][0]['segmentation_id']
         output_seg_list = devices_output[0]['interfaces'][0]['segmentation_id']
         self.assertEqual(len(input_seg_list), len(output_seg_list))
+
+    def test_l2gateway_show_update_delete_invalid_id(self):
+        """Test l2 gateway show, update and delete with invalid id."""
+        name = "l2gw_1"
+        name_update = "l2gw_2"
+        device_name = "device1"
+        invalid_l2gw_id = "invalid_id"
+        data_l2gw_create = self._get_l2_gateway_data(name, device_name)
+        data_l2gw_update = self._get_l2_gateway_data(name_update, device_name)
+        self._create_l2gateway(data_l2gw_create)
+        self.assertRaises(exceptions.L2GatewayNotFound,
+                          self._get_l2_gateway, invalid_l2gw_id)
+        self.assertRaises(exceptions.L2GatewayNotFound,
+                          self._validate_l2_gateway_for_update,
+                          invalid_l2gw_id, data_l2gw_update)
+        self.assertRaises(exceptions.L2GatewayNotFound,
+                          self._validate_l2_gateway_for_delete,
+                          invalid_l2gw_id)
