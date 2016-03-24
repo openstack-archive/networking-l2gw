@@ -41,7 +41,13 @@ def validate_gwdevice_list(data, valid_values=None):
             if not interface_data:
                 msg = _("Cannot create a gateway with an empty interfaces")
                 return msg
+            if not isinstance(interface_data, list):
+                msg = _("interfaces format is not a type list of dicts")
+                return msg
             for int_dict in interface_data:
+                if not isinstance(int_dict, dict):
+                    msg = _("interfaces format is not a type dict")
+                    return msg
                 err_msg = attributes._validate_dict(int_dict, None)
                 if not int_dict.get('name'):
                     msg = _("Cannot create a gateway with an empty "
