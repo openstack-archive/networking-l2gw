@@ -72,7 +72,8 @@ def validate_gwdevice_list(data, valid_values=None):
 
 def validate_network_mapping_list(network_mapping, check_vlan):
     """Validate network mapping list in connection."""
-    if network_mapping.get('segmentation_id'):
+    if (network_mapping.get(constants.SEG_ID) or
+       network_mapping.get(constants.SEG_ID) == 0):
         if check_vlan:
             raise exceptions.InvalidInput(
                 error_message=_("default segmentation_id should not be"
@@ -81,7 +82,7 @@ def validate_network_mapping_list(network_mapping, check_vlan):
         seg_id = network_mapping.get(constants.SEG_ID)
         is_valid_vlan_id(seg_id)
 
-    if not network_mapping.get('segmentation_id'):
+    elif not network_mapping.get(constants.SEG_ID):
         if check_vlan is False:
             raise exceptions.InvalidInput(
                 error_message=_("Segmentation id must be specified in create "
