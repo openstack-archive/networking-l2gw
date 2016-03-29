@@ -182,8 +182,9 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                   self.ovsdb_fd.check_monitor_table_thread) and (
                   self.ovsdb_fd.check_sock_rcv)):
                 for key in self.ovsdb_fd.ovsdb_dicts.keys():
-                    eventlet.greenthread.spawn_n(
-                        self.ovsdb_fd._spawn_monitor_table_thread, key)
+                    if key in self.ovsdb_fd.ovsdb_conn_list:
+                        eventlet.greenthread.spawn_n(
+                            self.ovsdb_fd._spawn_monitor_table_thread, key)
                 self._start_looping_task_ovsdb_states()
         elif ((self.enable_manager) and not (
               self.l2gw_agent_type == n_const.MONITOR)):
@@ -219,7 +220,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             self.ovsdb_fd = ovsdb_common_class.OVSDB_commom_class(
                 self.conf.ovsdb,
                 gateway,
-                self.agent_to_plugin_rpc)
+                self.agent_to_plugin_rpc, self)
 
     @contextmanager
     def _open_connection(self, ovsdb_identifier):
@@ -248,8 +249,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif ((self.enable_manager) and (
                 not self.l2gw_agent_type == n_const.MONITOR)):
             self._sock_open_connection()
-            self.ovsdb_fd._echo_response(ovsdb_identifier)
-            if self.ovsdb_fd.check_c_sock:
+            if ovsdb_identifier in self.ovsdb_fd.ovsdb_conn_list:
                 self.ovsdb_fd.delete_logical_switch(logical_switch_uuid,
                                                     ovsdb_identifier,
                                                     False)
@@ -271,12 +271,11 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif ((self.enable_manager) and (
                 not self.l2gw_agent_type == n_const.MONITOR)):
             self._sock_open_connection()
-            self.ovsdb_fd._echo_response(ovsdb_identifier)
-            if self.ovsdb_fd.check_c_sock:
+            if ovsdb_identifier in self.ovsdb_fd.ovsdb_conn_list:
                 self.ovsdb_fd.insert_ucast_macs_remote(
                     logical_switch_dict,
                     locator_dict,
-                    mac_dict, ovsdb_identifier)
+                    mac_dict, ovsdb_identifier, False)
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
@@ -295,11 +294,10 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif ((self.enable_manager) and (
                 not self.l2gw_agent_type == n_const.MONITOR)):
             self._sock_open_connection()
-            self.ovsdb_fd._echo_response(ovsdb_identifier)
-            if self.ovsdb_fd.check_c_sock:
+            if ovsdb_identifier in self.ovsdb_fd.ovsdb_conn_list:
                 self.ovsdb_fd.delete_ucast_macs_remote(
                     logical_switch_uuid,
-                    mac, ovsdb_identifier)
+                    mac, ovsdb_identifier, False)
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
@@ -319,11 +317,10 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif ((self.enable_manager) and (
                 not self.l2gw_agent_type == n_const.MONITOR)):
             self._sock_open_connection()
-            self.ovsdb_fd._echo_response(ovsdb_identifier)
-            if self.ovsdb_fd.check_c_sock:
+            if ovsdb_identifier in self.ovsdb_fd.ovsdb_conn_list:
                 self.ovsdb_fd.update_ucast_macs_remote(locator_dict,
                                                        mac_dict,
-                                                       ovsdb_identifier)
+                                                       ovsdb_identifier, False)
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
@@ -348,13 +345,12 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         elif ((self.enable_manager) and (
                 not self.l2gw_agent_type == n_const.MONITOR)):
             self._sock_open_connection()
-            self.ovsdb_fd._echo_response(ovsdb_identifier)
-            if self.ovsdb_fd.check_c_sock:
+            if ovsdb_identifier in self.ovsdb_fd.ovsdb_conn_list:
                 self.ovsdb_fd.update_connection_to_gateway(
                     logical_switch_dict,
                     locator_dicts,
                     mac_dicts,
-                    port_dicts, ovsdb_identifier)
+                    port_dicts, ovsdb_identifier, False)
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:

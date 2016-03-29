@@ -27,7 +27,9 @@ from neutron.tests import base
 
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
+from networking_l2gw.services.l2gateway.agent.ovsdb import manager
 from networking_l2gw.services.l2gateway.common import config
+from networking_l2gw.services.l2gateway.common import constants as n_const
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -182,12 +184,14 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
         self.conf = mock.patch.object(conf, 'L2GatewayConfig').start()
         config.register_ovsdb_opts_helper(cfg.CONF)
         cfg.CONF.set_override('enable_manager', True, 'ovsdb')
-        self.l2gw_ovsdb_conn = base_connection.BaseConnection(mock.Mock(),
-                                                              self.conf)
+        self.mgr = mock.patch.object(manager, 'OVSDBManager').start()
+        self.l2gw_ovsdb_conn = base_connection.BaseConnection(
+            mock.Mock(), self.conf, self.mgr)
         self.mock_sock = mock.patch('socket.socket').start()
         self.l2gw_ovsdb_conn.s = mock.patch('socket.socket').start()
         self.fakesocket = SocketClass()
         self.fake_ip = 'fake_ip'
+        self.l2gw_ovsdb_conn.ovsdb_conn_list = ['fake_ip']
         self.l2gw_ovsdb_conn.ovsdb_dicts = {'fake_ip': self.fakesocket}
 
     def test_init_with_enable_manager(self):
@@ -201,6 +205,34 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
             self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_dicts, fake_dict)
             self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_fd_states, fake_dict)
             self.assertTrue(mock_thread.called)
+
+    def test_send_monitor_msg_to_ovsdb_connection(self):
+        fake_ip = 'fake_ip'
+        self.l2gw_ovsdb_conn.ovsdb_fd_states = {fake_ip: 'fake_status'}
+        self.l2gw_ovsdb_conn.mgr.l2gw_agent_type = n_const.MONITOR
+        self.l2gw_ovsdb_conn.ovsdb_conn_list = [fake_ip]
+        with mock.patch.object(eventlet.greenthread, 'spawn_n') as (
+                mock_thread):
+            self.l2gw_ovsdb_conn._send_monitor_msg_to_ovsdb_connection(
+                fake_ip)
+            self.assertTrue(mock_thread.called)
+
+    def test_exception_for_send_monitor_msg_to_ovsdb_connection(self):
+        fake_ip = 'fake_ip'
+        self.l2gw_ovsdb_conn.ovsdb_fd_states = {fake_ip: 'fake_status'}
+        self.l2gw_ovsdb_conn.mgr.l2gw_agent_type = n_const.MONITOR
+        self.l2gw_ovsdb_conn.ovsdb_conn_list = [fake_ip]
+        with contextlib.nested(
+            mock.patch.object(eventlet.greenthread, 'spawn_n',
+                              side_effect=Exception),
+            mock.patch.object(base_connection.LOG, 'warning'),
+            mock.patch.object(self.l2gw_ovsdb_conn, 'disconnect')) as (
+                mock_thread, mock_warning, mock_disconnect):
+            self.l2gw_ovsdb_conn._send_monitor_msg_to_ovsdb_connection(
+                fake_ip)
+            self.assertTrue(mock_thread.called)
+            self.assertTrue(mock_warning.called)
+            mock_disconnect.assert_called_with(fake_ip)
 
     def test_echo_response(self):
         fake_resp = {"method": "echo",
@@ -248,7 +280,12 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
             self.assertFalse(self.l2gw_ovsdb_conn.read_on)
 
     def test_disconnect_with_enable_manager(self):
+        fake_ip = 'fake_ip'
+        self.l2gw_ovsdb_conn.ovsdb_fd_states = {fake_ip: 'fake_status'}
+        self.l2gw_ovsdb_conn.ovsdb_conn_list = [fake_ip]
         with mock.patch.object(self.fakesocket,
                                'close') as (mock_close):
-            self.l2gw_ovsdb_conn.disconnect(self.fake_ip)
+            self.l2gw_ovsdb_conn.disconnect(fake_ip)
             self.assertTrue(mock_close.called)
+            self.assertNotIn(fake_ip, self.l2gw_ovsdb_conn.ovsdb_fd_states)
+            self.assertNotIn(fake_ip, self.l2gw_ovsdb_conn.ovsdb_conn_list)

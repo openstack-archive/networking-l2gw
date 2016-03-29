@@ -38,17 +38,19 @@ class BaseConnection(object):
        Connects to an ovsdb server with/without SSL
        on a given host and TCP port.
     """
-    def __init__(self, conf, gw_config):
+    def __init__(self, conf, gw_config, mgr=None):
         self.responses = []
         self.connected = False
+        self.mgr = mgr
         self.enable_manager = cfg.CONF.ovsdb.enable_manager
         if self.enable_manager:
             self.s = None
             self.check_c_sock = None
             self.check_sock_rcv = False
-            eventlet.greenthread.spawn(self._rcv_socket)
             self.ovsdb_dicts = {}
             self.ovsdb_fd_states = {}
+            self.ovsdb_conn_list = []
+            eventlet.greenthread.spawn(self._rcv_socket)
         else:
             self.gw_config = gw_config
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -100,20 +102,47 @@ class BaseConnection(object):
             c_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             LOG.debug("Got connection from %s ", addr)
             self.connected = True
+            if addr in self.ovsdb_fd_states.keys():
+                del self.ovsdb_fd_states[addr]
+            if addr in self.ovsdb_conn_list:
+                self.ovsdb_conn_list.remove(addr)
+            if addr in self.ovsdb_dicts.keys():
+                self.ovsdb_dicts.get(addr).close()
+                del self.ovsdb_dicts[addr]
             self.ovsdb_dicts[addr] = c_sock
             eventlet.greenthread.spawn(self._common_sock_rcv_thread, addr)
+            # Now that OVSDB server has sent a socket open request, let us wait
+            # for echo request. After the first echo request, we will send the
+            # "monitor" request to the OVSDB server.
+
+    def _send_monitor_msg_to_ovsdb_connection(self, addr):
+        if self.mgr.l2gw_agent_type == n_const.MONITOR:
+            try:
+                if (self.mgr.ovsdb_fd) and (addr in self.ovsdb_conn_list):
+                    eventlet.greenthread.spawn_n(
+                        self.mgr.ovsdb_fd._spawn_monitor_table_thread,
+                        addr)
+            except Exception:
+                LOG.warning(_LW("Could not send monitor message to the "
+                                "OVSDB server."))
+                self.disconnect(addr)
 
     def _common_sock_rcv_thread(self, addr):
         chunks = []
         lc = rc = 0
         prev_char = None
+        self.read_on = True
+        check_monitor_msg = True
         self._echo_response(addr)
-        if self.enable_manager and self.check_c_sock:
+        if self.enable_manager and (addr in self.ovsdb_conn_list):
             while self.read_on:
                 response = self.ovsdb_dicts.get(addr).recv(n_const.BUFFER_SIZE)
                 self.ovsdb_fd_states[addr] = 'connected'
-                eventlet.greenthread.sleep(0)
                 self.check_sock_rcv = True
+                eventlet.greenthread.sleep(0)
+                if check_monitor_msg:
+                    self._send_monitor_msg_to_ovsdb_connection(addr)
+                    check_monitor_msg = False
                 if response:
                     response = response.decode('utf8')
                     message_mark = 0
@@ -140,7 +169,6 @@ class BaseConnection(object):
                 else:
                     self.read_on = False
                     self.disconnect(addr)
-                    self.ovsdb_fd_states[addr] = 'disconnected'
 
     def _echo_response(self, addr):
         while True:
@@ -156,6 +184,8 @@ class BaseConnection(object):
                         self.ovsdb_dicts.get(addr).send(jsonutils.dumps(
                             {"result": sock_json_m.get("params", None),
                              "error": None, "id": sock_json_m['id']}))
+                        if (addr not in self.ovsdb_conn_list):
+                            self.ovsdb_conn_list.append(addr)
                         break
             except Exception:
                 continue
@@ -190,6 +220,9 @@ class BaseConnection(object):
         if self.enable_manager:
             self.ovsdb_dicts.get(addr).close()
             del self.ovsdb_dicts[addr]
+            if addr in self.ovsdb_fd_states.keys():
+                del self.ovsdb_fd_states[addr]
+            self.ovsdb_conn_list.remove(addr)
         else:
             self.socket.close()
         self.connected = False
