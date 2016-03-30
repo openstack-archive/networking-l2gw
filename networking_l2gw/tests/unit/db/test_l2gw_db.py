@@ -17,7 +17,6 @@ import mock
 
 from neutron.callbacks import events
 from neutron.callbacks import resources
-from neutron.common import exceptions as exc
 from neutron import context
 from neutron import manager
 from neutron.tests.unit import testlib_api
@@ -27,6 +26,7 @@ from networking_l2gw.services.l2gateway.common import constants
 from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway import exceptions
 
+from neutron_lib import exceptions as exc
 from oslo_log import log as logging
 from oslo_utils import importutils
 

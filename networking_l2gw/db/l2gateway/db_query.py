@@ -13,10 +13,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from neutron.common import exceptions
 from neutron.db import models_v2
 from neutron.plugins.ml2 import driver_api as api
 
+from neutron_lib import exceptions
 import sqlalchemy as sa
 from sqlalchemy.orm import exc
 

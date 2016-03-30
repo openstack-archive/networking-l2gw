@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from neutron.common import exceptions as n_exc
 from neutron.db import servicetype_db as st_db
 from neutron import manager
 from neutron.services import provider_configuration as pconf
@@ -24,6 +23,7 @@ from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants
 
+from neutron_lib import exceptions as n_exc
 from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
