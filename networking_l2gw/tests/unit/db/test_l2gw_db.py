@@ -222,6 +222,22 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         result = self._delete_l2gw_connection_by_l2gw_id(l2gw_id)
         self.assertIsNone(result)
 
+    def _validate_l2_gateway_for_delete(self, l2gw_id):
+        """Delete l2 gateway helper method."""
+        with self.ctx.session.begin(subtransactions=True):
+            return self.mixin.validate_l2_gateway_for_delete(self.ctx, l2gw_id)
+
+    def _validate_l2_gateway_for_create(self, l2gw):
+        """Create l2 gateway helper method."""
+        with self.ctx.session.begin(subtransactions=True):
+            return self.mixin.validate_l2_gateway_for_create(self.ctx, l2gw)
+
+    def _validate_l2_gateway_for_update(self, l2gw_id, l2gw):
+        """Update l2 gateway helper method."""
+        with self.ctx.session.begin(subtransactions=True):
+            return self.mixin.validate_l2_gateway_for_update(self.ctx,
+                                                             l2gw_id, l2gw)
+
     def test_l2gateway_con_create_and_delete_in_use_without_seg_id(self):
         """Test l2 gateway connection create without seg id when use."""
         name = "l2gw_con2"
@@ -236,7 +252,7 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                         'network_id': net['id']}}
         self._create_l2gateway_connection(data_con)
         self.assertRaises(exceptions.L2GatewayInUse,
-                          self._delete_l2gateway, l2gw_id)
+                          self._validate_l2_gateway_for_delete, l2gw_id)
 
     def _delete_l2gateway(self, l2gw_id):
         """Delete l2 gateway helper method."""
@@ -266,14 +282,14 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         result = self._create_l2gateway(data)
         self.assertEqual(result['name'], name)
 
-    def test_l2_gateway_create_with_mul_interfaces_inconsitent_seg_id(self):
+    def test_l2_gateway_create_with_mul_interfaces_inconsistent_seg_id(self):
         """Test l2 gateway create with multiple interfaces."""
         name = "l2gw_1"
         dev_name = "device1"
         data = self._get_l2_gw_multiple_interface_partial_seg_id_data(name,
                                                                       dev_name)
         self.assertRaises(exceptions.L2GatewaySegmentationRequired,
-                          self._create_l2gateway, data)
+                          self._validate_l2_gateway_for_create, data)
 
     def test_l2_gateway_create_with_invalid_seg_id(self):
         """Test l2 gateway create with invalid seg-id."""
@@ -303,7 +319,8 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         gw_org = self._create_l2gateway(data_l2gw_create)
         l2gw_id = gw_org['id']
         self.assertRaises(exceptions.L2GatewayDeviceNotFound,
-                          self._update_l2_gateway, l2gw_id, data_l2gw_update)
+                          self._validate_l2_gateway_for_update, l2gw_id,
+                          data_l2gw_update)
 
     def test_l2gw_callback_update_port(self):
         service_plugins = {constants.L2GW: mock.Mock()}

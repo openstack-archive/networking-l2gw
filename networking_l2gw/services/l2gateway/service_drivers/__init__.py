@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 
 
 @six.add_metaclass(abc.ABCMeta)
-class L2gwDriver(object):
+class L2gwDriverBase(object):
 
     def __init__(self, service_plugin, validator=None):
         self.service_plugin = service_plugin
@@ -41,9 +41,131 @@ class L2gwDriver(object):
         pass
 
     @abc.abstractmethod
+    def create_l2_gateway(self, context, l2_gateway):
+        pass
+
+    @abc.abstractmethod
+    def update_l2_gateway(self, context, l2_gateway_id, l2_gateway):
+        pass
+
+    @abc.abstractmethod
+    def delete_l2_gateway(self, context, l2_gateway_id):
+        pass
+
+    @abc.abstractmethod
     def create_l2_gateway_connection(self, context, l2_gateway_connection):
         pass
 
     @abc.abstractmethod
-    def delete_l2_gateway_connection(self, context, l2_gateway_connection):
+    def delete_l2_gateway_connection(self, context, l2_gateway_connection_id):
+        pass
+
+    @abc.abstractmethod
+    def create_l2_gateway_precommit(self, context, l2_gateway):
+        pass
+
+    @abc.abstractmethod
+    def update_l2_gateway_precommit(self, context, l2_gateway):
+        pass
+
+    @abc.abstractmethod
+    def delete_l2_gateway_precommit(self, context, l2_gateway_id):
+        pass
+
+    @abc.abstractmethod
+    def create_l2_gateway_connection_precommit(self, context,
+                                               l2_gateway_connection):
+        pass
+
+    @abc.abstractmethod
+    def delete_l2_gateway_connection_precommit(self, context,
+                                               l2_gateway_connection_id):
+        pass
+
+    @abc.abstractmethod
+    def create_l2_gateway_postcommit(self, context, l2_gateway):
+        pass
+
+    @abc.abstractmethod
+    def delete_l2_gateway_postcommit(self, context, l2_gateway_id):
+        pass
+
+    @abc.abstractmethod
+    def update_l2_gateway_postcommit(self, context, l2_gateway):
+        pass
+
+    @abc.abstractmethod
+    def create_l2_gateway_connection_postcommit(self, context,
+                                                l2_gateway_connection):
+        pass
+
+    @abc.abstractmethod
+    def delete_l2_gateway_connection_postcommit(self, context,
+                                                l2_gateway_connection_id):
+        pass
+
+
+@six.add_metaclass(abc.ABCMeta)
+class L2gwDriver(L2gwDriverBase):
+
+    def __init__(self, service_plugin, validator=None):
+        super(L2gwDriver, self).__init__(service_plugin)
+
+    @property
+    def service_type(self):
+        pass
+
+    def add_port_mac(self, context, port_dict):
+        pass
+
+    def delete_port_mac(self, context, port):
+        pass
+
+    def create_l2_gateway(self, context, l2_gateway):
+        pass
+
+    def update_l2_gateway(self, context, l2_gateway_id, l2_gateway):
+        pass
+
+    def delete_l2_gateway(self, context, l2_gateway_id):
+        pass
+
+    def create_l2_gateway_connection(self, context, l2_gateway_connection):
+        pass
+
+    def delete_l2_gateway_connection(self, context, l2_gateway_connection_id):
+        pass
+
+    def create_l2_gateway_precommit(self, context, l2_gateway):
+        pass
+
+    def update_l2_gateway_precommit(self, context, l2_gateway):
+        pass
+
+    def delete_l2_gateway_precommit(self, context, l2_gateway_id):
+        pass
+
+    def create_l2_gateway_connection_precommit(self, context,
+                                               l2_gateway_connection):
+        pass
+
+    def delete_l2_gateway_connection_precommit(self, context,
+                                               l2_gateway_connection_id):
+        pass
+
+    def create_l2_gateway_postcommit(self, context, l2_gateway):
+        pass
+
+    def delete_l2_gateway_postcommit(self, context, l2_gateway_id):
+        pass
+
+    def update_l2_gateway_postcommit(self, context, l2_gateway):
+        pass
+
+    def create_l2_gateway_connection_postcommit(self, context,
+                                                l2_gateway_connection):
+        pass
+
+    def delete_l2_gateway_connection_postcommit(self, context,
+                                                l2_gateway_connection_id):
         pass

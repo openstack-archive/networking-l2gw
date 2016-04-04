@@ -114,6 +114,12 @@ class L2GatewayDuplicateSegmentationID(exceptions.Conflict):
 class OVSDBError(exceptions.NeutronException):
     message = _("%(message)s")
 
+
+class L2GatewayServiceDriverError(exceptions.NeutronException):
+    """Service driver call failed."""
+    message = _("%(method)s failed.")
+
+
 base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayPortInUse: web_exc.HTTPConflict,
                        L2GatewayConnectionExists: web_exc.HTTPConflict,
