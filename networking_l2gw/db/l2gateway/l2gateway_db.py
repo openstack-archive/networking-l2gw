@@ -44,9 +44,8 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
     config.register_l2gw_opts_helper()
 
     def _get_l2_gateway(self, context, gw_id):
-        try:
-            gw = context.session.query(models.L2Gateway).get(gw_id)
-        except sa_orm_exc.NoResultFound:
+        gw = context.session.query(models.L2Gateway).get(gw_id)
+        if not gw:
             raise l2gw_exc.L2GatewayNotFound(gateway_id=gw_id)
         return gw
 
