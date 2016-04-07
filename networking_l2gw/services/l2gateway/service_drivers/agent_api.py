@@ -15,6 +15,7 @@
 
 from neutron.common import rpc as n_rpc
 
+from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 
 from oslo_log import log as logging
@@ -80,10 +81,17 @@ class L2gatewayAgentApi(object):
                           ovsdb_identifier=ovsdb_identifier,
                           logical_switch_uuid=logical_switch_uuid)
 
+    def _validate_request_op_method(self, context, op_method):
+        """validate the method in the request."""
+        method_list = [n_const.CREATE, n_const.DELETE]
+        if op_method not in method_list:
+            raise l2gw_exc.InvalidMethod(op_method=op_method)
+
     def update_connection_to_gateway(self, context, ovsdb_identifier,
                                      ls_dict, locator_list, mac_dict,
-                                     port_dict):
+                                     port_dict, op_method):
         """RPC to update the connection to gateway."""
+        self._validate_request_op_method(context, op_method)
         cctxt = self.client.prepare()
         try:
             return cctxt.call(context,
@@ -92,7 +100,8 @@ class L2gatewayAgentApi(object):
                               logical_switch_dict=ls_dict,
                               locator_dicts=locator_list,
                               mac_dicts=mac_dict,
-                              port_dicts=port_dict)
+                              port_dicts=port_dict,
+                              op_method=op_method)
         except messaging.MessagingTimeout:
             message = _("Communication error with the L2 gateway agent")
             raise l2gw_exc.OVSDBError(message=message)

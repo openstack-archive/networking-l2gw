@@ -433,10 +433,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                                  'uuid': pp_dict['uuid']}
                     raise l2gw_exc.L2GatewayDuplicateSegmentationID(message=msg
                                                                     )
-                vlan_dict = {'vlan': vlan_binding.get('vlan'),
-                             'logical_switch_uuid': vlan_binding.get(
-                                 'logical_switch_uuid')}
-                port_list.append(vlan_dict)
             physical_port = self._get_dict(
                 ovsdb_schema.PhysicalPort(
                     uuid=pp_dict.get('uuid'),
@@ -449,17 +445,9 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             vlan_id = gw_connection.get('segmentation_id')
             if not vlan_id:
                 vlan_id = interface.get('segmentation_id')
-            for vlan_binding in vlan_bindings:
-                if ((vlan_binding.get('vlan') == vlan_id) and (
-                    vlan_binding.get(
-                        'logical_switch_uuid') == logical_switch_uuid)):
-                    continue
-                else:
-                    vlan_dict = {
-                        'vlan': vlan_binding.get('vlan'),
-                        'logical_switch_uuid':
-                        vlan_binding.get('logical_switch_uuid')}
-                    port_list.append(vlan_dict)
+            vlan_dict = {'vlan': vlan_id,
+                         'logical_switch_uuid': logical_switch_uuid}
+            port_list.append(vlan_dict)
             physical_port = self._get_dict(
                 ovsdb_schema.PhysicalPort(
                     uuid=pp_dict.get('uuid'),
@@ -646,7 +634,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                 locator.pop('ovsdb_identifier')
             self.agent_rpc.update_connection_to_gateway(
                 context, ovsdb_identifier, ls_dict, locator_list, mac_dict,
-                port_dict)
+                port_dict, 'CREATE')
 
     def _get_identifer_list(self, context, gw_connection):
         identifier_list = []
@@ -722,7 +710,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                     "DELETE", gw_connection_ovsdb_set))
             self.agent_rpc.update_connection_to_gateway(
                 context, ovsdb_identifier, ls_dict, locator_list, mac_dict,
-                port_dict)
+                port_dict, 'DELETE')
         # call delete vif_from_gateway for ovsdb_id_set
         self._remove_vm_macs(context, network_id, ovsdb_id_set)
 

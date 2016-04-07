@@ -226,7 +226,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
     def test_generate_port_list_for_delete(self):
         fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
                            'network_id': 'fake_network_id',
-                           'segmentation_id': 200L}
+                           'segmentation_id': 100}
         fake_method = 'DELETE'
         fake_interface = {'interface_name': 'fake_interface_name'}
         fake_pp_dict = {'interface_name': 'fake_interface_name',
@@ -234,7 +234,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
                         'physical_switch_id': 'fake_uuid',
                         'logical_switch_name': 'fake_network_id',
                         'uuid': 'fake_uuid'}
-        fake_vlan_binding = {'vlan': 100L,
+        fake_vlan_binding = {'vlan': 100,
                              'logical_switch_uuid': 'fake_uuid'}
         fake_vlan_binding_list = [fake_vlan_binding]
 
@@ -255,7 +255,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
                 get_vlan):
             port = self.plugin._generate_port_list(
                 self.context, fake_method, 100L, fake_interface,
-                fake_pp_dict, 'fake_uuid1', fake_connection)
+                fake_pp_dict, 'fake_uuid', fake_connection)
             get_vlan.assert_called_with(self.context, fake_pp_dict)
             self.assertEqual(port, phys_port_dict)
 
