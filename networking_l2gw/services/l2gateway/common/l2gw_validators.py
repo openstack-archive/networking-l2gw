@@ -85,7 +85,7 @@ def validate_network_mapping_list(network_mapping, check_vlan):
     if not network_mapping.get('segmentation_id'):
         if check_vlan is False:
             raise exceptions.InvalidInput(
-                error_message=_("Segmentation id must be specified in create"
+                error_message=_("Segmentation id must be specified in create "
                                 "l2gateway connections"))
     network_id = network_mapping.get(constants.NETWORK_ID)
     if not network_id:
