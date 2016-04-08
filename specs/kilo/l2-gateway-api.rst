@@ -534,7 +534,8 @@ Flow::
 Note: From steps 2 to 8, Neutron server is not shown for convenience.
 
 2. The administrator binds an existing VXLAN network 'net1' with the VXLAN ID
-1000 with this logical gateway gw1.
+1000 (I.e. provider:network_type=VXLAN, provider:segmentation_id=1000)
+with this logical gateway gw1.
 
 neutron l2-gateway-connection-create gw1 net1 --default-segmentation-id=100
 
