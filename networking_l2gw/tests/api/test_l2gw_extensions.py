@@ -15,7 +15,7 @@
 
 from tempest import test
 
-from neutron.tests.api import base
+from neutron.tests.tempest.api import base
 
 from tempest.lib.common.utils import data_utils
 

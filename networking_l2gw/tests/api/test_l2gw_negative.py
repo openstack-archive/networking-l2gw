@@ -16,7 +16,7 @@
 
 from tempest import test
 
-from neutron.tests.api import base
+from neutron.tests.tempest.api import base
 
 from networking_l2gw.tests.api import base_l2gw
 

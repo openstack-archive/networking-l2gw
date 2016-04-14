@@ -55,7 +55,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             L2GW_CALLBACK, self)
         self.endpoints = (
             [self.ovsdb_callback, agents_db.AgentExtRpcCallback()])
-        self.conn = n_rpc.create_connection(new=True)
+        self.conn = n_rpc.create_connection()
         self.conn.create_consumer(topics.L2GATEWAY_PLUGIN,
                                   self.endpoints,
                                   fanout=False)
