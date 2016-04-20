@@ -43,7 +43,7 @@ def validate_gwdevice_list(data, valid_values=None):
             for int_dict in interface_data:
                 err_msg = attributes._validate_dict(int_dict, None)
                 if not int_dict.get('name'):
-                    msg = _("Cannot create a gateway with an empty"
+                    msg = _("Cannot create a gateway with an empty "
                             "interface name")
                     return msg
                 if constants.SEG_ID in int_dict:
