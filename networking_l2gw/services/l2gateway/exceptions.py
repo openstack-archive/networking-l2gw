@@ -120,6 +120,10 @@ class L2GatewayServiceDriverError(exceptions.NeutronException):
     message = _("%(method)s failed.")
 
 
+class InvalidMethod(exceptions.NeutronException):
+    message = _("invalid method '%(op_method)s'")
+
+
 base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayPortInUse: web_exc.HTTPConflict,
                        L2GatewayConnectionExists: web_exc.HTTPConflict,

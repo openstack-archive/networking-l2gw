@@ -372,6 +372,7 @@ class TestOVSDBWriter(base.BaseTestCase):
 
     def test_get_bindings_to_update1(self):
         """Test case to test _get_bindings_to_update."""
+        fake_op_method = 'CREATE'
         with contextlib.nested(
             mock.patch.object(ovsdb_writer.OVSDBWriter,
                               '_form_logical_switch'),
@@ -405,12 +406,14 @@ class TestOVSDBWriter(base.BaseTestCase):
                                                       'vlan_bindings':
                                                       'vlan_bindings',
                                                       'port_fault_status':
-                                                      'port_fault_status'}])
+                                                      'port_fault_status'}],
+                                                    fake_op_method)
 
             form_ls.assert_called_with(ls, mock.ANY)
             form_pl.assert_called_with(['uuid', ls.uuid], [pl],
                                        mock.ANY, mock.ANY)
-            form_pp.assert_called_with(['uuid', ls.uuid], [pp], mock.ANY)
+            form_pp.assert_called_with(['uuid', ls.uuid], [pp], mock.ANY,
+                                       fake_op_method)
 
     def test_get_physical_locator_dict(self):
         """Test case to test _get_physical_locator_dict."""

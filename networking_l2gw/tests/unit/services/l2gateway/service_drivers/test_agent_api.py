@@ -98,6 +98,12 @@ class TestL2GatewayAgentApi(base.BaseTestCase):
             self.context, 'delete_network', ovsdb_identifier=mock.ANY,
             logical_switch_uuid=mock.ANY)
 
+    def test_validate_request_op_method(self):
+        self.assertRaises(l2gw_exc.InvalidMethod,
+                          self.plugin_rpc._validate_request_op_method,
+                          self.context,
+                          'fake_op_method')
+
     def test_update_connection_to_gateway(self):
         cctxt = mock.Mock()
         fake_ovsdb_identifier = 'fake_ovsdb_id'
@@ -105,17 +111,36 @@ class TestL2GatewayAgentApi(base.BaseTestCase):
         fake_physical_locator_list = []
         fake_mac_dicts = [{}]
         fake_port_dicts = [{}]
+        fake_op_method = 'DELETE'
         self.plugin_rpc.client.prepare.return_value = cctxt
         self.plugin_rpc.update_connection_to_gateway(
             self.context, fake_ovsdb_identifier, fake_logical_switch,
-            fake_physical_locator_list, fake_mac_dicts, fake_port_dicts)
+            fake_physical_locator_list, fake_mac_dicts, fake_port_dicts,
+            fake_op_method)
         cctxt.call.assert_called_with(
             self.context, 'update_connection_to_gateway',
             ovsdb_identifier=fake_ovsdb_identifier,
             logical_switch_dict=fake_logical_switch,
             locator_dicts=fake_physical_locator_list,
             mac_dicts=fake_mac_dicts,
-            port_dicts=fake_port_dicts)
+            port_dicts=fake_port_dicts,
+            op_method=fake_op_method)
+
+    def test_update_connection_to_gateway_with_invalid_op_method(self):
+        cctxt = mock.Mock()
+        fake_ovsdb_identifier = 'fake_ovsdb_id'
+        fake_logical_switch = {}
+        fake_physical_locator_list = []
+        fake_mac_dicts = [{}]
+        fake_port_dicts = [{}]
+        fake_op_method = 'create_delete_op'
+        self.plugin_rpc.client.prepare.return_value = cctxt
+        self.assertRaises(
+            l2gw_exc.InvalidMethod,
+            self.plugin_rpc.update_connection_to_gateway,
+            self.context, fake_ovsdb_identifier, fake_logical_switch,
+            fake_physical_locator_list, fake_mac_dicts, fake_port_dicts,
+            fake_op_method)
 
     def test_update_connection_to_gateway_with_error(self):
         cctxt = mock.Mock()
@@ -124,6 +149,7 @@ class TestL2GatewayAgentApi(base.BaseTestCase):
         fake_physical_locator_list = []
         fake_mac_dicts = [{}]
         fake_port_dicts = [{}]
+        fake_op_method = 'CREATE'
         self.plugin_rpc.client.prepare.return_value = cctxt
 
         # Test with a timeout exception
@@ -134,7 +160,8 @@ class TestL2GatewayAgentApi(base.BaseTestCase):
                 l2gw_exc.OVSDBError,
                 self.plugin_rpc.update_connection_to_gateway,
                 self.context, fake_ovsdb_identifier, fake_logical_switch,
-                fake_physical_locator_list, fake_mac_dicts, fake_port_dicts)
+                fake_physical_locator_list, fake_mac_dicts, fake_port_dicts,
+                fake_op_method)
 
         # Test with a remote exception
         with mock.patch.object(cctxt,
@@ -144,4 +171,5 @@ class TestL2GatewayAgentApi(base.BaseTestCase):
                 l2gw_exc.OVSDBError,
                 self.plugin_rpc.update_connection_to_gateway,
                 self.context, fake_ovsdb_identifier, fake_logical_switch,
-                fake_physical_locator_list, fake_mac_dicts, fake_port_dicts)
+                fake_physical_locator_list, fake_mac_dicts, fake_port_dicts,
+                fake_op_method)

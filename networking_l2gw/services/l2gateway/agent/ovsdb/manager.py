@@ -329,7 +329,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
 
     def update_connection_to_gateway(self, context, ovsdb_identifier,
                                      logical_switch_dict, locator_dicts,
-                                     mac_dicts, port_dicts):
+                                     mac_dicts, port_dicts, op_method):
         """Handle RPC cast from plugin.
 
         Handle RPC cast from plugin to connect/disconnect a network
@@ -341,6 +341,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                                                        mac_dicts,
                                                        port_dicts,
                                                        ovsdb_identifier,
+                                                       op_method,
                                                        False)
         elif ((self.enable_manager) and (
                 not self.l2gw_agent_type == n_const.MONITOR)):
@@ -350,7 +351,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                     logical_switch_dict,
                     locator_dicts,
                     mac_dicts,
-                    port_dicts, ovsdb_identifier, False)
+                    port_dicts, ovsdb_identifier, op_method, False)
         elif not self.enable_manager:
             if self._is_valid_request(ovsdb_identifier):
                 with self._open_connection(ovsdb_identifier) as ovsdb_fd:
@@ -358,7 +359,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                                                           locator_dicts,
                                                           mac_dicts,
                                                           port_dicts,
-                                                          ovsdb_identifier)
+                                                          ovsdb_identifier,
+                                                          op_method)
 
     def agent_to_plugin_rpc(self, ovsdb_data):
         self.plugin_rpc.update_ovsdb_changes(ctx.get_admin_context(),
