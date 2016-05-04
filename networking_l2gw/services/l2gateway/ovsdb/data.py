@@ -325,7 +325,11 @@ class OVSDBData(object):
         call add_fdb_entries. otherwise, call tunnel_sync.
         """
         for mac in new_remote_macs:
-            agent_l2_pop_enabled = self._get_agent_by_mac(context, mac)
+            try:
+                agent_l2_pop_enabled = self._get_agent_by_mac(context, mac)
+            except l2gw_exc.L2AgentNotFoundByHost as e:
+                LOG.debug(e.message)
+                continue
             physical_switches = self._get_physical_switch_ips(context, mac)
             for physical_switch in physical_switches:
                 other_fdb_entries = self._get_fdb_entries(
