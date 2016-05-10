@@ -3,6 +3,6 @@
 # process, which may cause wedges in the gate later.
 
 pbr>=1.6 # Apache-2.0
-Babel>=1.3 # BSD
-neutron-lib>=0.0.3 # Apache-2.0
-python-neutronclient>=4.1.1 # Apache-2.0
+Babel>=2.3.4 # BSD
+neutron-lib>=0.1.0 # Apache-2.0
+python-neutronclient>=4.2.0 # Apache-2.0
