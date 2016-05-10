@@ -29,9 +29,11 @@ from networking_l2gw.services.l2gateway import exceptions
 from neutron_lib import exceptions as exc
 from oslo_log import log as logging
 from oslo_utils import importutils
+from oslo_utils import uuidutils
 
 DB_PLUGIN_KLASS = 'neutron.db.db_base_plugin_v2.NeutronDbPluginV2'
 LOG = logging.getLogger(__name__)
+_uuid = uuidutils.generate_uuid
 
 
 class L2GWTestCase(testlib_api.SqlTestCase):
@@ -115,6 +117,22 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                 "device_name": device_name}]}}
         return data
 
+    def test_l2_gateway_get(self):
+        """Test l2 gateway get."""
+        name = "l2gw_1"
+        device_name = "device1"
+        data = self._get_l2_gateway_data(name, device_name)
+        result = self._create_l2gateway(data)
+        get_result = self._get_l2_gateway(result['id'])
+        self.assertEqual(name, get_result['name'])
+
+    def test_l2_gateway_get_invalid_id_failure(self):
+        """Test l2 gateway get for an invalid L2 gateway UUID."""
+        # Generate a random UUID and try to retrieve a L2 gateway
+        # using that UUID.
+        self.assertRaises(exceptions.L2GatewayNotFound,
+                          self._get_l2_gateway, _uuid())
+
     def test_l2_gateway_create(self):
         """Test l2 gateway create."""
         name = "l2gw_1"
@@ -122,6 +140,10 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         data = self._get_l2_gateway_data(name, device_name)
         result = self._create_l2gateway(data)
         self.assertEqual(result['name'], name)
+
+    def _get_l2_gateway(self, l2gw_id):
+        with self.ctx.session.begin(subtransactions=True):
+            return self.mixin.get_l2_gateway(self.ctx, l2gw_id)
 
     def _get_l2_gateways(self):
         """Update l2gateway helper."""
