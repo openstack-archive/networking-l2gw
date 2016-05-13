@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from neutron.common import exceptions
+from neutron_lib import exceptions
+
 from neutron.tests import base
 
 from networking_l2gw.services.l2gateway.common import l2gw_validators
