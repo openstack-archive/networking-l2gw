@@ -44,6 +44,8 @@ class BaseConnection(object):
         self.mgr = mgr
         self.enable_manager = cfg.CONF.ovsdb.enable_manager
         if self.enable_manager:
+            self.manager_table_listening_port = (
+                cfg.CONF.ovsdb.manager_table_listening_port)
             self.s = None
             self.check_c_sock = None
             self.check_sock_rcv = False
@@ -90,8 +92,9 @@ class BaseConnection(object):
     def _rcv_socket(self):
         # Create a socket object.
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        host = ''                  # Get local machine name
-        port = 6632                # Reserve a port for your service.
+        host = ''                        # Get local machine name
+        port = self.manager_table_listening_port
+        # configured port for your service.
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((host, port))        # Bind to the port
         self.s.listen(5)                 # Now wait for client connection.
