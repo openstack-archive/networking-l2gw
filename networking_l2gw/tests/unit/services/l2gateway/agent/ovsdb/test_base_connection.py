@@ -204,6 +204,8 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
             self.assertIsNone(self.l2gw_ovsdb_conn.check_c_sock)
             self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_dicts, fake_dict)
             self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_fd_states, fake_dict)
+            self.assertEqual(self.l2gw_ovsdb_conn.manager_table_listening_port,
+                             6632)
             self.assertTrue(mock_thread.called)
 
     def test_send_monitor_msg_to_ovsdb_connection(self):
