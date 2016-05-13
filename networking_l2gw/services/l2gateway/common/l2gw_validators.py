@@ -13,8 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from neutron.api.v2 import attributes
-
+from neutron_lib.api import validators
 from neutron_lib import exceptions
 
 from networking_l2gw._i18n import _
@@ -49,7 +48,7 @@ def validate_gwdevice_list(data, valid_values=None):
                 if not isinstance(int_dict, dict):
                     msg = _("interfaces format is not a type dict")
                     return msg
-                err_msg = attributes._validate_dict(int_dict, None)
+                err_msg = validators.validate_dict(int_dict, None)
                 if not int_dict.get('name'):
                     msg = _("Cannot create a gateway with an empty "
                             "interface name")
