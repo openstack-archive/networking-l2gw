@@ -1,0 +1,17 @@
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# This script is executed in the OpenStack CI jobs located here:
+# http://git.openstack.org/cgit/openstack-infra/project-config/tree/jenkins/jobs/networking-l2gw.yaml
+#
+
+export OVERRIDE_ENABLED_SERVICES=key,n-api,n-cpu,n-cond,n-sch,n-crt,n-cauth,n-obj,g-api,g-reg,c-sch,c-api,c-vol,q-meta,q-dhcp,rabbit,mysql,dstat,l2gw-plugin,l2gw-agent,q-svc,q-l3,q-agt
