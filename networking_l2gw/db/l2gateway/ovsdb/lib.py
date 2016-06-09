@@ -505,3 +505,66 @@ def get_all_ucast_mac_remote_by_ls(context, record_dict):
         return session.query(models.UcastMacsRemotes).filter_by(
             ovsdb_identifier=record_dict['ovsdb_identifier'],
             logical_switch_id=record_dict['logical_switch_id']).all()
+
+
+def delete_all_physical_locators_by_ovsdb_identifier(context,
+                                                     ovsdb_identifier):
+    """Delete all physical locators based on ovsdb identifier."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        session.query(models.PhysicalLocators).filter_by(
+            ovsdb_identifier=ovsdb_identifier).delete()
+
+
+def delete_all_physical_switches_by_ovsdb_identifier(context,
+                                                     ovsdb_identifier):
+    """Delete all physical switches based on ovsdb identifier."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        session.query(models.PhysicalSwitches).filter_by(
+            ovsdb_identifier=ovsdb_identifier).delete()
+
+
+def delete_all_physical_ports_by_ovsdb_identifier(context,
+                                                  ovsdb_identifier):
+    """Delete all physical ports based on ovsdb identifier."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        session.query(models.PhysicalPorts).filter_by(
+            ovsdb_identifier=ovsdb_identifier).delete()
+
+
+def delete_all_logical_switches_by_ovsdb_identifier(context,
+                                                    ovsdb_identifier):
+    """Delete all physical switches based on ovsdb identifier."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        session.query(models.LogicalSwitches).filter_by(
+            ovsdb_identifier=ovsdb_identifier).delete()
+
+
+def delete_all_ucast_macs_locals_by_ovsdb_identifier(context,
+                                                     ovsdb_identifier):
+    """Delete all ucast mac locals based on ovsdb identifier."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        session.query(models.UcastMacsLocals).filter_by(
+            ovsdb_identifier=ovsdb_identifier).delete()
+
+
+def delete_all_ucast_macs_remotes_by_ovsdb_identifier(context,
+                                                      ovsdb_identifier):
+    """Delete all ucast mac remotes based on ovsdb identifier."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        session.query(models.UcastMacsRemotes).filter_by(
+            ovsdb_identifier=ovsdb_identifier).delete()
+
+
+def delete_all_vlan_bindings_by_ovsdb_identifier(context,
+                                                 ovsdb_identifier):
+    """Delete all vlan bindings based on ovsdb identifier."""
+    session = context.session
+    with session.begin(subtransactions=True):
+        session.query(models.VlanBindings).filter_by(
+            ovsdb_identifier=ovsdb_identifier).delete()

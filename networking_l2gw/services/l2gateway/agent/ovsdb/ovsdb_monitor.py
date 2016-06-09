@@ -29,6 +29,10 @@ from networking_l2gw.services.l2gateway import exceptions
 LOG = logging.getLogger(__name__)
 
 
+class Activity:
+    Initial, Update = range(2)
+
+
 class OVSDBMonitor(base_connection.BaseConnection):
     """Monitors OVSDB servers."""
     def __init__(self, conf, gw_config, callback, mgr=None):
@@ -135,7 +139,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
             params_list = message.get('params')
             param_dict = params_list[1]
             self._process_tables(param_dict, data_dict)
-            self.rpc_callback(self._form_ovsdb_data(data_dict, addr))
+            self.rpc_callback(Activity.Update,
+                              self._form_ovsdb_data(data_dict, addr))
 
     def _process_tables(self, param_dict, data_dict):
         # Process all the tables one by one.
@@ -246,7 +251,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
         data_dict = self._initialize_data_dict()
         try:
             self._process_tables(result_dict, data_dict)
-            self.rpc_callback(self._form_ovsdb_data(data_dict, addr))
+            self.rpc_callback(Activity.Initial,
+                              self._form_ovsdb_data(data_dict, addr))
         except Exception as e:
             LOG.exception(_LE("_process_monitor_msg:ERROR %s "), e)
 

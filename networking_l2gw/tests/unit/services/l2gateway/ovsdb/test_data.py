@@ -37,13 +37,15 @@ class TestL2GatewayOVSDBCallbacks(object):
         self.context = context.get_admin_context()
 
     def test_update_ovsdb_changes(self):
+        fake_activity = 1
         fake_ovsdb_data = {n_const.OVSDB_IDENTIFIER: 'fake_id'}
         with mock.patch.object(data, 'OVSDBData') as ovs_data:
             self.l2gw_callbacks.update_ovsdb_changes(self.context,
+                                                     fake_activity,
                                                      fake_ovsdb_data)
             ovsdb_return_value = ovs_data.return_value
             ovsdb_return_value.update_ovsdb_changes.assert_called_with(
-                self.context, fake_ovsdb_data)
+                self.context, fake_activity, fake_ovsdb_data)
 
     def test_notify_ovsdb_states(self):
         fake_ovsdb_states = {'ovsdb1': 'connected'}
@@ -83,6 +85,7 @@ class TestOVSDBData(base.BaseTestCase):
 
     def test_update_ovsdb_changes(self):
         fake_dict = {}
+        fake_activity = 1
         fake_remote_mac = {'uuid': '123456',
                            'mac': 'mac123',
                            'ovsdb_identifier': 'host1',
@@ -182,7 +185,7 @@ class TestOVSDBData(base.BaseTestCase):
                 'deleted_local_macs': process_deleted_local_macs,
                 'deleted_remote_macs': process_deleted_remote_macs}
             self.ovsdb_data.update_ovsdb_changes(
-                self.context, fake_ovsdb_data)
+                self.context, fake_activity, fake_ovsdb_data)
 
             process_new_logical_switches.assert_called_with(
                 self.context, fake_new_logical_switches)

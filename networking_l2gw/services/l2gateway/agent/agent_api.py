@@ -28,10 +28,11 @@ class L2GatewayAgentApi(object):
         target = messaging.Target(topic=topic, version=self.API_VERSION)
         self.client = n_rpc.get_client(target)
 
-    def update_ovsdb_changes(self, context, ovsdb_data):
+    def update_ovsdb_changes(self, context, activity, ovsdb_data):
         cctxt = self.client.prepare()
         return cctxt.cast(context,
                           'update_ovsdb_changes',
+                          activity=activity,
                           ovsdb_data=ovsdb_data)
 
     def notify_ovsdb_states(self, context, ovsdb_states):
