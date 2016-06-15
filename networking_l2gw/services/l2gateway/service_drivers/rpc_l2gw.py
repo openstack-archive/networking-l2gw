@@ -585,7 +585,6 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         u_mac_dict = {}
         ls_dict = {}
         mac_dict = {}
-        is_mac = False
         self.service_plugin._admin_check(context, 'CREATE')
         gw_connection = l2_gateway_connection.get('l2_gateway_connection')
         # validate connection
@@ -603,35 +602,33 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                 context, logical_switch, gw_connection)
             ports = self._get_port_details(context,
                                            gw_connection.get('network_id'))
-            if not is_mac:
-                is_mac = True
-                for port in ports:
-                    mac_list = []
-                    if port['device_owner']:
-                        dst_ip, ip_address = self._get_ip_details(context,
-                                                                  port)
-                        mac_remote = self._get_dict(
-                            ovsdb_schema.UcastMacsRemote(
-                                uuid=None,
-                                mac=port.get('mac_address'),
-                                logical_switch_id=None,
-                                physical_locator_id=None,
-                                ip_address=ip_address))
-                        if logical_switch:
-                            u_mac_dict['mac'] = port.get('mac_address')
-                            u_mac_dict['ovsdb_identifier'] = ovsdb_identifier
-                            u_mac_dict['logical_switch_uuid'] = (
-                                logical_switch.get('uuid'))
-                            ucast_mac_remote = (
-                                db.get_ucast_mac_remote_by_mac_and_ls(
-                                    context, u_mac_dict))
-                            if not ucast_mac_remote:
-                                mac_list.append(mac_remote)
-                        else:
+            for port in ports:
+                mac_list = []
+                if port['device_owner']:
+                    dst_ip, ip_address = self._get_ip_details(context,
+                                                              port)
+                    mac_remote = self._get_dict(
+                        ovsdb_schema.UcastMacsRemote(
+                            uuid=None,
+                            mac=port.get('mac_address'),
+                            logical_switch_id=None,
+                            physical_locator_id=None,
+                            ip_address=ip_address))
+                    if logical_switch:
+                        u_mac_dict['mac'] = port.get('mac_address')
+                        u_mac_dict['ovsdb_identifier'] = ovsdb_identifier
+                        u_mac_dict['logical_switch_uuid'] = (
+                            logical_switch.get('uuid'))
+                        ucast_mac_remote = (
+                            db.get_ucast_mac_remote_by_mac_and_ls(
+                                context, u_mac_dict))
+                        if not ucast_mac_remote:
                             mac_list.append(mac_remote)
-                        locator_list = self._get_locator_list(
-                            context, dst_ip, ovsdb_identifier, mac_list,
-                            locator_list)
+                    else:
+                        mac_list.append(mac_remote)
+                    locator_list = self._get_locator_list(
+                        context, dst_ip, ovsdb_identifier, mac_list,
+                        locator_list)
             for locator in locator_list:
                 mac_dict[locator.get('dst_ip')] = locator.pop('macs')
                 locator.pop('ovsdb_identifier')
