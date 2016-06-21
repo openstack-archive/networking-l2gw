@@ -44,11 +44,11 @@ class L2GatewayOVSDBCallbacks(object):
         self.plugin = plugin
         self.ovsdb = None
 
-    def update_ovsdb_changes(self, context, ovsdb_data):
+    def update_ovsdb_changes(self, context, activity, ovsdb_data):
         """RPC to update the changes from OVSDB in the database."""
         self.ovsdb = self.get_ovsdbdata_object(
             ovsdb_data.get(n_const.OVSDB_IDENTIFIER))
-        self.ovsdb.update_ovsdb_changes(context, ovsdb_data)
+        self.ovsdb.update_ovsdb_changes(context, activity, ovsdb_data)
 
     def notify_ovsdb_states(self, context, ovsdb_states):
         """RPC to notify the OVSDB servers connection state."""
@@ -74,9 +74,27 @@ class OVSDBData(object):
         self.core_plugin = manager.NeutronManager.get_plugin()
         self.tunnel_call = tunnel_calls.Tunnel_Calls()
 
-    def update_ovsdb_changes(self, context, ovsdb_data):
-        """RPC to update the changes from OVSDB in the database."""
+    def _cleanup_all_ovsdb_tables(self, context, ovsdb_identifier):
+        db.delete_all_physical_locators_by_ovsdb_identifier(
+            context, ovsdb_identifier)
+        db.delete_all_physical_switches_by_ovsdb_identifier(
+            context, ovsdb_identifier)
+        db.delete_all_physical_ports_by_ovsdb_identifier(
+            context, ovsdb_identifier)
+        db.delete_all_logical_switches_by_ovsdb_identifier(
+            context, ovsdb_identifier)
+        db.delete_all_ucast_macs_locals_by_ovsdb_identifier(
+            context, ovsdb_identifier)
+        db.delete_all_ucast_macs_remotes_by_ovsdb_identifier(
+            context, ovsdb_identifier)
+        db.delete_all_vlan_bindings_by_ovsdb_identifier(
+            context, ovsdb_identifier)
 
+    def update_ovsdb_changes(self, context, activity, ovsdb_data):
+        """RPC to update the changes from OVSDB in the database."""
+        ovsdb_identifier = ovsdb_data.get('ovsdb_identifier')
+        if not activity:
+            self._cleanup_all_ovsdb_tables(context, ovsdb_identifier)
         for item, value in ovsdb_data.items():
             lookup = self.entry_table.get(item, None)
             if lookup:

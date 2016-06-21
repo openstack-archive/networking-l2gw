@@ -362,6 +362,7 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                                                           ovsdb_identifier,
                                                           op_method)
 
-    def agent_to_plugin_rpc(self, ovsdb_data):
+    def agent_to_plugin_rpc(self, activity, ovsdb_data):
         self.plugin_rpc.update_ovsdb_changes(ctx.get_admin_context(),
+                                             activity,
                                              ovsdb_data)
