@@ -16,6 +16,7 @@
 import eventlet
 
 import contextlib
+import os.path
 import socket
 import ssl
 import time
@@ -291,3 +292,62 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
             self.assertTrue(mock_close.called)
             self.assertNotIn(fake_ip, self.l2gw_ovsdb_conn.ovsdb_fd_states)
             self.assertNotIn(fake_ip, self.l2gw_ovsdb_conn.ovsdb_conn_list)
+
+    def test_get_ovsdb_ip_mapping(self):
+        expected_ovsdb_ip_mapping = {'10.10.10.10': 'ovsdb1'}
+        cfg.CONF.set_override('ovsdb_hosts',
+                              'ovsdb1:10.10.10.10:6632',
+                              'ovsdb')
+        return_mapping = self.l2gw_ovsdb_conn._get_ovsdb_ip_mapping()
+        self.assertEqual(expected_ovsdb_ip_mapping, return_mapping)
+
+    def test_is_ssl_configured(self):
+        self.l2gw_ovsdb_conn.ip_ovsdb_mapping = {'10.10.10.10': 'ovsdb1'}
+        cfg.CONF.set_override('l2_gw_agent_priv_key_base_path',
+                              '/home',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_cert_base_path',
+                              '/home',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_ca_cert_base_path',
+                              '/home',
+                              'ovsdb')
+        with contextlib.nested(
+            mock.patch.object(os.path, 'isfile', return_value=True),
+            mock.patch.object(base_connection.LOG, 'error'),
+            mock.patch.object(ssl, 'wrap_socket')
+                ) as (mock_isfile, mock_error, mock_wrap_sock):
+            self.l2gw_ovsdb_conn._is_ssl_configured('10.10.10.10',
+                                                    self.mock_sock)
+            self.assertTrue(mock_isfile.called)
+            self.assertTrue(mock_wrap_sock.called)
+            self.assertFalse(mock_error.called)
+            mock_wrap_sock.assert_called_with(
+                self.mock_sock,
+                server_side=True,
+                keyfile='/home/ovsdb1.key',
+                certfile='/home/ovsdb1.cert',
+                ssl_version=ssl.PROTOCOL_SSLv23,
+                ca_certs='/home/ovsdb1.ca_cert')
+
+    def test_is_ssl_configured_for_certs_not_found(self):
+        self.l2gw_ovsdb_conn.ip_ovsdb_mapping = {'10.10.10.10': 'ovsdb1'}
+        cfg.CONF.set_override('l2_gw_agent_priv_key_base_path',
+                              '/home/',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_cert_base_path',
+                              '/home/',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_ca_cert_base_path',
+                              '/home/',
+                              'ovsdb')
+        with contextlib.nested(
+            mock.patch.object(os.path, 'isfile', return_value=False),
+            mock.patch.object(base_connection.LOG, 'error'),
+            mock.patch.object(ssl, 'wrap_socket')
+                ) as (mock_isfile, mock_error, mock_wrap_sock):
+            self.l2gw_ovsdb_conn._is_ssl_configured('10.10.10.10',
+                                                    self.mock_sock)
+            self.assertTrue(mock_isfile.called)
+            self.assertFalse(mock_wrap_sock.called)
+            self.assertTrue(mock_error.called)
