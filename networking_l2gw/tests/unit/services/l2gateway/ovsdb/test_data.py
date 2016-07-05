@@ -445,7 +445,11 @@ class TestOVSDBData(base.BaseTestCase):
                               'name': 'fake_name'}
         fake_physical_switch = {'uuid': 'fake_uuid',
                                 'ovsdb_identifier': 'fake_ovsdb_id',
-                                'name': 'fake_switch'}
+                                'name': 'fake_switch'},
+        fake_vlan_binding = {'port_uuid:': 'fake_port_uuid',
+                             'vlan': 'fake_vlan',
+                             'logical_switch_uuid': 'fake_switch_uuid',
+                             'ovsdb_identifier': 'fake_ovsdb_id'}
         with contextlib.nested(
             mock.patch.object(lib,
                               'delete_physical_port'),
@@ -454,12 +458,15 @@ class TestOVSDBData(base.BaseTestCase):
                               return_value=fake_physical_port),
             mock.patch.object(lib, 'get_physical_switch',
                               return_vaue=fake_physical_switch),
+            mock.patch.object(lib,
+                              'get_all_vlan_bindings_by_physical_port',
+                              return_vaue=fake_vlan_binding),
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               '_get_l2gw_ids_by_interface_switch',
                               return_value=['fake_uuid']),
             mock.patch.object(l2gateway_db.L2GatewayMixin,
                               '_delete_connection_by_l2gw_id')
-        ) as (delete_pp, get_pp, get_ps, l2gw_del, l2gw_conn_del):
+        ) as (delete_pp, get_pp, get_ps, get_vb, l2gw_del, l2gw_conn_del):
             self.ovsdb_data._process_deleted_physical_ports(
                 self.context, fake_deleted_physical_ports)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
