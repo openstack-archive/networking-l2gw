@@ -260,7 +260,7 @@ class TestL2GatewayBasic(base.BaseAdminNetworkTest):
             ip = port['ports'][i]['fixed_ips'][0]['ip_address']
             ip_mac_dict.update({mac: ip})
         try:
-            for key, value in ip_mac_dict.iteritems():
+            for key, value in ip_mac_dict.items():
                 row = objConnection.find_row(key, count_uuid, resp_dec)
                 self.assertIn(value, row)
         except Exception:

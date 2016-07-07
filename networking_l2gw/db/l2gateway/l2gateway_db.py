@@ -130,7 +130,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
     def _retrieve_gateway_connections(self, context, gateway_id,
                                       mapping_info={}, only_one=False):
         filters = {'l2_gateway_id': [gateway_id]}
-        for k, v in mapping_info.iteritems():
+        for k, v in mapping_info.items():
             if v and k != constants.SEG_ID:
                 filters[k] = [v]
         query = self._get_collection_query(context,

@@ -26,7 +26,7 @@ class L2GatewayCommonDbMixin(object):
     def _apply_filters_to_query(self, query, model, filters):
         """Apply filters to query for the models."""
         if filters:
-            for key, value in filters.iteritems():
+            for key, value in filters.items():
                 column = getattr(model, key, None)
                 if column:
                     query = query.filter(column.in_(value))
