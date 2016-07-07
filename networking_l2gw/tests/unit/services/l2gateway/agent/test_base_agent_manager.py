@@ -45,8 +45,8 @@ class TestBaseAgentManager(base.BaseTestCase):
             with mock.patch.object(l2gw_manager.BaseAgentManager,
                                    '_setup_state_rpc') as setup_state_rpc:
                 self.l2gw_agent_manager.__init__(mock.Mock())
-                self.assertEqual(self.l2gw_agent_manager.l2gw_agent_type,
-                                 '')
+                self.assertEqual('',
+                                 self.l2gw_agent_manager.l2gw_agent_type)
                 self.assertTrue(self.l2gw_agent_manager.admin_state_up)
                 self.assertTrue(setup_state_rpc.called)
                 self.assertTrue(l2_gw_agent_api.called)
