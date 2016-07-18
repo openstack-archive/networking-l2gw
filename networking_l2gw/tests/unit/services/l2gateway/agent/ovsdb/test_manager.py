@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os.path
 import socket
 
 import eventlet
@@ -69,6 +70,42 @@ class TestManager(base.BaseTestCase):
                                  'enable_ssl': False,
                                  'certificate': 'dummy_cert',
                                  'ca_cert': 'dummy_ca'}
+
+    def test_process_ovsdb_host(self):
+        fake_host = "ovsdb1:10.10.10.10:6632"
+        cfg.CONF.set_override('l2_gw_agent_priv_key_base_path',
+                              '/home/someuser/fakedir',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_cert_base_path',
+                              '/home/someuser/fakedir',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_ca_cert_base_path',
+                              '/home/someuser/fakedir',
+                              'ovsdb')
+        with mock.patch.object(os.path, 'isfile',
+                               return_value=True) as mock_isfile, \
+                mock.patch.object(manager.LOG, 'exception') as mock_log_exc:
+            self.l2gw_agent_manager._process_ovsdb_host(fake_host)
+            self.assertTrue(mock_isfile.called)
+            self.assertFalse(mock_log_exc.called)
+
+    def test_process_ovsdb_host_for_certs_not_found(self):
+        fake_host = "ovsdb1:10.10.10.10:6632"
+        cfg.CONF.set_override('l2_gw_agent_priv_key_base_path',
+                              '/home/someuser/fakedir',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_cert_base_path',
+                              '/home/someuser/fakedir',
+                              'ovsdb')
+        cfg.CONF.set_override('l2_gw_agent_ca_cert_base_path',
+                              '/home/someuser/fakedir',
+                              'ovsdb')
+        with mock.patch.object(os.path, 'isfile',
+                               return_value=False) as mock_isfile, \
+                mock.patch.object(manager.LOG, 'exception') as mock_log_exc:
+            self.l2gw_agent_manager._process_ovsdb_host(fake_host)
+            self.assertTrue(mock_isfile.called)
+            self.assertTrue(mock_log_exc.called)
 
     def test_extract_ovsdb_config(self):
         fake_ovsdb_config = {n_const.OVSDB_IDENTIFIER: 'host2',

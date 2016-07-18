@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os.path
+
 import eventlet
 
 from contextlib import contextmanager
@@ -78,6 +80,33 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             ca_cert_path = self.conf.ovsdb.l2_gw_agent_ca_cert_base_path
             use_ssl = priv_key_path and cert_path and ca_cert_path
             if use_ssl:
+                LOG.debug("ssl is enabled with priv_key_path %s, cert_path "
+                          "%s, ca_cert_path %s", priv_key_path,
+                          cert_path, ca_cert_path)
+                priv_key_file = priv_key_path + "/" + ovsdb_identifier + ".key"
+                cert_file = cert_path + "/" + ovsdb_identifier + ".cert"
+                ca_cert_file = (ca_cert_path + "/" + ovsdb_identifier
+                                + ".ca_cert")
+                is_priv_key = os.path.isfile(priv_key_file)
+                is_cert_file = os.path.isfile(cert_file)
+                is_ca_cert_file = os.path.isfile(ca_cert_file)
+                if not is_priv_key:
+                    LOG.exception(_LE("Could not find private key in "
+                                      "%(path)s dir, expecting in the "
+                                      "file name %(file)s "),
+                                  {'path': priv_key_path,
+                                   'file': ovsdb_identifier + ".key"})
+                if not is_cert_file:
+                    LOG.exception(_LE("Could not find cert in %(path)s dir, "
+                                      "expecting in the file name %(file)s"),
+                                  {'path': cert_path,
+                                   'file': ovsdb_identifier + ".cert"})
+                if not is_ca_cert_file:
+                    LOG.exception(_LE("Could not find cacert in %(path)s "
+                                      "dir, expecting in the file name "
+                                      "%(file)s"),
+                                  {'path': ca_cert_path,
+                                   'file': ovsdb_identifier + ".ca_cert"})
                 ssl_ovsdb = {'use_ssl': True,
                              'private_key':
                                  "/".join([str(priv_key_path),
