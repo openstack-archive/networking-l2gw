@@ -53,7 +53,8 @@ class L2GatewayOVSDBCallbacks(object):
     def notify_ovsdb_states(self, context, ovsdb_states):
         """RPC to notify the OVSDB servers connection state."""
         if ovsdb_states:
-            self.ovsdb = self.get_ovsdbdata_object(ovsdb_states.keys()[0])
+            self.ovsdb = self.get_ovsdbdata_object(
+                list(ovsdb_states.keys())[0])
         if self.ovsdb:
             LOG.debug("ovsdb_states = %s", ovsdb_states)
             self.ovsdb.notify_ovsdb_states(context, ovsdb_states)
