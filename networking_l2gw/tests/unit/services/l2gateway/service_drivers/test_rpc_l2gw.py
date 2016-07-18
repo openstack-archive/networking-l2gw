@@ -256,7 +256,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
                 self.context, fake_method, 100L, fake_interface,
                 fake_pp_dict, 'fake_uuid', fake_connection)
             get_vlan.assert_called_with(self.context, fake_pp_dict)
-            self.assertEqual(port, phys_port_dict)
+            self.assertEqual(phys_port_dict, port)
 
     def test_get_ip_details(self):
         fake_port = {'binding:host_id': 'fake_host',
@@ -268,8 +268,8 @@ class TestL2gwRpcDriver(base.BaseTestCase):
             (ret_dst_ip, ret_ip_add) = self.plugin._get_ip_details(
                 self.context, fake_port)
             get_agent.assert_called_with(self.context, 'fake_host')
-            self.assertEqual(ret_dst_ip, 'fake_tun_ip')
-            self.assertEqual(ret_ip_add, 'fake_ip')
+            self.assertEqual('fake_tun_ip', ret_dst_ip)
+            self.assertEqual('fake_ip', ret_ip_add)
 
     def test_get_agent_details_for_no_ovs_agent(self):
         core_plugin = mock.PropertyMock()
@@ -332,8 +332,8 @@ class TestL2gwRpcDriver(base.BaseTestCase):
             ret_ls_dict_without_ls = self.plugin._get_logical_switch_dict(
                 self.context, fake_ls, fake_connection)
             get_network.assert_called_with(self.context, 'fake_network_id')
-            self.assertEqual(ret_ls_dict, fake_ls_dict)
-            self.assertEqual(ret_ls_dict_without_ls, fake_ls_dict_without_ls)
+            self.assertEqual(fake_ls_dict, ret_ls_dict)
+            self.assertEqual(fake_ls_dict_without_ls, ret_ls_dict_without_ls)
 
     def test_get_logical_switch_dict_for_multi_segment_network(self):
         fake_logical_switch = {'uuid': 'fake_uuid',
@@ -436,7 +436,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
                                                 fake_locator_dict)
             get_pl_dict.assert_called_with(fake_dst_ip,
                                            'fake_uuid', fake_mac_list)
-            self.assertEqual(ret_pl_list, fale_pl_list)
+            self.assertEqual(fale_pl_list, ret_pl_list)
 
     def test_get_identifer_list(self):
         fake_connection = {'l2_gateway_id': 'fake_l2gw_id',
@@ -462,7 +462,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
              assert_called_with(mock.ANY, mock.ANY))
             db.get_physical_switch_by_name.assert_called_with(
                 self.context, 'fake_device_name')
-            self.assertEqual(ret_value, fake_identifier_set)
+            self.assertEqual(fake_identifier_set, ret_value)
 
     def test_get_set_of_ovsdb_ids(self):
         fake_connection = {'id': 'fake_id',
@@ -479,7 +479,7 @@ class TestL2gwRpcDriver(base.BaseTestCase):
                 fake_gw_conn_ovsdb_set)
             self.service_plugin.get_l2_gateway_connections.assert_called_with(
                 mock.ANY, filters=mock.ANY)
-            self.assertEqual(ret_value, fake_gw_conn_ovsdb_set)
+            self.assertEqual(fake_gw_conn_ovsdb_set, ret_value)
 
     def test_remove_vm_macs(self):
         fake_network_id = 'fake_network_id'

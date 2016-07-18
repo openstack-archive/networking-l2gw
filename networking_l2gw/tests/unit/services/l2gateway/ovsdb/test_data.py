@@ -79,8 +79,8 @@ class TestOVSDBData(base.BaseTestCase):
         with mock.patch.object(data.OVSDBData,
                                '_setup_entry_table') as setup_entry_table:
             self.ovsdb_data.__init__(self.ovsdb_identifier)
-            self.assertEqual(self.ovsdb_data.ovsdb_identifier,
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             self.ovsdb_data.ovsdb_identifier)
             self.assertTrue(setup_entry_table.called)
 
     def test_update_ovsdb_changes(self):
@@ -270,8 +270,8 @@ class TestOVSDBData(base.BaseTestCase):
                 self.ovsdb_data._process_new_logical_switches(
                     self.context, fake_new_logical_switches)
                 self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-                self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                                 'fake_ovsdb_id')
+                self.assertEqual('fake_ovsdb_id',
+                                 fake_dict[n_const.OVSDB_IDENTIFIER])
                 get_ls.assert_called_with(self.context, fake_dict)
                 add_ls.assert_called_with(self.context, fake_dict)
 
@@ -286,8 +286,8 @@ class TestOVSDBData(base.BaseTestCase):
                     self.context, fake_new_physical_switches)
                 self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
                 self.assertIsNone(fake_dict['tunnel_ip'])
-                self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                                 'fake_ovsdb_id')
+                self.assertEqual('fake_ovsdb_id',
+                                 fake_dict[n_const.OVSDB_IDENTIFIER])
                 get_ps.assert_called_with(self.context, fake_dict)
                 add_ps.assert_called_with(self.context, fake_dict)
 
@@ -308,8 +308,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_new_physical_ports(
                 self.context, fake_new_physical_ports)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict2)
-            self.assertEqual(fake_dict2[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict2[n_const.OVSDB_IDENTIFIER])
             get_pp.assert_called_with(self.context, fake_dict2)
             add_pp.assert_called_with(self.context, fake_dict2)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict1)
@@ -327,8 +327,8 @@ class TestOVSDBData(base.BaseTestCase):
                 self.ovsdb_data._process_new_physical_locators(
                     self.context, fake_new_physical_locators)
                 self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-                self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                                 'fake_ovsdb_id')
+                self.assertEqual('fake_ovsdb_id',
+                                 fake_dict[n_const.OVSDB_IDENTIFIER])
                 get_pl.assert_called_with(self.context, fake_dict)
                 add_pl.assert_called_with(self.context, fake_dict)
 
@@ -345,8 +345,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_new_local_macs(
                 self.context, fake_new_local_macs)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict[n_const.OVSDB_IDENTIFIER])
             get_lm.assert_called_with(self.context, fake_dict)
             add_lm.assert_called_with(self.context, fake_dict)
 
@@ -360,8 +360,8 @@ class TestOVSDBData(base.BaseTestCase):
                 self.ovsdb_data._process_new_remote_macs(
                     self.context, fake_new_remote_macs)
                 self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-                self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                                 'fake_ovsdb_id')
+                self.assertEqual('fake_ovsdb_id',
+                                 fake_dict[n_const.OVSDB_IDENTIFIER])
                 get_mr.assert_called_with(self.context, fake_dict)
                 add_mr.assert_called_with(self.context, fake_dict)
 
@@ -373,8 +373,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_modified_remote_macs(
                 self.context, fake_modified_remote_macs)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict[n_const.OVSDB_IDENTIFIER])
             update_mr.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_logical_switches(self):
@@ -384,8 +384,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_deleted_logical_switches(
                 self.context, fake_deleted_logical_switches)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict[n_const.OVSDB_IDENTIFIER])
             delete_ls.assert_called_with(self.context, fake_dict)
 
     def test_get_agent_by_mac(self):
@@ -430,8 +430,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_deleted_physical_switches(
                 self.context, fake_deleted_physical_switches)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict[n_const.OVSDB_IDENTIFIER])
             delete_ps.assert_called_with(self.context, fake_dict)
             get_ps.assert_called_with(self.context, 'fake_ovsdb_id')
             get_ls.assert_called_with(self.context, 'fake_ovsdb_id')
@@ -470,8 +470,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_deleted_physical_ports(
                 self.context, fake_deleted_physical_ports)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict[n_const.OVSDB_IDENTIFIER])
             l2gw_conn_del.assert_called_with(self.context, 'fake_uuid')
             delete_pp.assert_called_with(self.context, fake_dict)
 
@@ -519,8 +519,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_deleted_physical_ports(
                 self.context, fake_deleted_physical_ports)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict[n_const.OVSDB_IDENTIFIER])
             l2gw_conn_del.assert_called_with(self.context, 'fake_uuid')
             get_vlan_by_pp.assert_called_with(self.context, fake_dict)
             del_vlan.assert_called_with(self.context, vlan_binding_dict)
@@ -562,8 +562,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.assertTrue(get_ls.called)
             self.assertTrue(get_all_ps.called)
             self.assertTrue(get_fdb.called)
-            self.assertEqual(fake_dict1[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict1[n_const.OVSDB_IDENTIFIER])
             delete_pl.assert_called_with(self.context, fake_dict1)
             self.assertTrue(get_agent_ips.called)
             trig_l2pop.assert_called_with(self.context,
@@ -601,8 +601,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.assertTrue(get_ls.called)
             self.assertTrue(get_all_ps.called)
             self.assertTrue(get_fdb.called)
-            self.assertEqual(fake_dict1[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict1[n_const.OVSDB_IDENTIFIER])
             delete_pl.assert_called_once_with(self.context, fake_dict1)
             self.assertTrue(get_agent_ips.called)
             trig_l2pop.assert_called_with(self.context,
@@ -621,8 +621,8 @@ class TestOVSDBData(base.BaseTestCase):
                 self.ovsdb_data._process_deleted_local_macs(
                     self.context, fake_deleted_local_macs)
                 self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-                self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                                 'fake_ovsdb_id')
+                self.assertEqual('fake_ovsdb_id',
+                                 fake_dict[n_const.OVSDB_IDENTIFIER])
                 delete_ml.assert_called_with(self.context, fake_dict)
 
     def test_process_deleted_remote_macs(self):
@@ -632,8 +632,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_deleted_remote_macs(
                 self.context, fake_deleted_remote_macs)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict)
-            self.assertEqual(fake_dict[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict[n_const.OVSDB_IDENTIFIER])
             delete_mr.assert_called_with(self.context, fake_dict)
 
     def test_process_modified_physical_ports(self):
@@ -656,8 +656,8 @@ class TestOVSDBData(base.BaseTestCase):
             self.ovsdb_data._process_modified_physical_ports(
                 self.context, fake_modified_physical_ports)
             self.assertIn(n_const.OVSDB_IDENTIFIER, fake_dict2)
-            self.assertEqual(fake_dict2[n_const.OVSDB_IDENTIFIER],
-                             'fake_ovsdb_id')
+            self.assertEqual('fake_ovsdb_id',
+                             fake_dict2[n_const.OVSDB_IDENTIFIER])
             get_pp.assert_called_with(self.context, fake_dict2)
             update_pp_status.assert_called_with(self.context, fake_dict2)
             self.assertFalse(add_pp.called)

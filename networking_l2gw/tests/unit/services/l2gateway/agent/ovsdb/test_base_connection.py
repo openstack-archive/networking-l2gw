@@ -200,13 +200,13 @@ class TestBaseConnection_with_enable_manager(base.BaseTestCase):
         with mock.patch.object(eventlet.greenthread,
                                'spawn') as (mock_thread):
             self.l2gw_ovsdb_conn.__init__(mock.Mock(), self.conf)
-            self.assertEqual(self.l2gw_ovsdb_conn.s, mock.ANY)
+            self.assertEqual(mock.ANY, self.l2gw_ovsdb_conn.s)
             self.assertFalse(self.l2gw_ovsdb_conn.check_sock_rcv)
             self.assertIsNone(self.l2gw_ovsdb_conn.check_c_sock)
-            self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_dicts, fake_dict)
-            self.assertEqual(self.l2gw_ovsdb_conn.ovsdb_fd_states, fake_dict)
-            self.assertEqual(self.l2gw_ovsdb_conn.manager_table_listening_port,
-                             6632)
+            self.assertEqual(fake_dict, self.l2gw_ovsdb_conn.ovsdb_dicts)
+            self.assertEqual(fake_dict, self.l2gw_ovsdb_conn.ovsdb_fd_states)
+            self.assertEqual(6632,
+                             self.l2gw_ovsdb_conn.manager_table_listening_port)
             self.assertTrue(mock_thread.called)
 
     def test_send_monitor_msg_to_ovsdb_connection(self):
