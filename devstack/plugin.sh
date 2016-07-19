@@ -31,6 +31,7 @@ function run_l2gw_alembic_migration {
 
 function configure_l2gw_plugin {
     sudo cp $L2GW_DIR/etc/l2gw_plugin.ini $L2GW_PLUGIN_CONF_FILE
+    neutron_server_config_add $L2GW_PLUGIN_CONF_FILE
 }
 
 # main loop
