@@ -22,72 +22,60 @@ from neutron.db import models_v2
 class PhysicalLocators(model_base.BASEV2):
     __tablename__ = 'physical_locators'
     uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
-    dst_ip = sa.Column(sa.String(64), nullable=False)
+    dst_ip = sa.Column(sa.String(64), nullable=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
-    __table_args__ = (sa.UniqueConstraint(uuid,
-                                          ovsdb_identifier),)
 
 
 class PhysicalSwitches(model_base.BASEV2):
     __tablename__ = 'physical_switches'
     uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
-    name = sa.Column(sa.String(255), nullable=False)
-    tunnel_ip = sa.Column(sa.String(64), nullable=False)
+    name = sa.Column(sa.String(255), nullable=True)
+    tunnel_ip = sa.Column(sa.String(64), nullable=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
     switch_fault_status = sa.Column(sa.String(length=32), nullable=True)
-    __table_args__ = (sa.UniqueConstraint(uuid,
-                                          ovsdb_identifier),)
 
 
 class PhysicalPorts(model_base.BASEV2):
     __tablename__ = 'physical_ports'
     uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
-    name = sa.Column(sa.String(255), nullable=False)
-    physical_switch_id = sa.Column(sa.String(36), nullable=False)
+    name = sa.Column(sa.String(255), nullable=True)
+    physical_switch_id = sa.Column(sa.String(36), nullable=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
     port_fault_status = sa.Column(sa.String(length=32), nullable=True)
-    __table_args__ = (sa.UniqueConstraint(uuid,
-                                          ovsdb_identifier),)
 
 
 class LogicalSwitches(model_base.BASEV2):
     __tablename__ = 'logical_switches'
     uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
-    name = sa.Column(sa.String(255), nullable=False)
-    key = sa.Column(sa.Integer, nullable=False)
+    name = sa.Column(sa.String(255), nullable=True)
+    key = sa.Column(sa.Integer, nullable=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
-    __table_args__ = (sa.UniqueConstraint(uuid,
-                                          ovsdb_identifier),)
 
 
 class UcastMacsLocals(model_base.BASEV2):
     __tablename__ = 'ucast_macs_locals'
     uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
-    mac = sa.Column(sa.String(32), nullable=False)
-    logical_switch_id = sa.Column(sa.String(36), nullable=False)
-    physical_locator_id = sa.Column(sa.String(36), nullable=False)
-    ip_address = sa.Column(sa.String(64), nullable=False)
+    mac = sa.Column(sa.String(32), nullable=True)
+    logical_switch_id = sa.Column(sa.String(36), nullable=True)
+    physical_locator_id = sa.Column(sa.String(36), nullable=True)
+    ip_address = sa.Column(sa.String(64), nullable=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
-    __table_args__ = (sa.UniqueConstraint(uuid,
-                                          ovsdb_identifier),)
 
 
 class UcastMacsRemotes(model_base.BASEV2):
     __tablename__ = 'ucast_macs_remotes'
     uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
-    mac = sa.Column(sa.String(32), nullable=False)
-    logical_switch_id = sa.Column(sa.String(36), nullable=False)
-    physical_locator_id = sa.Column(sa.String(36), nullable=False)
-    ip_address = sa.Column(sa.String(64), nullable=False)
+    mac = sa.Column(sa.String(32), nullable=True)
+    logical_switch_id = sa.Column(sa.String(36), nullable=True)
+    physical_locator_id = sa.Column(sa.String(36), nullable=True)
+    ip_address = sa.Column(sa.String(64), nullable=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
-    __table_args__ = (sa.UniqueConstraint(uuid,
-                                          ovsdb_identifier),)
 
 
 class VlanBindings(model_base.BASEV2):
@@ -98,16 +86,13 @@ class VlanBindings(model_base.BASEV2):
                                     primary_key=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
                                  primary_key=True)
-    __table_args__ = (sa.UniqueConstraint(port_uuid, vlan,
-                                          logical_switch_uuid,
-                                          ovsdb_identifier),)
 
 
 class PendingUcastMacsRemote(model_base.BASEV2, models_v2.HasId):
     __tablename__ = 'pending_ucast_macs_remotes'
     uuid = sa.Column(sa.String(36), nullable=True)
     mac = sa.Column(sa.String(32), nullable=False)
-    logical_switch_uuid = sa.Column(sa.String(36), nullable=True)
+    logical_switch_uuid = sa.Column(sa.String(36), nullable=False)
     locator_uuid = sa.Column(sa.String(36), nullable=True)
     dst_ip = sa.Column(sa.String(64))
     vm_ip = sa.Column(sa.String(64))

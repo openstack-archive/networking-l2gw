@@ -103,13 +103,3 @@ def upgrade():
                               nullable=False),
                     sa.PrimaryKeyConstraint('port_uuid', 'ovsdb_identifier',
                                             'vlan', 'logical_switch_uuid'))
-
-
-def downgrade():
-    op.drop_table('physical_locators')
-    op.drop_table('physical_switches')
-    op.drop_table('physical_ports')
-    op.drop_table('logical_switches')
-    op.drop_table('ucast_macs_locals')
-    op.drop_table('ucast_macs_remotes')
-    op.drop_table('vlan_bindings')

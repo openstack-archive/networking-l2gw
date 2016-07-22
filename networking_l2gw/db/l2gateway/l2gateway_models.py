@@ -27,7 +27,8 @@ class L2GatewayConnection(model_base.BASEV2, models_v2.HasTenant,
                               sa.ForeignKey('l2gateways.id',
                                             ondelete='CASCADE'))
     network_id = sa.Column(sa.String(36),
-                           sa.ForeignKey('networks.id', ondelete='CASCADE'))
+                           sa.ForeignKey('networks.id', ondelete='CASCADE'),
+                           nullable=False)
     segmentation_id = sa.Column(sa.Integer)
     __table_args__ = (sa.UniqueConstraint(l2_gateway_id,
                                           network_id),)
@@ -38,19 +39,21 @@ class L2GatewayInterface(model_base.BASEV2, models_v2.HasId):
     interface_name = sa.Column(sa.String(255))
     device_id = sa.Column(sa.String(36),
                           sa.ForeignKey('l2gatewaydevices.id',
-                                        ondelete='CASCADE'))
+                                        ondelete='CASCADE'),
+                          nullable=False)
     segmentation_id = sa.Column(sa.Integer)
 
 
 class L2GatewayDevice(model_base.BASEV2, models_v2.HasId):
     """Define an l2 gateway device."""
-    device_name = sa.Column(sa.String(255))
+    device_name = sa.Column(sa.String(255), nullable=False)
     interfaces = orm.relationship(L2GatewayInterface,
                                   backref='l2gatewaydevices',
                                   cascade='all,delete')
     l2_gateway_id = sa.Column(sa.String(36),
                               sa.ForeignKey('l2gateways.id',
-                                            ondelete='CASCADE'))
+                                            ondelete='CASCADE'),
+                              nullable=False)
 
 
 class L2Gateway(model_base.BASEV2, models_v2.HasId,
