@@ -15,7 +15,6 @@
 
 import mock
 
-import contextlib
 from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 from neutron.plugins.ml2.drivers import type_tunnel
 from neutron.plugins.ml2 import managers
@@ -34,13 +33,12 @@ class TestTunnelCalls(base.BaseTestCase):
         self.context = mock.MagicMock()
 
     def test_trigger_tunnel_sync(self):
-        with contextlib.nested(
-            mock.patch.object(rpc, 'RpcCallbacks'),
-            mock.patch.object(type_tunnel.TunnelRpcCallbackMixin,
-                              'tunnel_sync')) as (mock_rpc, mock_tunnel_sync):
-            self.tunnel_call.trigger_tunnel_sync(self.context, 'fake_ip')
-            mock_tunnel_sync.assert_called_with(
-                self.context, tunnel_ip='fake_ip', tunnel_type='vxlan')
+        with mock.patch.object(rpc, 'RpcCallbacks'):
+            with mock.patch.object(type_tunnel.TunnelRpcCallbackMixin,
+                                   'tunnel_sync') as mock_tunnel_sync:
+                self.tunnel_call.trigger_tunnel_sync(self.context, 'fake_ip')
+                mock_tunnel_sync.assert_called_with(
+                    self.context, tunnel_ip='fake_ip', tunnel_type='vxlan')
 
     def test_trigger_l2pop_sync(self):
         fake_fdb_entry = "fake_fdb_entry"

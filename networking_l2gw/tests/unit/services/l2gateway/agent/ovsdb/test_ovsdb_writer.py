@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import contextlib
 import random
 import socket
 import ssl
@@ -112,17 +111,16 @@ class TestOVSDBWriter(base.BaseTestCase):
         """Test case to test _get_reply."""
         ret_value = jsonutils.dumps({self.op_id:
                                      'foo_value'})
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_recv_data',
-                              return_value=jsonutils.dumps({self.op_id:
-                                                            'foo_value'})),
+        with mock.patch.object(
+            ovsdb_writer.OVSDBWriter,
+            '_recv_data',
+            return_value=jsonutils.dumps({self.op_id:
+                                          'foo_value'})) as recv_data, \
             mock.patch.object(ovsdb_writer.OVSDBWriter,
                               '_process_response',
-                              return_value=(ret_value, None)),
+                              return_value=(ret_value, None)) as proc_response, \
             mock.patch.object(ovsdb_writer.LOG,
-                              'debug')
-        ) as (recv_data, proc_response, debug):
+                              'debug'):
             self.l2gw_ovsdb._get_reply(self.op_id, mock.ANY)
             self.assertTrue(recv_data.called)
             self.assertTrue(proc_response.called)
@@ -180,69 +178,53 @@ class TestOVSDBWriter(base.BaseTestCase):
 
     def test_insert_ucast_macs_remote(self):
         """Test case to test insert ucast_macs_remote."""
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_ucast_macs_remote_dict'),
-            mock.patch.object(random,
-                              'getrandbits',
-                              return_value=self.op_id
-                              ),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_send_and_receive'
-                              ),
-            mock.patch.object(ovsdb_writer.LOG,
-                              'debug'),
-            mock.patch.object(ovsdb_schema, 'LogicalSwitch'),
-            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
-            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
-        ) as (get_ucast_mac_remote,
-              get_rand,
-              send_n_receive,
-              mock_log,
-              mock_ls,
-              mock_pl,
-              mock_ucmr):
-                self.l2gw_ovsdb.insert_ucast_macs_remote(mock.MagicMock(),
-                                                         mock.MagicMock(),
-                                                         mock.MagicMock(),
-                                                         mock.ANY)
-                get_rand.assert_called_with(128)
-                send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, mock.ANY, True)
+        with mock.patch.object(ovsdb_writer.OVSDBWriter,
+                               '_get_ucast_macs_remote_dict') as get_ucast_mac_remote, \
+                mock.patch.object(random,
+                                  'getrandbits',
+                                  return_value=self.op_id
+                                  ) as get_rand, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_send_and_receive'
+                                  ) as send_n_receive, \
+                mock.patch.object(ovsdb_writer.LOG,
+                                  'debug'), \
+                mock.patch.object(ovsdb_schema, 'LogicalSwitch'), \
+                mock.patch.object(ovsdb_schema, 'PhysicalLocator'), \
+                mock.patch.object(ovsdb_schema, 'UcastMacsRemote'):
+            self.l2gw_ovsdb.insert_ucast_macs_remote(mock.MagicMock(),
+                                                     mock.MagicMock(),
+                                                     mock.MagicMock(),
+                                                     mock.ANY)
+            get_rand.assert_called_with(128)
+            send_n_receive.assert_called_with(mock.ANY,
+                                              self.op_id, mock.ANY, True)
 
-                self.assertTrue(get_ucast_mac_remote.called)
+            self.assertTrue(get_ucast_mac_remote.called)
 
     def test_insert_ucast_macs_remote_with_no_locator_id(self):
         """Test case to test insert ucast_macs_remote
 
            without locator_id and logical_switch_id.
         """
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_ucast_macs_remote_dict'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_physical_locator_dict'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_logical_switch_dict'),
-            mock.patch.object(random,
-                              'getrandbits',
-                              return_value=self.op_id
-                              ),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_send_and_receive'
-                              ),
-            mock.patch.object(ovsdb_writer.LOG,
-                              'debug'),
-            mock.patch.object(ovsdb_schema, 'LogicalSwitch'),
-            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
-            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
-        ) as (get_ucast_mac_remote,
-              get_physical_locator_dict,
-              get_logical_switch_dict,
-              get_rand,
-              send_n_receive,
-              mock_log,
-              mock_ls, mock_pl, mock_ucmr):
+        with mock.patch.object(ovsdb_writer.OVSDBWriter,
+                               '_get_ucast_macs_remote_dict') as get_ucast_mac_remote, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_get_physical_locator_dict') as get_physical_locator_dict, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_get_logical_switch_dict') as get_logical_switch_dict, \
+                mock.patch.object(random,
+                                  'getrandbits',
+                                  return_value=self.op_id
+                                  ), \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_send_and_receive'
+                                  ), \
+                mock.patch.object(ovsdb_writer.LOG,
+                                  'debug'), \
+                mock.patch.object(ovsdb_schema, 'LogicalSwitch') as mock_ls, \
+                mock.patch.object(ovsdb_schema, 'PhysicalLocator') as mock_pl, \
+                mock.patch.object(ovsdb_schema, 'UcastMacsRemote'):
             locator = mock_pl.return_value
             locator.uuid = None
             ls = mock_ls.return_value
@@ -258,62 +240,48 @@ class TestOVSDBWriter(base.BaseTestCase):
 
     def test_update_ucast_macs_remote(self):
         """Test case to test update ucast_macs_remote."""
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_dict_for_update_ucast_mac_remote'),
-            mock.patch.object(random,
-                              'getrandbits',
-                              return_value=self.op_id
-                              ),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_send_and_receive'
-                              ),
-            mock.patch.object(ovsdb_writer.LOG,
-                              'debug'),
-            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
-            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
-        ) as (get_update_ucast_mac_remote,
-              get_rand,
-              send_n_receive,
-              mock_log,
-              mock_pl,
-              mock_ucmr):
-                self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
-                                                         mock.MagicMock(),
-                                                         mock.ANY)
-                get_rand.assert_called_with(128)
-                send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, mock.ANY, True)
+        with mock.patch.object(ovsdb_writer.OVSDBWriter,
+                               '_get_dict_for_update_ucast_mac_remote') as get_update_ucast_mac_remote, \
+                mock.patch.object(random,
+                                  'getrandbits',
+                                  return_value=self.op_id
+                                  ) as get_rand, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_send_and_receive'
+                                  ) as send_n_receive, \
+                mock.patch.object(ovsdb_writer.LOG,
+                                  'debug'), \
+                mock.patch.object(ovsdb_schema, 'PhysicalLocator'), \
+                mock.patch.object(ovsdb_schema, 'UcastMacsRemote'):
+            self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
+                                                     mock.MagicMock(),
+                                                     mock.ANY)
+            get_rand.assert_called_with(128)
+            send_n_receive.assert_called_with(mock.ANY,
+                                              self.op_id, mock.ANY, True)
 
-                self.assertTrue(get_update_ucast_mac_remote.called)
+            self.assertTrue(get_update_ucast_mac_remote.called)
 
     def test_update_ucast_macs_remote_with_no_locator_id(self):
         """Test case to test update ucast_macs_remote
 
            without locator_id and logical_switch_id.
         """
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_dict_for_update_ucast_mac_remote'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_physical_locator_dict'),
-            mock.patch.object(random,
-                              'getrandbits',
-                              return_value=self.op_id
-                              ),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_send_and_receive'
-                              ),
-            mock.patch.object(ovsdb_writer.LOG,
-                              'debug'),
-            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
-            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
-        ) as (get_update_ucast_mac_remote,
-              get_physical_locator_dict,
-              get_rand,
-              send_n_receive,
-              mock_log,
-              mock_pl, mock_ucmr):
+        with mock.patch.object(ovsdb_writer.OVSDBWriter,
+                               '_get_dict_for_update_ucast_mac_remote') as get_update_ucast_mac_remote, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_get_physical_locator_dict') as get_physical_locator_dict, \
+                mock.patch.object(random,
+                                  'getrandbits',
+                                  return_value=self.op_id
+                                  ), \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_send_and_receive'
+                                  ), \
+                mock.patch.object(ovsdb_writer.LOG,
+                                  'debug'), \
+                mock.patch.object(ovsdb_schema, 'PhysicalLocator') as mock_pl, \
+                mock.patch.object(ovsdb_schema, 'UcastMacsRemote'):
             locator = mock_pl.return_value
             locator.uuid = None
             self.l2gw_ovsdb.update_ucast_macs_remote(mock.MagicMock(),
@@ -324,68 +292,56 @@ class TestOVSDBWriter(base.BaseTestCase):
 
     def test_delete_ucast_macs_remote(self):
         """Test case to test delete_ucast_macs_remote."""
-        with contextlib.nested(
-            mock.patch.object(random,
-                              'getrandbits',
-                              return_value=self.op_id
-                              ),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_send_and_receive'
-                              ),
-            mock.patch.object(ovsdb_writer.LOG,
-                              'debug')
-        ) as (get_rand,
-              send_n_receive,
-              mock_log):
-                self.l2gw_ovsdb.delete_ucast_macs_remote(mock.Mock(),
-                                                         mock.MagicMock(),
-                                                         mock.ANY)
-                get_rand.assert_called_with(128)
-                send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, mock.ANY, True)
+        with mock.patch.object(random,
+                               'getrandbits',
+                               return_value=self.op_id
+                               ) as get_rand, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_send_and_receive'
+                                  ) as send_n_receive, \
+                mock.patch.object(ovsdb_writer.LOG,
+                                  'debug'):
+            self.l2gw_ovsdb.delete_ucast_macs_remote(mock.Mock(),
+                                                     mock.MagicMock(),
+                                                     mock.ANY)
+            get_rand.assert_called_with(128)
+            send_n_receive.assert_called_with(mock.ANY,
+                                              self.op_id, mock.ANY, True)
 
     def test_update_connection_to_gateway(self):
         """Test case to test update_connection_to_gateway."""
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_get_bindings_to_update'),
-            mock.patch.object(random,
-                              'getrandbits',
-                              return_value=self.op_id
-                              ),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_send_and_receive'
-                              ),
-            mock.patch.object(ovsdb_writer.LOG,
-                              'debug')
-        ) as (get_bindings,
-              get_rand,
-              send_n_receive,
-              mock_log):
-                self.l2gw_ovsdb.update_connection_to_gateway(
-                    mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock(),
-                    mock.ANY, mock.ANY)
-                get_rand.assert_called_with(128)
-                send_n_receive.assert_called_with(mock.ANY,
-                                                  self.op_id, mock.ANY, True)
-                self.assertTrue(get_bindings.called)
+        with mock.patch.object(ovsdb_writer.OVSDBWriter,
+                               '_get_bindings_to_update') as get_bindings, \
+                mock.patch.object(random,
+                                  'getrandbits',
+                                  return_value=self.op_id
+                                  ) as get_rand, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_send_and_receive'
+                                  ) as send_n_receive, \
+                mock.patch.object(ovsdb_writer.LOG,
+                                  'debug'):
+            self.l2gw_ovsdb.update_connection_to_gateway(
+                mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock(),
+                mock.ANY, mock.ANY)
+            get_rand.assert_called_with(128)
+            send_n_receive.assert_called_with(mock.ANY,
+                                              self.op_id, mock.ANY, True)
+            self.assertTrue(get_bindings.called)
 
     def test_get_bindings_to_update1(self):
         """Test case to test _get_bindings_to_update."""
         fake_op_method = 'CREATE'
-        with contextlib.nested(
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_form_logical_switch'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_form_physical_locators'),
-            mock.patch.object(ovsdb_writer.OVSDBWriter,
-                              '_form_ports'),
-            mock.patch.object(ovsdb_schema, 'LogicalSwitch'),
-            mock.patch.object(ovsdb_schema, 'PhysicalLocator'),
-            mock.patch.object(ovsdb_schema, 'UcastMacsRemote'),
-            mock.patch.object(ovsdb_schema, 'PhysicalPort')
-        ) as (form_ls, form_pl, form_pp,
-              mock_ls, mock_pl, mock_ucmr, mock_pp):
+        with mock.patch.object(ovsdb_writer.OVSDBWriter,
+                               '_form_logical_switch') as form_ls, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_form_physical_locators') as form_pl, \
+                mock.patch.object(ovsdb_writer.OVSDBWriter,
+                                  '_form_ports') as form_pp, \
+                mock.patch.object(ovsdb_schema, 'LogicalSwitch') as mock_ls, \
+                mock.patch.object(ovsdb_schema, 'PhysicalLocator') as mock_pl, \
+                mock.patch.object(ovsdb_schema, 'UcastMacsRemote') as mock_ucmr, \
+                mock.patch.object(ovsdb_schema, 'PhysicalPort') as mock_pp:
             ls = mock_ls.return_value = ovsdb_schema.LogicalSwitch(
                 'ls_uuid', 'ls_name', 'ls_key', 'ls_desc')
             pl = mock_pl.return_value = ovsdb_schema.PhysicalLocator(
@@ -492,11 +448,9 @@ class TestOVSDBWriter(base.BaseTestCase):
                                             None,
                                             None,
                                             '')
-        with contextlib.nested(
-            mock.patch.object(socket, 'socket', return_value=fake_socket
-                              ),
-            mock.patch.object(ovsdb_writer.LOG, 'warning')
-        ) as (fake_sock, fake_warn):
+        with mock.patch.object(socket, 'socket',
+                               return_value=fake_socket):
+            with mock.patch.object(ovsdb_writer.LOG, 'warning'):
                 ovsdb_conf = base_test.FakeConf()
                 l2gw_obj = ovsdb_writer.OVSDBWriter(
                     cfg.CONF.ovsdb, ovsdb_conf)
@@ -509,11 +463,9 @@ class TestOVSDBWriter(base.BaseTestCase):
         fake_socket = base_test.SocketClass(None,
                                             None,
                                             socket.error)
-        with contextlib.nested(
-            mock.patch.object(socket, 'socket', return_value=fake_socket
-                              ),
-            mock.patch.object(ovsdb_writer.LOG, 'warning')
-        ) as (fake_sock, fake_warn):
+        with mock.patch.object(socket, 'socket', return_value=fake_socket):
+            with mock.patch.object(ovsdb_writer.LOG,
+                                   'warning') as fake_warn:
                 ovsdb_conf = base_test.FakeConf()
                 l2gw_obj = ovsdb_writer.OVSDBWriter(
                     cfg.CONF.ovsdb, ovsdb_conf)

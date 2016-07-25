@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import contextlib
-
 import mock
 
 from neutron.common import config as common_config
@@ -45,14 +43,11 @@ class TestL2gwAgent(base.BaseTestCase):
     def test_main_l2gw_agent(self):
         logging_str = 'neutron.agent.common.config.setup_logging'
         common_config_str = mock.patch.object(common_config, 'init').start()
-        with contextlib.nested(
-            mock.patch.object(common_config_str, 'init'),
-            mock.patch(logging_str),
-            mock.patch.object(agent.service, 'launch'),
-            mock.patch('sys.argv'),
-            mock.patch.object(agent.manager, 'OVSDBManager'),
-            mock.patch.object(cfg.CONF, 'register_opts')
-        ) as (mock_config, mock_logging, mock_launch, sys_argv,
-              mgr_cls, ro):
+        with mock.patch.object(common_config_str, 'init'), \
+                mock.patch(logging_str), \
+                mock.patch.object(agent.service, 'launch') as mock_launch, \
+                mock.patch('sys.argv'), \
+                mock.patch.object(agent.manager, 'OVSDBManager'), \
+                mock.patch.object(cfg.CONF, 'register_opts'):
             agent.main()
             mock_launch.assert_called_once_with(cfg.CONF, mock.ANY)
