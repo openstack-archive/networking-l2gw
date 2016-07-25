@@ -163,7 +163,8 @@ class L2GWTestCase(testlib_api.SqlTestCase):
             result_interfaces = device["interfaces"]
             for interface in result_interfaces:
                 result_interface_seg_id = interface["segmentation_id"]
-                result_interface_seg_id = map(int, result_interface_seg_id)
+                result_interface_seg_id = list(map(int,
+                                                   result_interface_seg_id))
         self.assertEqual([seg_id], result_interface_seg_id,)
         del_result = self._delete_l2gateway(result['id'])
         self.assertIsNone(del_result)
