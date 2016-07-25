@@ -67,7 +67,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                 query = context.session.query(models.L2GatewayInterface)
                 int_db = query.filter_by(id=int_model.id).first()
                 seg_id = int_db[constants.SEG_ID]
-                if seg_id > 0:
+                if seg_id >= 0:
                     return True
         return False
 
@@ -91,8 +91,6 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         if gw_conn is None:
             raise l2gw_exc.L2GatewayConnectionNotFound(id="")
         segmentation_id = gw_conn['segmentation_id']
-        if segmentation_id == 0:
-            segmentation_id = ""
         res = {'id': gw_conn['id'],
                'network_id': gw_conn['network_id'],
                'l2_gateway_id': gw_conn['l2_gateway_id'],
@@ -107,8 +105,6 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
             interface_list = []
             for interfaces_db in d.interfaces:
                 seg_id = interfaces_db[constants.SEG_ID]
-                if seg_id == 0:
-                    seg_id = ""
                 interface_list.append({'name':
                                        interfaces_db['interface_name'],
                                        constants.SEG_ID:
@@ -177,7 +173,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                             interface_db = self._get_int_model(uuid,
                                                                int_name,
                                                                dev_db.id,
-                                                               0)
+                                                               None)
                             context.session.add(interface_db)
                         context.session.query(models.L2GatewayDevice).all()
         return self._make_l2_gateway_dict(gw_db)
@@ -298,8 +294,10 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
             nw_map['tenant_id'] = tenant_id
             connection_id = uuidutils.generate_uuid()
             nw_map['id'] = connection_id
-            if not segmentation_id:
-                nw_map['segmentation_id'] = "0"
+            if segmentation_id == 0:
+                nw_map['segmentation_id'] = segmentation_id
+            elif not segmentation_id:
+                nw_map['segmentation_id'] = None
             gw_db.network_connections.append(
                 models.L2GatewayConnection(**nw_map))
             gw_db = models.L2GatewayConnection(id=connection_id,

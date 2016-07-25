@@ -93,7 +93,7 @@ class UcastMacsRemotes(model_base.BASEV2):
 class VlanBindings(model_base.BASEV2):
     __tablename__ = 'vlan_bindings'
     port_uuid = sa.Column(sa.String(36), nullable=False, primary_key=True)
-    vlan = sa.Column(sa.Integer, nullable=False, primary_key=True)
+    vlan = sa.Column(sa.Integer, nullable=True, primary_key=True)
     logical_switch_uuid = sa.Column(sa.String(36), nullable=False,
                                     primary_key=True)
     ovsdb_identifier = sa.Column(sa.String(64), nullable=False,
