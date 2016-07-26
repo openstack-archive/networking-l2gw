@@ -15,6 +15,7 @@
 
 from neutron.common import rpc as n_rpc
 
+from networking_l2gw._i18n import _
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 
