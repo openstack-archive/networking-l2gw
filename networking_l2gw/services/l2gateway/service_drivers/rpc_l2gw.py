@@ -346,7 +346,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         network_id = gw_connection.get(constants.NETWORK_ID)
         nw_map[constants.NETWORK_ID] = network_id
         nw_map['l2_gateway_id'] = l2_gw_id
-        if seg_id is not None:
+        if seg_id:
             nw_map[constants.SEG_ID] = gw_connection.get(constants.SEG_ID)
         if not self.service_plugin._get_network(context, network_id):
             raise exceptions.NetworkNotFound(net_id=network_id)
@@ -417,9 +417,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         vlan_bindings = db.get_all_vlan_bindings_by_physical_port(
             context, pp_dict)
         if method == "CREATE":
-            if seg_id == 0:
-                LOG.debug("gateway connection with segmentation id 0")
-            elif not seg_id:
+            if not seg_id:
                 vlan_id = interface.get('segmentation_id')
             else:
                 vlan_id = int(seg_id)
@@ -444,9 +442,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             physical_port['vlan_bindings'] = port_list
         else:
             vlan_id = gw_connection.get('segmentation_id')
-            if vlan_id == 0:
-                LOG.debug("gateway connection with segmentation id 0")
-            elif not vlan_id:
+            if not vlan_id:
                 vlan_id = interface.get('segmentation_id')
             vlan_dict = {'vlan': vlan_id,
                          'logical_switch_uuid': logical_switch_uuid}

@@ -62,15 +62,6 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                  "device_name": device_name}]}}
         return data
 
-    def _get_l2_gateway_data_with_seg_id(self, name, device_name, seg_id):
-        """Get l2 gateway data helper method."""
-        data = {"l2_gateway": {"name": name,
-                               "devices":
-                               [{"interfaces": [{"name": "port1",
-                                                 "segmentation_id": [seg_id]}],
-                                 "device_name": device_name}]}}
-        return data
-
     def _get_l2_gateway_data_with_multiple_segid(self, name, device_name):
         """Get l2 gateway data helper method for multiple seg id."""
         data = {"l2_gateway": {"name": name,
@@ -149,46 +140,6 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         data = self._get_l2_gateway_data(name, device_name)
         result = self._create_l2gateway(data)
         self.assertEqual(result['name'], name)
-
-    def test_l2_gateway_create_delete_with_seg_id_0(self):
-        name = "l2gw"
-        device_name = "device1"
-        seg_id = 0
-        data = self._get_l2_gateway_data_with_seg_id(name, device_name,
-                                                     seg_id)
-        result = self._create_l2gateway(data)
-        self.assertEqual(name, result['name'])
-        result_devices = result['devices']
-        for device in result_devices:
-            result_interfaces = device["interfaces"]
-            for interface in result_interfaces:
-                result_interface_seg_id = interface["segmentation_id"]
-                result_interface_seg_id = list(map(int,
-                                                   result_interface_seg_id))
-        self.assertEqual([seg_id], result_interface_seg_id,)
-        del_result = self._delete_l2gateway(result['id'])
-        self.assertIsNone(del_result)
-
-    def test_l2_gateway_connection_create_delete_with_seg_id_0(self):
-        name = "l2gw_con1"
-        device_name = "device_name1"
-        seg_id = 0
-        l2gw_data = self._get_l2_gateway_data_without_seg_id(name, device_name)
-        gw = self._create_l2gateway(l2gw_data)
-        net_data = self._get_nw_data()
-        net = self.plugin.create_network(self.ctx, net_data)
-        l2gw_id = gw['id']
-        data_con = {self.con_resource: {'l2_gateway_id': l2gw_id,
-                                        'network_id': net['id'],
-                                        'segmentation_id': seg_id}}
-        gw_con = self._create_l2gateway_connection(data_con)
-        exp_net_id = gw_con['network_id']
-        self.assertEqual(net['id'], exp_net_id)
-        list_con = self._list_l2gateway_connection()
-        self.assertIn('id', list_con[0])
-        self.assertEqual(seg_id, gw_con['segmentation_id'])
-        result = self._delete_l2gw_connection_by_l2gw_id(l2gw_id)
-        self.assertIsNone(result)
 
     def _get_l2_gateway(self, l2gw_id):
         with self.ctx.session.begin(subtransactions=True):
