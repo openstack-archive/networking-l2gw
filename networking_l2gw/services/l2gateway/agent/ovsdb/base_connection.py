@@ -107,10 +107,11 @@ class BaseConnection(object):
         priv_key_path = cfg.CONF.ovsdb.l2_gw_agent_priv_key_base_path
         cert_path = cfg.CONF.ovsdb.l2_gw_agent_cert_base_path
         ca_cert_path = cfg.CONF.ovsdb.l2_gw_agent_ca_cert_base_path
-        LOG.debug("ssl is enabled with priv_key_path %s, cert_path %s, "
-                  "ca_cert_path %s", priv_key_path, cert_path, ca_cert_path)
         use_ssl = priv_key_path and cert_path and ca_cert_path
         if use_ssl:
+            LOG.debug("ssl is enabled with priv_key_path %s, cert_path %s, "
+                      "ca_cert_path %s", priv_key_path,
+                      cert_path, ca_cert_path)
             if addr in self.ip_ovsdb_mapping.keys():
                 ovsdb_id = self.ip_ovsdb_mapping.get(addr)
                 priv_key_file = priv_key_path + "/" + ovsdb_id + ".key"
@@ -155,6 +156,8 @@ class BaseConnection(object):
                               "entry in ovsdb_hosts in l2gateway_agent.ini"),
                           addr)
                 return client_sock
+        else:
+            return client_sock
 
     def _rcv_socket(self):
         # Create a socket object.
