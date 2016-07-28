@@ -33,12 +33,12 @@ class TestTunnelCalls(base.BaseTestCase):
         self.context = mock.MagicMock()
 
     def test_trigger_tunnel_sync(self):
-        with mock.patch.object(rpc, 'RpcCallbacks'):
-            with mock.patch.object(type_tunnel.TunnelRpcCallbackMixin,
-                                   'tunnel_sync') as mock_tunnel_sync:
-                self.tunnel_call.trigger_tunnel_sync(self.context, 'fake_ip')
-                mock_tunnel_sync.assert_called_with(
-                    self.context, tunnel_ip='fake_ip', tunnel_type='vxlan')
+        with mock.patch.object(rpc, 'RpcCallbacks'), \
+                mock.patch.object(type_tunnel.TunnelRpcCallbackMixin,
+                                  'tunnel_sync') as mock_tunnel_sync:
+            self.tunnel_call.trigger_tunnel_sync(self.context, 'fake_ip')
+            mock_tunnel_sync.assert_called_with(
+                self.context, tunnel_ip='fake_ip', tunnel_type='vxlan')
 
     def test_trigger_l2pop_sync(self):
         fake_fdb_entry = "fake_fdb_entry"
