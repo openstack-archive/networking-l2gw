@@ -1,5 +1,3 @@
-# Copyright 2015 OpenStack Foundation
-#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -13,18 +11,21 @@
 #    under the License.
 #
 
-"""start networking-l2gw chain
+"""add indexes to tenant_id
 
-Revision ID: start_networking_l2gw
-Revises: None
-Create Date: 2015-02-04 11:06:18.196062
+Revision ID: 49ce408ac349
+Create Date: 2016-07-22 10:42:14.495451
 
 """
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
-revision = 'start_networking_l2gw'
-down_revision = None
+revision = '49ce408ac349'
+down_revision = '60019185aa99'
 
 
 def upgrade():
-    pass
+    for table in ['l2gateways', 'l2gatewayconnections']:
+        op.create_index(op.f('ix_%s_tenant_id' % table),
+                        table, ['tenant_id'], unique=False)

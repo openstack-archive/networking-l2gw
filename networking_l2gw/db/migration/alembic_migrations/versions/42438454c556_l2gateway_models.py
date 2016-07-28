@@ -94,11 +94,3 @@ def upgrade():
                               nullable=False),
                     sa.Column('operation', sa.String(8), nullable=False),
                     sa.Column('timestamp', sa.DateTime, nullable=False))
-
-
-def downgrade():
-    op.drop_table('l2gatewayconnections')
-    op.drop_table('l2gatewayinterfaces')
-    op.drop_table('l2gatewaydevices')
-    op.drop_table('l2gateways')
-    op.drop_table('pending_ucast_macs_remotes')
