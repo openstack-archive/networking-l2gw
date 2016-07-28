@@ -18,7 +18,7 @@ import contextlib
 from neutron.common import rpc as n_rpc
 from neutron import context as ctx
 from neutron.db import agents_db
-from neutron.tests import base
+from neutron.tests.unit.plugins.ml2 import test_plugin
 
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import l2gw_validators
@@ -31,7 +31,7 @@ from networking_l2gw.services.l2gateway.service_drivers import rpc_l2gw
 from oslo_utils import importutils
 
 
-class TestL2gwRpcDriver(base.BaseTestCase):
+class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
 
     def setUp(self):
         super(TestL2gwRpcDriver, self).setUp()

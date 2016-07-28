@@ -135,3 +135,11 @@ base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
                        L2GatewayDuplicateSegmentationID: web_exc.HTTPConflict,
                        L2AgentNotFoundByHost: web_exc.HTTPNotFound,
                        OVSDBError: web_exc.HTTPConflict})
+
+
+class L3DvrAgentNotFound(exceptions.NotFound):
+    message = _("L3 agent could not be found")
+
+
+class DvrAgentHostnameNotFound(exceptions.NeutronException):
+    message = _("Hostname '%(host)' has 127.0.0.1 address")
