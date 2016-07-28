@@ -120,27 +120,7 @@ class BaseConnection(object):
                 is_priv_key = os.path.isfile(priv_key_file)
                 is_cert_file = os.path.isfile(cert_file)
                 is_ca_cert_file = os.path.isfile(ca_cert_file)
-                if not is_priv_key:
-                    LOG.error(_LE("Could not find private key in"
-                                  " %(path)s dir, expecting in the "
-                                  "file name %(file)s "),
-                              {'path': priv_key_path,
-                               'file': ovsdb_id + ".key"})
-                    return client_sock
-                if not is_cert_file:
-                    LOG.error(_LE("Could not find cert in %(path)s dir, "
-                                  "expecting in the file name %(file)s"),
-                              {'path': cert_path,
-                               'file': ovsdb_id + ".cert"})
-                    return client_sock
-                if not is_ca_cert_file:
-                    LOG.error(_LE("Could not find cacert in %(path)s "
-                                  "dir, expecting in the file name "
-                                  "%(file)s"),
-                              {'path': ca_cert_path,
-                               'file': ovsdb_id + ".ca_cert"})
-                    return client_sock
-                if (is_priv_key and is_cert_file and is_ca_cert_file):
+                if is_priv_key and is_cert_file and is_ca_cert_file:
                     ssl_conn_stream = ssl.wrap_socket(
                         client_sock,
                         server_side=True,
@@ -149,15 +129,30 @@ class BaseConnection(object):
                         ssl_version=ssl.PROTOCOL_SSLv23,
                         ca_certs=ca_cert_file)
                     client_sock = ssl_conn_stream
-                    return client_sock
+                else:
+                    if not is_priv_key:
+                        LOG.error(_LE("Could not find private key in"
+                                      " %(path)s dir, expecting in the "
+                                      "file name %(file)s "),
+                                  {'path': priv_key_path,
+                                   'file': ovsdb_id + ".key"})
+                    if not is_cert_file:
+                        LOG.error(_LE("Could not find cert in %(path)s dir, "
+                                      "expecting in the file name %(file)s"),
+                                  {'path': cert_path,
+                                   'file': ovsdb_id + ".cert"})
+                    if not is_ca_cert_file:
+                        LOG.error(_LE("Could not find cacert in %(path)s "
+                                      "dir, expecting in the file name "
+                                      "%(file)s"),
+                                  {'path': ca_cert_path,
+                                   'file': ovsdb_id + ".ca_cert"})
             else:
                 LOG.error(_LE("you have enabled SSL for ovsdb %s, "
                               "expecting the ovsdb identifier and ovdb IP "
                               "entry in ovsdb_hosts in l2gateway_agent.ini"),
                           addr)
-                return client_sock
-        else:
-            return client_sock
+        return client_sock
 
     def _rcv_socket(self):
         # Create a socket object.
