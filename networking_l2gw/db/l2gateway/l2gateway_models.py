@@ -13,14 +13,39 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import sqlalchemy as sa
+from sqlalchemy.ext import declarative
+from sqlalchemy import orm
+
+from neutron.api.v2 import attributes as attr
 from neutron.db import model_base
 from neutron.db import models_v2
 
-import sqlalchemy as sa
-from sqlalchemy import orm
+
+class HasProject(object):
+    # NOTE(dasm): Temporary solution!
+    # Remove when I87a8ef342ccea004731ba0192b23a8e79bc382dc is merged.
+
+    project_id = sa.Column(sa.String(attr.TENANT_ID_MAX_LEN), index=True)
+
+    def __init__(self, *args, **kwargs):
+        # NOTE(dasm): debtcollector requires init in class
+        super(HasProject, self).__init__(*args, **kwargs)
+
+    def get_tenant_id(self):
+        return self.project_id
+
+    def set_tenant_id(self, value):
+        self.project_id = value
+
+    @declarative.declared_attr
+    def tenant_id(cls):
+        return orm.synonym(
+            'project_id',
+            descriptor=property(cls.get_tenant_id, cls.set_tenant_id))
 
 
-class L2GatewayConnection(model_base.BASEV2, models_v2.HasTenant,
+class L2GatewayConnection(model_base.BASEV2, HasProject,
                           models_v2.HasId):
     """Define an l2 gateway connection between a l2 gateway and a network."""
     l2_gateway_id = sa.Column(sa.String(36),
@@ -56,8 +81,7 @@ class L2GatewayDevice(model_base.BASEV2, models_v2.HasId):
                               nullable=False)
 
 
-class L2Gateway(model_base.BASEV2, models_v2.HasId,
-                models_v2.HasTenant):
+class L2Gateway(model_base.BASEV2, models_v2.HasId, HasProject):
     """Define an l2 gateway."""
     name = sa.Column(sa.String(255))
     devices = orm.relationship(L2GatewayDevice,
