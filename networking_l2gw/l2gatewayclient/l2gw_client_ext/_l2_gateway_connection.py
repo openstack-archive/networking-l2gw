@@ -15,8 +15,9 @@
 #
 
 from neutronclient.common import extension
-from neutronclient.i18n import _
 from neutronclient.neutron import v2_0 as l2gatewayV20
+
+from networking_l2gw._i18n import _
 
 
 class L2GatewayConnection(extension.NeutronClientExtension):
