@@ -16,8 +16,9 @@
 
 from neutronclient.common import extension
 from neutronclient.common import utils
-from neutronclient.i18n import _
 from oslo_serialization import jsonutils
+
+from networking_l2gw._i18n import _
 
 INTERFACE_DELIMITER = ";"
 SEGMENTATION_ID_DELIMITER = "#"
