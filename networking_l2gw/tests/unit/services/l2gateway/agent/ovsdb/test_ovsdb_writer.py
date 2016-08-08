@@ -455,7 +455,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 l2gw_obj = ovsdb_writer.OVSDBWriter(
                     cfg.CONF.ovsdb, ovsdb_conf)
                 result = l2gw_obj._recv_data(mock.ANY)
-                self.assertEqual(None, result)
+                self.assertIsNone(result)
 
     def test_recv_data_with_socket_error(self):
         """Test case to test _recv_data with socket error."""
@@ -470,7 +470,7 @@ class TestOVSDBWriter(base.BaseTestCase):
                 l2gw_obj = ovsdb_writer.OVSDBWriter(
                     cfg.CONF.ovsdb, ovsdb_conf)
                 result = l2gw_obj._recv_data(mock.ANY)
-                self.assertEqual(None, result)
+                self.assertIsNone(result)
                 fake_warn.assert_called_with(
                     _LW("Did not receive any reply from the OVSDB "
                         "server"))
