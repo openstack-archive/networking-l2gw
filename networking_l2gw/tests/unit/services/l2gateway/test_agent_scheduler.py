@@ -144,22 +144,22 @@ class TestAgentScheduler(base.BaseTestCase):
             '1001', srv_const.AGENT_TYPE_L2GATEWAY, config))
 
         with mock.patch.object(self.agentsch,
-                               '_select_agent_type') as select_agent:
-            with mock.patch.object(
+                               '_select_agent_type') as select_agent, \
+                mock.patch.object(
                     self.plugin, 'get_agents',
-                    return_value=fake_all_agent_list) as get_agent_list:
-                with mock.patch.object(self.agentsch, 'is_agent_down',
-                                       return_value=False) as is_agt:
-                    self.agentsch.monitor_agent_state()
-                    self.assertTrue(get_agent_list.called)
-                    self.assertTrue(select_agent.called)
-                    self.assertTrue(is_agt.called)
+                    return_value=fake_all_agent_list) as get_agent_list, \
+                mock.patch.object(self.agentsch, 'is_agent_down',
+                                  return_value=False) as is_agt:
+            self.agentsch.monitor_agent_state()
+            self.assertTrue(get_agent_list.called)
+            self.assertTrue(select_agent.called)
+            self.assertTrue(is_agt.called)
 
     def test_monitor_agent_state_exception_get_agents(self):
         with mock.patch.object(
                 self.plugin, 'get_agents',
-                side_effect=Exception) as get_agent_list:
-            with mock.patch.object(self.LOG, 'exception') as exception_log:
-                self.agentsch.monitor_agent_state()
-                self.assertTrue(get_agent_list.called)
-                self.assertTrue(exception_log.called)
+                side_effect=Exception) as get_agent_list, \
+                mock.patch.object(self.LOG, 'exception') as exception_log:
+            self.agentsch.monitor_agent_state()
+            self.assertTrue(get_agent_list.called)
+            self.assertTrue(exception_log.called)
