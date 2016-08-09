@@ -18,8 +18,6 @@ from neutron.api import extensions
 from neutron.api.v2 import attributes
 from neutron.api.v2 import resource_helper
 
-from neutron_lib.api import validators
-
 import networking_l2gw.extensions
 from networking_l2gw.services.l2gateway.common import constants
 from networking_l2gw.services.l2gateway.common import l2gw_validators
@@ -44,7 +42,7 @@ RESOURCE_ATTRIBUTE_MAP = {
 }
 
 validator_func = l2gw_validators.validate_gwdevice_list
-validators.add_validator('l2gwdevice_list', validator_func)
+attributes.validators['type:l2gwdevice_list'] = validator_func
 
 
 class L2gateway(extensions.ExtensionDescriptor):
