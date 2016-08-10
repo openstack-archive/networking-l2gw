@@ -73,7 +73,7 @@ L2GW_OPTS = [
     cfg.StrOpt('l2gw_callback_class',
                default='networking_l2gw.services.l2gateway.ovsdb.'
                        'data.L2GatewayOVSDBCallbacks',
-               help=_('L2 gateway plugin callback class where the'
+               help=_('L2 gateway plugin callback class where the '
                       'RPCs from the agent are going to get invoked'))
 ]
 
