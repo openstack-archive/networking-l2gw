@@ -16,6 +16,7 @@
 import random
 
 import eventlet
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
@@ -43,6 +44,7 @@ class OVSDBMonitor(base_connection.BaseConnection):
         self._setup_dispatch_table()
         self.read_on = True
         self.handlers = {"echo": self._default_echo_handler}
+        self.sock_timeout = cfg.CONF.ovsdb.socket_timeout
         if self.enable_manager:
             self.check_monitor_table_thread = False
         if not self.enable_manager:
@@ -207,6 +209,16 @@ class OVSDBMonitor(base_connection.BaseConnection):
         prev_char = None
         while self.read_on:
             try:
+                # self.socket.recv() is a blocked call
+                # (if timeout value is not passed) due to which we cannot
+                # determine if the remote OVSDB server has died. The remote
+                # OVSDB server sends echo requests every 4 seconds.
+                # If there is no echo request on the socket for socket_timeout
+                # seconds(by default its 30 seconds),
+                # the agent can safely assume that the connection with the
+                # remote OVSDB server is lost. Better to retry by reopening
+                # the socket.
+                self.socket.settimeout(self.sock_timeout)
                 response = self.socket.recv(n_const.BUFFER_SIZE)
                 eventlet.greenthread.sleep(0)
                 if response:
