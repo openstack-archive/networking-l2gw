@@ -33,6 +33,13 @@ OVSDB_OPTS = [
     cfg.IntOpt('periodic_interval',
                default=20,
                help=_('Seconds between periodic task runs')),
+    cfg.IntOpt('socket_timeout',
+               default=30,
+               help=_('Socket timeout in seconds. '
+                      'If there is no echo request on the socket for '
+                      'socket_timeout seconds, the agent can safely '
+                      'assume that the connection with the remote '
+                      'OVSDB server is lost')),
     cfg.BoolOpt('enable_manager',
                 default=False,
                 help=_('Set to True if ovsdb Manager manages the client')),
