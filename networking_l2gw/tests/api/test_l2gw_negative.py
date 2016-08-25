@@ -41,7 +41,7 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
         if (len(CONF.L2GW.l2gw_switch) < 0):
             msg = ('At least one switch detail must be defined.')
             raise cls.skipException(msg)
-        if not test.is_extension_enabled('l2gateway', 'network'):
+        if not test.is_extension_enabled('l2-gateway', 'network'):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 
@@ -105,7 +105,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
     @classmethod
     def resource_setup(cls):
         super(L2GatewaysNegativeAdminTestJSON, cls).resource_setup()
-        if not test.is_extension_enabled('l2gateway', 'network'):
+        if not test.is_extension_enabled('l2-gateway', 'network'):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 

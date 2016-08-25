@@ -54,7 +54,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
         if (len(CONF.L2GW.l2gw_switch) < 0):
             msg = ('At least one switch detail must be defined.')
             raise cls.skipException(msg)
-        if not test.is_extension_enabled('l2gateway', 'network'):
+        if not test.is_extension_enabled('l2-gateway', 'network'):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 
