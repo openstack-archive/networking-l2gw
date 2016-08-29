@@ -19,14 +19,11 @@ from neutron.common import rpc as n_rpc
 import sys
 
 from oslo_config import cfg
-from oslo_log import log as logging
 from oslo_service import service
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import manager
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import topics
-
-LOG = logging.getLogger(__name__)
 
 
 class L2gatewayAgentService(n_rpc.Service):
