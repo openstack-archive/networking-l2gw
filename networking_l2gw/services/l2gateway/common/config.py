@@ -18,6 +18,8 @@ from neutron.common import config
 from oslo_config import cfg
 from oslo_log import log as logging
 
+from networking_l2gw._i18n import _
+
 LOG = logging.getLogger(__name__)
 
 OVSDB_OPTS = [

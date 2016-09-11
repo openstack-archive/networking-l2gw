@@ -18,6 +18,8 @@ from neutron.api.v2 import base
 from neutron_lib import exceptions
 from webob import exc as web_exc
 
+from networking_l2gw._i18n import _
+
 
 class L2GatewayInUse(exceptions.InUse):
     message = _("L2 Gateway '%(gateway_id)s' still has active mappings "
