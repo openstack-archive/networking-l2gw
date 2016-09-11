@@ -13,10 +13,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from neutron_lib.db import model_base
 import sqlalchemy as sa
 from sqlalchemy import orm
-
-from neutron.db import model_base
 
 
 class L2GatewayConnection(model_base.BASEV2, model_base.HasProject,
