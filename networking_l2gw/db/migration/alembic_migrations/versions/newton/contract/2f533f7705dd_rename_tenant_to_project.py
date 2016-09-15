@@ -29,8 +29,13 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.engine import reflection
 
+from neutron.db import migration
+
 
 _INSPECTOR = None
+
+# milestone identifier, used by neutron-db-manage
+neutron_milestone = [migration.NEWTON]
 
 
 def get_inspector():

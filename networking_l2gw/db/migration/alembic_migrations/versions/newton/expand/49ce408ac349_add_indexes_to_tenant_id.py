@@ -20,9 +20,15 @@ Create Date: 2016-07-22 10:42:14.495451
 
 from alembic import op
 
+from neutron.db import migration
+
+
 # revision identifiers, used by Alembic.
 revision = '49ce408ac349'
 down_revision = '60019185aa99'
+
+# milestone identifier, used by neutron-db-manage
+neutron_milestone = [migration.NEWTON]
 
 
 def upgrade():
