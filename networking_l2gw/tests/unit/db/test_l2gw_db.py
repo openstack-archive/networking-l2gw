@@ -27,12 +27,10 @@ from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway import exceptions
 
 from neutron_lib import exceptions as exc
-from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import uuidutils
 
 DB_PLUGIN_KLASS = 'neutron.db.db_base_plugin_v2.NeutronDbPluginV2'
-LOG = logging.getLogger(__name__)
 _uuid = uuidutils.generate_uuid
 
 
