@@ -24,10 +24,10 @@ from neutron.tests.tempest import exceptions
 from neutron.tests.tempest import manager
 
 from oslo_log import log
-from tempest_lib.common import rest_client
-from tempest_lib.common.utils import data_utils
-from tempest_lib.common.utils import misc as misc_utils
-from tempest_lib import exceptions as lib_exc
+from tempest.lib.common import rest_client
+from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import misc as misc_utils
+from tempest.lib import exceptions as lib_exc
 
 import json
 import time
