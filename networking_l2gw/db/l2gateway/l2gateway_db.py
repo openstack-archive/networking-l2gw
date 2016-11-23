@@ -16,7 +16,6 @@
 from neutron.callbacks import events
 from neutron.callbacks import registry
 from neutron.callbacks import resources
-from neutron import manager
 
 from networking_l2gw.db.l2gateway import db_query
 from networking_l2gw.db.l2gateway import l2gateway_models as models
@@ -28,6 +27,7 @@ from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 
 from neutron_lib import exceptions
+from neutron_lib.plugins import directory
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 from sqlalchemy.orm import exc as sa_orm_exc
@@ -546,8 +546,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
 
 
 def l2gw_callback(resource, event, trigger, **kwargs):
-    l2gwservice = manager.NeutronManager.get_service_plugins().get(
-        constants.L2GW)
+    l2gwservice = directory.get_plugin(constants.L2GW)
     context = kwargs.get('context')
     port_dict = kwargs.get('port')
     if l2gwservice:

@@ -13,10 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from neutron_lib.plugins import directory
 from oslo_utils import excutils
 
 from neutron.db import servicetype_db as st_db
-from neutron import manager
 from neutron.services import provider_configuration as pconf
 from neutron.services import service_base
 
@@ -73,7 +73,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
 
     @property
     def _core_plugin(self):
-        return manager.NeutronManager.get_plugin()
+        return directory.get_plugin()
 
     def get_plugin_type(self):
         """Get type of the plugin."""

@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from neutron.extensions import portbindings
-from neutron import manager
 
 from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway import l2gateway_db
@@ -27,6 +26,7 @@ from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
 from neutron_lib import constants
+from neutron_lib.plugins import directory
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
@@ -72,7 +72,7 @@ class OVSDBData(object):
         self.agent_rpc = agent_api.L2gatewayAgentApi(
             topics.L2GATEWAY_AGENT, cfg.CONF.host)
         self.l2gw_mixin = l2gateway_db.L2GatewayMixin()
-        self.core_plugin = manager.NeutronManager.get_plugin()
+        self.core_plugin = directory.get_plugin()
         self.tunnel_call = tunnel_calls.Tunnel_Calls()
 
     def _cleanup_all_ovsdb_tables(self, context, ovsdb_identifier):

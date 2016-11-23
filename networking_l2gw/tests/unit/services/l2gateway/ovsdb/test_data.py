@@ -20,6 +20,8 @@ from neutron import manager
 from neutron.plugins.ml2 import managers
 from neutron.tests import base
 
+from neutron_lib.plugins import directory
+
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -70,7 +72,7 @@ class TestOVSDBData(base.BaseTestCase):
         super(TestOVSDBData, self).setUp()
         self.context = context.get_admin_context()
         self.ovsdb_identifier = 'fake_ovsdb_id'
-        mock.patch.object(manager.NeutronManager, 'get_plugin').start()
+        mock.patch.object(directory, 'get_plugin').start()
         mock.patch.object(managers, 'TypeManager').start()
         self.ovsdb_data = data.OVSDBData(self.ovsdb_identifier)
 

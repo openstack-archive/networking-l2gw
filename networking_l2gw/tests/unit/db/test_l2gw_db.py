@@ -18,7 +18,6 @@ import mock
 from neutron.callbacks import events
 from neutron.callbacks import resources
 from neutron import context
-from neutron import manager
 from neutron.tests.unit import testlib_api
 
 from networking_l2gw.db.l2gateway import l2gateway_db
@@ -27,6 +26,7 @@ from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway import exceptions
 
 from neutron_lib import exceptions as exc
+from neutron_lib.plugins import directory
 from oslo_utils import importutils
 from oslo_utils import uuidutils
 
@@ -353,36 +353,30 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                           data_l2gw_update)
 
     def test_l2gw_callback_update_port(self):
-        service_plugins = {constants.L2GW: mock.Mock()}
+        service_plugin = mock.Mock()
+        directory.add_plugin(constants.L2GW, service_plugin)
         fake_context = mock.Mock()
         fake_port = mock.Mock()
         fake_kwargs = {'context': fake_context,
                        'port': fake_port}
-        with mock.patch.object(manager.NeutronManager,
-                               'get_service_plugins',
-                               return_value=service_plugins):
-            l2gateway_db.l2gw_callback(resources.PORT,
-                                       events.AFTER_UPDATE,
-                                       mock.Mock(),
-                                       **fake_kwargs)
-            self.assertTrue(service_plugins[constants.L2GW].
-                            add_port_mac.called)
+        l2gateway_db.l2gw_callback(resources.PORT,
+                                   events.AFTER_UPDATE,
+                                   mock.Mock(),
+                                   **fake_kwargs)
+        self.assertTrue(service_plugin.add_port_mac.called)
 
     def test_l2gw_callback_delete_port(self):
-        service_plugins = {constants.L2GW: mock.Mock()}
+        service_plugin = mock.Mock()
+        directory.add_plugin(constants.L2GW, service_plugin)
         fake_context = mock.Mock()
         fake_port = mock.Mock()
         fake_kwargs = {'context': fake_context,
                        'port': fake_port}
-        with mock.patch.object(manager.NeutronManager,
-                               'get_service_plugins',
-                               return_value=service_plugins):
-            l2gateway_db.l2gw_callback(resources.PORT,
-                                       events.AFTER_DELETE,
-                                       mock.Mock(),
-                                       **fake_kwargs)
-            self.assertTrue(service_plugins[constants.L2GW].
-                            delete_port_mac.called)
+        l2gateway_db.l2gw_callback(resources.PORT,
+                                   events.AFTER_DELETE,
+                                   mock.Mock(),
+                                   **fake_kwargs)
+        self.assertTrue(service_plugin.delete_port_mac.called)
 
     def test_l2_gateway_create_output_aligned_with_input(self):
         """Test l2 gateway create output that is aligned with input dict."""

@@ -15,13 +15,13 @@
 
 import random
 
+from neutron_lib.plugins import directory
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall
 
 from neutron import context as neutron_context
 from neutron.db import agents_db
-from neutron import manager
 
 from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.common import config
@@ -49,15 +49,13 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
     @property
     def l2gwplugin(self):
         if self._l2gwplugin is None:
-            self._l2gwplugin = (
-                manager.NeutronManager.
-                get_service_plugins().get(srv_const.L2GW))
+            self._l2gwplugin = directory.get_plugin(srv_const.L2GW)
         return self._l2gwplugin
 
     @property
     def plugin(self):
         if self._plugin is None:
-            self._plugin = manager.NeutronManager.get_plugin()
+            self._plugin = directory.get_plugin()
         return self._plugin
 
     def initialize_thread(self):

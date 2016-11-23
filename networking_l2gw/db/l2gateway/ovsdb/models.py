@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from neutron_lib.db import model_base
 import sqlalchemy as sa
 
-from neutron.db import model_base
 from neutron.db import models_v2
 
 
