@@ -15,16 +15,17 @@
 
 import abc
 
+from neutron_lib.api import extensions as api_extensions
 from neutron_lib.api import validators
 
 from neutron.api import extensions
 from neutron.api.v2 import resource_helper
 
-import networking_l2gw.extensions
+from networking_l2gw import extensions as l2gw_extensions
 from networking_l2gw.services.l2gateway.common import constants
 from networking_l2gw.services.l2gateway.common import l2gw_validators
 
-extensions.append_api_extensions_path(networking_l2gw.extensions.__path__)
+extensions.append_api_extensions_path(l2gw_extensions.__path__)
 
 RESOURCE_ATTRIBUTE_MAP = {
     constants.L2_GATEWAYS: {
@@ -47,7 +48,7 @@ validators.add_validator('l2gwdevice_list',
                          l2gw_validators.validate_gwdevice_list)
 
 
-class L2gateway(extensions.ExtensionDescriptor):
+class L2gateway(api_extensions.ExtensionDescriptor):
 
     """API extension for Layer-2 Gateway support."""
 
