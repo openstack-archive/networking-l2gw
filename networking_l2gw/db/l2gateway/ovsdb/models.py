@@ -16,8 +16,6 @@
 from neutron_lib.db import model_base
 import sqlalchemy as sa
 
-from neutron.db import models_v2
-
 
 class PhysicalLocators(model_base.BASEV2):
     __tablename__ = 'physical_locators'
@@ -88,7 +86,7 @@ class VlanBindings(model_base.BASEV2):
                                  primary_key=True)
 
 
-class PendingUcastMacsRemote(model_base.BASEV2, models_v2.HasId):
+class PendingUcastMacsRemote(model_base.BASEV2, model_base.HasId):
     __tablename__ = 'pending_ucast_macs_remotes'
     uuid = sa.Column(sa.String(36), nullable=True)
     mac = sa.Column(sa.String(32), nullable=False)
