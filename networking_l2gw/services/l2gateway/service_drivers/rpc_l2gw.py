@@ -246,19 +246,16 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                                        'logical_switch_uuid':
                                        logical_switch_uuid,
                                        'ovsdb_identifier': ovsdb_identifier}
-                        rec_dict = {'logical_switch_id': logical_switch_uuid,
-                                    'ovsdb_identifier': ovsdb_identifier}
-                        if len(db.get_all_vlan_bindings_by_logical_switch(
-                               context, rec_dict)) > 1:
-                            if from_l2gw_plugin:
-                                ls = logical_switch.get('name')
-                                l2gateway_connections = (
-                                    self.service_plugin.
-                                    get_l2_gateway_connections(
-                                        context,
-                                        filters={'network_id': [ls]}))
-                                if len(l2gateway_connections) > 1:
-                                    continue
+
+                        if from_l2gw_plugin:
+                            ls = logical_switch.get('name')
+                            l2gateway_connections = (
+                                self.service_plugin.
+                                get_l2_gateway_connections(
+                                    context,
+                                    filters={'network_id': [ls]}))
+                            if len(l2gateway_connections) > 1:
+                                continue
                         ucast_mac_remote = (
                             db.get_ucast_mac_remote_by_mac_and_ls(
                                 context, record_dict))
