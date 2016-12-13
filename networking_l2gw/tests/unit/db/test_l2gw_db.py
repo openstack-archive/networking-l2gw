@@ -101,7 +101,7 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         return [data]
 
     def _get_nw_data(self):
-        return {'network': {'id': 'fake-id',
+        return {'network': {'id': _uuid(),
                             'name': 'net1',
                             'admin_state_up': True,
                             'tenant_id': 'test-tenant',
