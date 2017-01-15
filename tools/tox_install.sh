@@ -33,8 +33,12 @@ elif [ $neutron_installed -eq 0 ]; then
     echo "ALREADY INSTALLED at $location"
 elif [ -x "$ZUUL_CLONER" ]; then
     echo "USING ZUUL CLONER to obtain Neutron code"
-    cwd=$(/bin/pwd)
-    cd /tmp
+    # Make this relative to current working directory so that
+    # git clean can remove it. We cannot remove the directory directly
+    # since it is referenced after $install_cmd -e.
+    mkdir -p .tmp
+    NEUTRON_DIR=$(/bin/mktemp -d -p $(pwd)/.tmp)
+    pushd $NEUTRON_DIR
     $ZUUL_CLONER --cache-dir \
         /opt/git \
         --branch $BRANCH_NAME \
@@ -42,7 +46,7 @@ elif [ -x "$ZUUL_CLONER" ]; then
         openstack/neutron
     cd openstack/neutron
     $install_cmd -e .
-    cd "$cwd"
+    popd
 else
     echo "LOCAL - Obtaining Neutron code from git.openstack.org"
     $install_cmd -U -egit+https://git.openstack.org/openstack/neutron@$BRANCH_NAME#egg=neutron
