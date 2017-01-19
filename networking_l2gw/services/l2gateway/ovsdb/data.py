@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from neutron.extensions import portbindings
-
 from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
@@ -25,6 +23,7 @@ from networking_l2gw.services.l2gateway.common import tunnel_calls
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
+from neutron_lib.api.definitions import portbindings
 from neutron_lib import constants
 from neutron_lib.plugins import directory
 from oslo_config import cfg

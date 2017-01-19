@@ -17,7 +17,6 @@ import abc
 from neutron.common import constants as nc_const
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
-from neutron.extensions import portbindings
 
 from networking_l2gw._i18n import _, _LE
 from networking_l2gw.db.l2gateway import l2gateway_db as l2_gw_db
@@ -33,6 +32,7 @@ from networking_l2gw.services.l2gateway.service_drivers import agent_api
 
 from neutron.plugins.ml2 import managers
 
+from neutron_lib.api.definitions import portbindings
 from neutron_lib import constants as n_const
 from neutron_lib import exceptions
 from oslo_config import cfg
