@@ -18,6 +18,7 @@ from tempest import test
 from neutron.tests.tempest.api import base
 
 from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
 
 from networking_l2gw.tests.api import base_l2gw
 from networking_l2gw.tests.tempest import config
@@ -58,7 +59,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 
-    @test.idempotent_id('3ca07946-a3c9-49ac-b058-8be54abecf1f')
+    @decorators.idempotent_id('3ca07946-a3c9-49ac-b058-8be54abecf1f')
     def test_create_show_list_update_delete_l2gateway(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
@@ -86,7 +87,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
         show_body = self.admin_client.show_l2_gateway(l2_gateway['id'])
         self.assertEqual(show_body['l2_gateway']['name'], updated_name)
 
-    @test.idempotent_id('3ad5e945-2b42-4ea8-9c03-0bf41d4167f2')
+    @decorators.idempotent_id('3ad5e945-2b42-4ea8-9c03-0bf41d4167f2')
     def test_create_show_list_delete_l2gateway_connection(self):
         # Create a network
         name = data_utils.rand_name('network')

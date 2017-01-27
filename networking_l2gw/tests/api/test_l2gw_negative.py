@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.lib import decorators
 from tempest import test
 
 from neutron.tests.tempest.api import base
@@ -46,7 +47,7 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
             raise cls.skipException(msg)
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('b301d83d-3af3-4712-86dc-a6824e9b14e5')
+    @decorators.idempotent_id('b301d83d-3af3-4712-86dc-a6824e9b14e5')
     def test_create_l2gateway_non_admin_user(self):
         gw_name = data_utils.rand_name('l2gw')
         devices = base_l2gw.get_l2gw_body(CONF.L2GW.l2gw_switch)["devices"]
@@ -55,13 +56,13 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           name=gw_name, devices=devices)
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('68451dfe-b3b5-4eb1-b03f-9935d4a2dbe7')
+    @decorators.idempotent_id('68451dfe-b3b5-4eb1-b03f-9935d4a2dbe7')
     def test_list_l2gateway_non_admin_user(self):
         self.assertRaises(lib_exc.Forbidden,
                           self.client.list_l2_gateways)
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('f8589452-7aff-4992-b865-5bb5c41fa755')
+    @decorators.idempotent_id('f8589452-7aff-4992-b865-5bb5c41fa755')
     def test_update_l2gateway_non_admin_user(self):
         non_exist_id = data_utils.rand_name('l2gw')
         self.assertRaises(lib_exc.Forbidden,
@@ -69,7 +70,7 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           non_exist_id, name="updated_name")
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('d9f57800-6cae-4770-a2d7-ab60cf7417bf')
+    @decorators.idempotent_id('d9f57800-6cae-4770-a2d7-ab60cf7417bf')
     def test_delete_l2gateway_non_admin_user(self):
         non_exist_id = data_utils.rand_name('l2gw')
         self.assertRaises(lib_exc.Forbidden,
@@ -77,7 +78,7 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           non_exist_id)
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('c6b61a8d-8c82-497d-9fad-9929c9acf035')
+    @decorators.idempotent_id('c6b61a8d-8c82-497d-9fad-9929c9acf035')
     def test_create_l2gateway_connection_non_admin_user(self):
         non_exist_id = data_utils.rand_name('network')
         self.assertRaises(lib_exc.Forbidden,
@@ -85,13 +86,13 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           network_id=non_exist_id, l2_gateway_id=non_exist_id)
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('a56a0180-7d98-414c-9a44-fe47a30fe436')
+    @decorators.idempotent_id('a56a0180-7d98-414c-9a44-fe47a30fe436')
     def test_list_l2gateway_connection_non_admin_user(self):
         self.assertRaises(lib_exc.Forbidden,
                           self.client.list_l2_gateway_connections)
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('ce42c68d-5c41-4988-8912-233e3fe5c8fd')
+    @decorators.idempotent_id('ce42c68d-5c41-4988-8912-233e3fe5c8fd')
     def test_delete_l2gateway_connection_non_admin_user(self):
         non_exist_id = data_utils.rand_name('l2gwconnection')
         self.assertRaises(lib_exc.Forbidden,
@@ -110,7 +111,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
             raise cls.skipException(msg)
 
     @test.attr(type=['negative', 'smoke'])
-    @test.idempotent_id('42067b44-3aff-4428-8305-d0496bd38179')
+    @decorators.idempotent_id('42067b44-3aff-4428-8305-d0496bd38179')
     def test_delete_l2gw_associated_l2gw_connection(self):
         # Create a network
         name = data_utils.rand_name('network')
