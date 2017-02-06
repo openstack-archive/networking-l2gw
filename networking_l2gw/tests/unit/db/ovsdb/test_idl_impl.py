@@ -79,4 +79,4 @@ class SimpleIdlTests(base.BaseTestCase):
             sw_list = self.db.get_physical_sw_list().execute()
 
             assert (sw_list is not None) & (sw_list[0] == 'ps1')
-            print ('physical switch: %s' % sw_list)
+            print('physical switch: %s' % sw_list)
