@@ -26,7 +26,7 @@ from neutron.tests.tempest import manager
 from oslo_log import log
 from tempest.lib.common import rest_client
 from tempest.lib.common.utils import data_utils
-from tempest.lib.common.utils import misc as misc_utils
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
 import json
@@ -144,7 +144,7 @@ class TestL2GatewayBasic(base.BaseAdminNetworkTest):
                             'timeout': timeout})
                 message += ' Current status: %s.' % server_status
                 message += ' Current task state: %s.' % task_state
-                caller = misc_utils.find_test_caller()
+                caller = test_utils.find_test_caller()
                 if caller:
                     message = '(%s) %s' % (caller, message)
                 raise exceptions.TimeoutException(message)
