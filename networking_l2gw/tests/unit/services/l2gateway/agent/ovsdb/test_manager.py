@@ -22,8 +22,8 @@ import mock
 from neutron.agent.common import config as agent_config
 from neutron.agent import rpc as agent_rpc
 from neutron.common import rpc
-from neutron import context
 from neutron.tests import base
+from neutron_lib import context
 
 from oslo_config import cfg
 from oslo_service import loopingcall

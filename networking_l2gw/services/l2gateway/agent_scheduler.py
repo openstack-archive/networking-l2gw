@@ -20,8 +20,8 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall
 
-from neutron import context as neutron_context
 from neutron.db import agents_db
+from neutron_lib import context as neutron_context
 
 from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.common import config

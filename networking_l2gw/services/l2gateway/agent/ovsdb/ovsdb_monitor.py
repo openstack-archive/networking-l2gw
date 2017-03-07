@@ -30,7 +30,7 @@ from networking_l2gw.services.l2gateway import exceptions
 LOG = logging.getLogger(__name__)
 
 
-class Activity:
+class Activity(object):
     Initial, Update = range(2)
 
 

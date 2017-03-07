@@ -18,7 +18,7 @@ import os.path
 import eventlet
 
 from contextlib import contextmanager
-from neutron import context as ctx
+from neutron_lib import context as ctx
 
 from oslo_config import cfg
 from oslo_log import log as logging

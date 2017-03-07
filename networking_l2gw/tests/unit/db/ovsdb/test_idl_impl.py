@@ -24,7 +24,7 @@ from neutron.tests import base
 from networking_l2gw.services.l2gateway.agent.ovsdb import impl_idl
 
 
-class Msg:
+class Msg(object):
     id = 0
     type = 1
     method = 'update'

@@ -15,9 +15,9 @@
 import mock
 
 from neutron.common import rpc as n_rpc
-from neutron import context as ctx
 from neutron.db import agents_db
 from neutron.tests.unit.plugins.ml2 import test_plugin
+from neutron_lib import context as ctx
 
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import l2gw_validators

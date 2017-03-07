@@ -14,7 +14,7 @@
 #    under the License.
 
 from neutron.agent import rpc as agent_rpc
-from neutron import context
+from neutron_lib import context
 
 from oslo_config import cfg
 from oslo_log import log as logging

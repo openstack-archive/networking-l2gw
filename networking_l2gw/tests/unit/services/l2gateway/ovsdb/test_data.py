@@ -15,11 +15,11 @@
 
 import mock
 
-from neutron import context
 from neutron import manager
 from neutron.plugins.ml2 import managers
 from neutron.tests import base
 
+from neutron_lib import context
 from neutron_lib.plugins import directory
 
 from networking_l2gw.db.l2gateway import l2gateway_db

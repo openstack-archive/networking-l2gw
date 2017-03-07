@@ -17,8 +17,8 @@ import mock
 
 from neutron.callbacks import events
 from neutron.callbacks import resources
-from neutron import context
 from neutron.tests.unit import testlib_api
+from neutron_lib import context
 
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import constants

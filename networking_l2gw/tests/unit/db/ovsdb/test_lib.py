@@ -17,8 +17,8 @@ from oslo_db import exception as d_exc
 from oslo_utils import timeutils
 from oslo_utils import uuidutils
 
-from neutron import context
 from neutron.tests.unit import testlib_api
+from neutron_lib import context
 
 from networking_l2gw.db.l2gateway.ovsdb import lib
 from networking_l2gw.db.l2gateway.ovsdb import models

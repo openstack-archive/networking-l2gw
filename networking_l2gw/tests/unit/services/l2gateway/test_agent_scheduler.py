@@ -23,11 +23,11 @@ from oslo_service import loopingcall
 from oslo_utils import timeutils
 
 from neutron.common import topics
-from neutron import context as neutron_context
 from neutron.db import agents_db
 from neutron import manager
 from neutron.plugins.ml2 import rpc
 from neutron.tests import base
+from neutron_lib import context as neutron_context
 
 from networking_l2gw.services.l2gateway import agent_scheduler
 from networking_l2gw.services.l2gateway.common import constants as srv_const
