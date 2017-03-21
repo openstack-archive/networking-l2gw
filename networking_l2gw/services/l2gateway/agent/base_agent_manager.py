@@ -21,7 +21,6 @@ from oslo_log import log as logging
 from oslo_service import loopingcall
 from oslo_service import periodic_task
 
-from networking_l2gw._i18n import _LE, _LI
 from networking_l2gw.services.l2gateway.agent import agent_api
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import topics
@@ -73,14 +72,14 @@ class BaseAgentManager(periodic_task.PeriodicTasks):
                                         True)
             self.agent_state['start_flag'] = False
         except Exception:
-            LOG.exception(_LE("Failed reporting state!"))
+            LOG.exception("Failed reporting state!")
             self.handle_report_state_failure()
 
     def handle_report_state_failure(self):
         pass
 
     def agent_updated(self, context, payload):
-        LOG.info(_LI("agent_updated by server side %s!"), payload)
+        LOG.info("agent_updated by server side %s!", payload)
 
     def set_monitor_agent(self, context, hostname):
         """Handle RPC call from plugin to update agent type.

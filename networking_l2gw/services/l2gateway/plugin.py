@@ -20,7 +20,6 @@ from neutron.db import servicetype_db as st_db
 from neutron.services import provider_configuration as pconf
 from neutron.services import service_base
 
-from networking_l2gw._i18n import _LE, _LI
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants
@@ -49,13 +48,13 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         self.service_type_manager.add_provider_configuration(
             constants.L2GW, pconf.ProviderConfiguration('networking_l2gw'))
         self._load_drivers()
-        LOG.info(_LI("L2Gateway Service Plugin using Service Driver: %s"),
+        LOG.info("L2Gateway Service Plugin using Service Driver: %s",
                  self.default_provider)
         self.driver = self.drivers[self.default_provider]
         if len(self.drivers) > 1:
-            LOG.warning(_LI("Multiple drivers configured for L2Gateway, "
-                            "although running multiple drivers in parallel"
-                            " is not yet supported"))
+            LOG.warning("Multiple drivers configured for L2Gateway, "
+                        "although running multiple drivers in parallel"
+                        " is not yet supported")
         super(L2GatewayPlugin, self).__init__()
         l2gateway_db.subscribe()
 
@@ -68,7 +67,7 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
         if provider in self.drivers:
             return self.drivers[provider]
         # raise if not associated (should never be reached)
-        raise n_exc.Invalid(_LE("Error retrieving driver for provider %s") %
+        raise n_exc.Invalid("Error retrieving driver for provider %s" %
                             provider)
 
     @property
@@ -106,8 +105,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 context, l2_gateway_instance)
         except exc.L2GatewayServiceDriverError:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE("L2GatewayPlugin.create_l2_gateway_postcommit "
-                              "failed, deleting l2gateway '%s'"),
+                LOG.error("L2GatewayPlugin.create_l2_gateway_postcommit "
+                          "failed, deleting l2gateway '%s'",
                           l2_gateway_instance['id'])
                 self.delete_l2_gateway(context, l2_gateway_instance['id'])
         return l2_gateway_instance
@@ -128,8 +127,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 context, l2_gateway_instance)
         except exc.L2GatewayServiceDriverError:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE("L2GatewayPlugin.update_l2_gateway_postcommit"
-                              " failed for l2gateway %s"), l2_gateway_id)
+                LOG.error("L2GatewayPlugin.update_l2_gateway_postcommit"
+                          " failed for l2gateway %s", l2_gateway_id)
         return l2_gateway_instance
 
     def delete_l2_gateway(self, context, l2_gateway_id):
@@ -144,8 +143,8 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
             self.driver.delete_l2_gateway_postcommit(context, l2_gateway_id)
         except exc.L2GatewayServiceDriverError:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE("L2GatewayPlugin.delete_l2_gateway_postcommit"
-                              " failed for l2gateway %s"), l2_gateway_id)
+                LOG.error("L2GatewayPlugin.delete_l2_gateway_postcommit"
+                          " failed for l2gateway %s", l2_gateway_id)
 
     def create_l2_gateway_connection(self, context, l2_gateway_connection):
         """Create an L2Gateway Connection
@@ -167,9 +166,9 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 context, l2_gateway_conn_instance)
         except exc.L2GatewayServiceDriverError:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE("L2GatewayPlugin."
-                              "create_l2_gateway_connection_postcommit "
-                              "failed, deleting connection '%s'"),
+                LOG.error("L2GatewayPlugin."
+                          "create_l2_gateway_connection_postcommit "
+                          "failed, deleting connection '%s'",
                           l2_gateway_conn_instance['id'])
                 self.delete_l2_gateway_connection(
                     context, l2_gateway_conn_instance['id'])
@@ -195,6 +194,6 @@ class L2GatewayPlugin(l2gateway_db.L2GatewayMixin):
                 context, l2_gateway_connection_id)
         except exc.L2GatewayServiceDriverError:
             with excutils.save_and_reraise_exception():
-                LOG.error(_LE(
+                LOG.error(
                     "L2GatewayPlugin.delete_l2_gateway_connection_postcommit"
-                    " failed for connection %s"), l2_gateway_connection_id)
+                    " failed for connection %s", l2_gateway_connection_id)

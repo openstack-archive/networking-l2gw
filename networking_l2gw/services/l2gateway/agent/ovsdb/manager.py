@@ -24,7 +24,6 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall
 
-from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.agent import base_agent_manager
 from networking_l2gw.services.l2gateway.agent import l2gateway_config
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_common_class
@@ -91,20 +90,20 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                 is_cert_file = os.path.isfile(cert_file)
                 is_ca_cert_file = os.path.isfile(ca_cert_file)
                 if not is_priv_key:
-                    LOG.exception(_LE("Could not find private key in "
-                                      "%(path)s dir, expecting in the "
-                                      "file name %(file)s "),
+                    LOG.exception("Could not find private key in "
+                                  "%(path)s dir, expecting in the "
+                                  "file name %(file)s ",
                                   {'path': priv_key_path,
                                    'file': ovsdb_identifier + ".key"})
                 if not is_cert_file:
-                    LOG.exception(_LE("Could not find cert in %(path)s dir, "
-                                      "expecting in the file name %(file)s"),
+                    LOG.exception("Could not find cert in %(path)s dir, "
+                                  "expecting in the file name %(file)s",
                                   {'path': cert_path,
                                    'file': ovsdb_identifier + ".cert"})
                 if not is_ca_cert_file:
-                    LOG.exception(_LE("Could not find cacert in %(path)s "
-                                      "dir, expecting in the file name "
-                                      "%(file)s"),
+                    LOG.exception("Could not find cacert in %(path)s "
+                                  "dir, expecting in the file name "
+                                  "%(file)s",
                                   {'path': ca_cert_path,
                                    'file': ovsdb_identifier + ".ca_cert"})
                 ssl_ovsdb = {'use_ssl': True,
@@ -127,8 +126,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
             gateway = l2gateway_config.L2GatewayConfig(ovsdb_conf)
             self.gateways[ovsdb_identifier] = gateway
         except Exception as ex:
-            LOG.exception(_LE("Exception %(ex)s occurred while processing "
-                              "host %(host)s"), {'ex': ex, 'host': host})
+            LOG.exception("Exception %(ex)s occurred while processing "
+                          "host %(host)s", {'ex': ex, 'host': host})
 
     def _connect_to_ovsdb_server(self):
         """Initializes the connection to the OVSDB servers."""
@@ -149,8 +148,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                         ovsdb_states[key] = 'disconnected'
                         # Log a warning and continue so that it can be
                         # retried in the next iteration.
-                        LOG.error(_LE("OVSDB server %s is not "
-                                      "reachable"), gateway.ovsdb_ip)
+                        LOG.error("OVSDB server %s is not "
+                                  "reachable", gateway.ovsdb_ip)
                         # Continue processing the next element in the list.
                         continue
                     gateway.ovsdb_fd = ovsdb_fd

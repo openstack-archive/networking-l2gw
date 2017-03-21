@@ -18,7 +18,7 @@ from neutron.common import constants as nc_const
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
 
-from networking_l2gw._i18n import _, _LE
+from networking_l2gw._i18n import _
 from networking_l2gw.db.l2gateway import l2gateway_db as l2_gw_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway import agent_scheduler
@@ -144,8 +144,8 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                         except messaging.MessagingTimeout:
                             # If RPC is timed out, then the RabbitMQ
                             # will retry the operation.
-                            LOG.exception(_LE("Communication error with "
-                                              "the L2 gateway agent"))
+                            LOG.exception("Communication error with "
+                                          "the L2 gateway agent")
                         except Exception:
                             # The remote OVSDB server may be down.
                             # We need to retry this operation later.
@@ -172,8 +172,8 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                 except messaging.MessagingTimeout:
                     # If RPC is timed out, then the RabbitMQ
                     # will retry the operation.
-                    LOG.exception(_LE("Communication error with "
-                                      "the L2 gateway agent"))
+                    LOG.exception("Communication error with "
+                                  "the L2 gateway agent")
                 except Exception:
                     # The remote OVSDB server may be down.
                     # We need to retry this operation later.
@@ -290,8 +290,8 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             except messaging.MessagingTimeout:
                 # If RPC is timed out, then the RabbitMQ
                 # will retry the operation.
-                LOG.exception(_LE("Communication error with "
-                                  "the L2 gateway agent"))
+                LOG.exception("Communication error with "
+                              "the L2 gateway agent")
             except Exception as ex:
                 # The remote OVSDB server may be down.
                 # We need to retry this operation later.

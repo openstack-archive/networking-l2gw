@@ -23,7 +23,6 @@ from oslo_service import loopingcall
 from neutron.db import agents_db
 from neutron_lib import context as neutron_context
 
-from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants as srv_const
 
@@ -70,7 +69,7 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
             LOG.debug("Successfully initialized L2gateway agent scheduler"
                       " thread with loop interval %s", self.monitor_interval)
         except Exception:
-            LOG.error(_LE("Cannot initialize agent scheduler thread"))
+            LOG.error("Cannot initialize agent scheduler thread")
 
     def _select_agent_type(self, context, agents_to_process):
         """Select the Monitor agent."""
@@ -122,7 +121,7 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
                 context,
                 filters={'agent_type': [srv_const.AGENT_TYPE_L2GATEWAY]})
         except Exception:
-            LOG.exception(_LE("Unable to get the agent list. Continuing..."))
+            LOG.exception("Unable to get the agent list. Continuing...")
             return
 
         # Reset the agents that will be processed for selecting the

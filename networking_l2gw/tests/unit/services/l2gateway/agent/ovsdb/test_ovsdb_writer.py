@@ -21,7 +21,6 @@ import mock
 
 from neutron.tests import base
 
-from networking_l2gw._i18n import _LW
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.agent.ovsdb import ovsdb_writer
@@ -472,5 +471,4 @@ class TestOVSDBWriter(base.BaseTestCase):
                 result = l2gw_obj._recv_data(mock.ANY)
                 self.assertIsNone(result)
                 fake_warn.assert_called_with(
-                    _LW("Did not receive any reply from the OVSDB "
-                        "server"))
+                    "Did not receive any reply from the OVSDB server")

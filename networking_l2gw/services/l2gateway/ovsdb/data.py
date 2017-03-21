@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from networking_l2gw._i18n import _LE
 from networking_l2gw.db.l2gateway import l2gateway_db
 from networking_l2gw.db.l2gateway.ovsdb import lib as db
 from networking_l2gw.services.l2gateway.common import constants as n_const
@@ -158,7 +157,7 @@ class OVSDBData(object):
                                 logical_switch_uuid,
                                 mac)
                         except Exception as ex:
-                            LOG.exception(_LE("Exception occurred = %s"),
+                            LOG.exception("Exception occurred = %s",
                                           str(ex))
 
     def _setup_entry_table(self):

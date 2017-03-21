@@ -25,11 +25,10 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
-from networking_l2gw._i18n import _LE, _LW
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
 LOG = logging.getLogger(__name__)
-OVSDB_UNREACHABLE_MSG = _LW('Unable to reach OVSDB server %s')
+OVSDB_UNREACHABLE_MSG = 'Unable to reach OVSDB server %s'
 OVSDB_CONNECTED_MSG = 'Connected to OVSDB server %s'
 
 
@@ -81,8 +80,8 @@ class BaseConnection(object):
                         # Give up and return so that it can be tried in
                         # the next periodic interval.
                         with excutils.save_and_reraise_exception(reraise=True):
-                            LOG.exception(_LE("Socket error in connecting to "
-                                              "the OVSDB server"))
+                            LOG.exception("Socket error in connecting to "
+                                          "the OVSDB server")
                     else:
                         time.sleep(1)
                         retryCount += 1
@@ -131,26 +130,26 @@ class BaseConnection(object):
                     client_sock = ssl_conn_stream
                 else:
                     if not is_priv_key:
-                        LOG.error(_LE("Could not find private key in"
-                                      " %(path)s dir, expecting in the "
-                                      "file name %(file)s "),
+                        LOG.error("Could not find private key in"
+                                  " %(path)s dir, expecting in the "
+                                  "file name %(file)s ",
                                   {'path': priv_key_path,
                                    'file': ovsdb_id + ".key"})
                     if not is_cert_file:
-                        LOG.error(_LE("Could not find cert in %(path)s dir, "
-                                      "expecting in the file name %(file)s"),
+                        LOG.error("Could not find cert in %(path)s dir, "
+                                  "expecting in the file name %(file)s",
                                   {'path': cert_path,
                                    'file': ovsdb_id + ".cert"})
                     if not is_ca_cert_file:
-                        LOG.error(_LE("Could not find cacert in %(path)s "
-                                      "dir, expecting in the file name "
-                                      "%(file)s"),
+                        LOG.error("Could not find cacert in %(path)s "
+                                  "dir, expecting in the file name "
+                                  "%(file)s",
                                   {'path': ca_cert_path,
                                    'file': ovsdb_id + ".ca_cert"})
             else:
-                LOG.error(_LE("you have enabled SSL for ovsdb %s, "
-                              "expecting the ovsdb identifier and ovdb IP "
-                              "entry in ovsdb_hosts in l2gateway_agent.ini"),
+                LOG.error("you have enabled SSL for ovsdb %s, "
+                          "expecting the ovsdb identifier and ovdb IP "
+                          "entry in ovsdb_hosts in l2gateway_agent.ini",
                           addr)
         return client_sock
 
@@ -193,8 +192,8 @@ class BaseConnection(object):
                         self.mgr.ovsdb_fd._spawn_monitor_table_thread,
                         addr)
             except Exception:
-                LOG.warning(_LW("Could not send monitor message to the "
-                                "OVSDB server."))
+                LOG.warning("Could not send monitor message to the "
+                            "OVSDB server.")
                 self.disconnect(addr)
 
     def _common_sock_rcv_thread(self, addr):
@@ -224,7 +223,7 @@ class BaseConnection(object):
                                                prev_char == '\\'):
                             rc += 1
                         if rc > lc:
-                            raise Exception(_LE("json string not valid"))
+                            raise Exception("json string not valid")
                         elif lc == rc and lc is not 0:
                             chunks.append(response[message_mark:i + 1])
                             message = "".join(chunks)
@@ -276,12 +275,12 @@ class BaseConnection(object):
                 if bytes_sent:
                     return True
             except Exception as ex:
-                LOG.exception(_LE("Exception [%s] occurred while sending "
-                                  "message to the OVSDB server"), ex)
+                LOG.exception("Exception [%s] occurred while sending "
+                              "message to the OVSDB server", ex)
             retry_count += 1
 
-        LOG.warning(_LW("Could not send message to the "
-                        "OVSDB server."))
+        LOG.warning("Could not send message to the "
+                    "OVSDB server.")
         self.disconnect(addr)
         return False
 

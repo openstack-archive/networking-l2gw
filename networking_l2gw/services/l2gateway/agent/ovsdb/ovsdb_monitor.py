@@ -21,7 +21,6 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
-from networking_l2gw._i18n import _LE
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
@@ -126,8 +125,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
                     with excutils.save_and_reraise_exception():
                         if self.enable_manager:
                             self.check_monitor_table_thread = False
-                        LOG.exception(_LE("Exception while receiving the "
-                                          "response for the monitor message"))
+                        LOG.exception("Exception while receiving the "
+                                      "response for the monitor message")
                 self._process_monitor_msg(response_result, addr)
 
     def _update_event_handler(self, message, addr):
@@ -200,8 +199,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
             else:
                 self.responses.append(json_m)
         except Exception as e:
-            LOG.exception(_LE("Exception [%s] while handling "
-                              "message"), e)
+            LOG.exception("Exception [%s] while handling "
+                          "message", e)
 
     def _rcv_thread(self):
         chunks = []
@@ -232,7 +231,7 @@ class OVSDBMonitor(base_connection.BaseConnection):
                                                prev_char == '\\'):
                             rc += 1
                         if rc > lc:
-                            raise Exception(_LE("json string not valid"))
+                            raise Exception("json string not valid")
                         elif lc == rc and lc is not 0:
                             chunks.append(response[message_mark:i + 1])
                             message = "".join(chunks)
@@ -249,8 +248,8 @@ class OVSDBMonitor(base_connection.BaseConnection):
             except Exception as ex:
                 self.read_on = False
                 self.disconnect()
-                LOG.exception(_LE("Exception [%s] occurred while receiving"
-                                  "message from the OVSDB server"), ex)
+                LOG.exception("Exception [%s] occurred while receiving"
+                              "message from the OVSDB server", ex)
 
     def disconnect(self, addr=None):
         """disconnects the connection from the OVSDB server."""
@@ -266,7 +265,7 @@ class OVSDBMonitor(base_connection.BaseConnection):
             self.rpc_callback(Activity.Initial,
                               self._form_ovsdb_data(data_dict, addr))
         except Exception as e:
-            LOG.exception(_LE("_process_monitor_msg:ERROR %s "), e)
+            LOG.exception("_process_monitor_msg:ERROR %s ", e)
 
     def _get_list(self, resource_list):
         return [element.__dict__ for element in resource_list]

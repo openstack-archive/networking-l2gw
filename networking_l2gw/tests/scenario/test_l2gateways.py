@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from networking_l2gw._i18n import _LI
 from networking_l2gw.tests.api import base_l2gw
 from networking_l2gw.tests.scenario import ovsdb_connections
 from networking_l2gw.tests.tempest import config
@@ -121,8 +120,8 @@ class TestL2GatewayBasic(base.BaseAdminNetworkTest):
                 serverstatus = '/'.join((server_status, str(task_state)))
                 waitsec = (time.time() - start_time)
                 LOG.info(
-                    _LI('State transition %(oldstatus)s => %(serverstatus)s'
-                        'after %(waitsec)d second wait') %
+                    'State transition %(oldstatus)s => %(serverstatus)s'
+                    'after %(waitsec)d second wait' %
                     {'oldstatus': oldstatus, 'serverstatus': serverstatus,
                      'waitsec': waitsec}
                 )

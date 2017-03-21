@@ -20,7 +20,6 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
-from networking_l2gw._i18n import _LE, _LW
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.common import constants as n_const
 from networking_l2gw.services.l2gateway.common import ovsdb_schema
@@ -72,13 +71,13 @@ class OVSDBWriter(base_connection.BaseConnection):
                             return True
                 except Exception as ex:
                     with excutils.save_and_reraise_exception():
-                        LOG.exception(_LE("Exception while receiving the "
-                                          "response for the write request:"
-                                          " [%s]"), ex)
+                        LOG.exception("Exception while receiving the "
+                                      "response for the write request:"
+                                      " [%s]", ex)
             count += 1
         with excutils.save_and_reraise_exception():
-            LOG.error(_LE("Could not obtain response from the OVSDB server "
-                          "for the request"))
+            LOG.error("Could not obtain response from the OVSDB server "
+                      "for the request")
 
     def _send_and_receive(self, query, operation_id, ovsdb_identifier,
                           rcv_required):
@@ -259,12 +258,12 @@ class OVSDBWriter(base_connection.BaseConnection):
                         prev_char = c
                     chunks.append(response)
                 else:
-                    LOG.warning(_LW("Did not receive any reply from the OVSDB "
-                                    "server"))
+                    LOG.warning("Did not receive any reply from the OVSDB "
+                                "server")
                     return
             except (socket.error, socket.timeout):
-                LOG.warning(_LW("Did not receive any reply from the OVSDB "
-                                "server"))
+                LOG.warning("Did not receive any reply from the OVSDB "
+                            "server")
                 return
 
     def _get_bindings_to_update(self, l_switch_dict, locator_dicts,
