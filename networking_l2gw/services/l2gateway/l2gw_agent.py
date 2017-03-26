@@ -13,9 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from neutron.agent.common import config as agent_config
 from neutron.common import config as common_config
 from neutron.common import rpc as n_rpc
+from neutron.conf.agent import common as agent_config
 import sys
 
 from oslo_config import cfg

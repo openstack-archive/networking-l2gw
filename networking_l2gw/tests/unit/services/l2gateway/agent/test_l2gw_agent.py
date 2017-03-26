@@ -41,7 +41,7 @@ class TestL2gwAgent(base.BaseTestCase):
             self.assertTrue(mock_start.called)
 
     def test_main_l2gw_agent(self):
-        logging_str = 'neutron.agent.common.config.setup_logging'
+        logging_str = 'neutron.conf.agent.common.setup_logging'
         common_config_str = mock.patch.object(common_config, 'init').start()
         with mock.patch.object(common_config_str, 'init'), \
                 mock.patch(logging_str), \

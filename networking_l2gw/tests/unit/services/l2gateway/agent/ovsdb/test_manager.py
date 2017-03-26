@@ -19,9 +19,9 @@ import socket
 import eventlet
 import mock
 
-from neutron.agent.common import config as agent_config
 from neutron.agent import rpc as agent_rpc
 from neutron.common import rpc
+from neutron.conf.agent import common as agent_config
 from neutron.tests import base
 from neutron_lib import context
 
