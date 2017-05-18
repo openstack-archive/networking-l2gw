@@ -14,9 +14,9 @@
 # under the License.
 
 from neutron.db import models_v2
-from neutron.plugins.ml2 import driver_api as api
 
 from neutron_lib import exceptions
+from neutron_lib.plugins.ml2 import api
 import sqlalchemy as sa
 from sqlalchemy.orm import exc
 
