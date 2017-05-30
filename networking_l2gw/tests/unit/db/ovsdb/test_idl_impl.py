@@ -17,9 +17,9 @@ import mock
 from mock import MagicMock
 import ovs.jsonrpc
 
-from neutron.agent.ovsdb.native import commands as cmd
-from neutron.agent.ovsdb.native import idlutils
 from neutron.tests import base
+from ovsdbapp.backend.ovs_idl import command as cmd
+from ovsdbapp.backend.ovs_idl import idlutils
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import impl_idl
 

@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from neutron.agent.ovsdb.native import commands as comm
+from ovsdbapp.backend.ovs_idl import command as comm
 
 
 class ListPhysicalSwitchCommand(comm.BaseCommand):

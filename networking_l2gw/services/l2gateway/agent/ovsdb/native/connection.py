@@ -14,13 +14,10 @@
 #    under the License.
 
 import os
-import threading
 
 from ovs.db import idl
-from ovs import poller
 
-from neutron.agent.ovsdb.native import connection as conn
-from neutron.agent.ovsdb.native import idlutils
+from ovsdbapp.backend.ovs_idl import connection as conn
 
 
 def get_schema_helper_for_vtep():
@@ -30,23 +27,5 @@ def get_schema_helper_for_vtep():
 
 class Connection(conn.Connection):
     def __init__(self, connection, timeout, schema_name):
-        super(Connection, self).__init__(connection, timeout, schema_name)
-
-    def start(self, table_name_list=None):
-        with self.lock:
-            if self.idl is not None:
-                return
-
-            helper = get_schema_helper_for_vtep()
-
-            if table_name_list is None:
-                helper.register_all()
-            else:
-                for table_name in table_name_list:
-                    helper.register_table(table_name)
-            self.idl = idl.Idl(self.connection, helper)
-            idlutils.wait_for_change(self.idl, self.timeout)
-            self.poller = poller.Poller()
-            self.thread = threading.Thread(target=self.run)
-            self.thread.setDaemon(True)
-            self.thread.start()
+        idl_ = idl.Idl(connection, get_schema_helper_for_vtep())
+        super(Connection, self).__init__(idl_, timeout)

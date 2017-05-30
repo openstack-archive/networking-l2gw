@@ -12,7 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from neutron.agent.ovsdb.impl_idl import Transaction
+from ovsdbapp.backend.ovs_idl.transaction import Transaction
 
 from networking_l2gw.services.l2gateway.agent.ovsdb import api
 from networking_l2gw.services.l2gateway.agent.ovsdb.native import (
