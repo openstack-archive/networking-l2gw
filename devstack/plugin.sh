@@ -22,7 +22,7 @@ function configure_agent_conf {
 }
 
 function start_l2gw_agent {
-   run_process l2gw-agent "python $L2GW_AGENT_BINARY --config-file $NEUTRON_CONF --config-file=$L2GW_CONF_FILE"
+    run_process l2gw-agent "$L2GW_AGENT_BINARY --config-file $NEUTRON_CONF --config-file=$L2GW_CONF_FILE"
 }
 
 function run_l2gw_alembic_migration {
