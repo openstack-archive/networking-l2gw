@@ -52,7 +52,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
         config.register_options()
         super(L2GatewayExtensionTestJSON, cls).resource_setup()
         # At least one switch detail should be provided to run the tests
-        if (len(CONF.L2GW.l2gw_switch) < 0):
+        if (len(CONF.L2GW.l2gw_switch) <= 0):
             msg = ('At least one switch detail must be defined.')
             raise cls.skipException(msg)
         if not test.is_extension_enabled('l2-gateway', 'network'):
