@@ -517,6 +517,8 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         gw_connection = l2_gateway_connection[self.connection_resource]
         l2_gw_id = gw_connection.get('l2_gateway_id')
         network_id = gw_connection.get('network_id')
+        plugin = directory.get_plugin()
+        plugin.get_network(context, network_id)
         nw_map = {}
         nw_map['network_id'] = network_id
         nw_map['l2_gateway_id'] = l2_gw_id

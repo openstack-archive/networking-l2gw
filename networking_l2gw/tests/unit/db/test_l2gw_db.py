@@ -268,6 +268,12 @@ class L2GWTestCase(testlib_api.SqlTestCase):
             return self.mixin.validate_l2_gateway_for_update(self.ctx,
                                                              l2gw_id, l2gw)
 
+    def _validate_l2_gateway_connection_for_create(self, l2gw_con):
+        """Create l2 gateway connection helper method."""
+        with self.ctx.session.begin(subtransactions=True):
+            return self.mixin.validate_l2_gateway_connection_for_create(
+                self.ctx, l2gw_con)
+
     def test_l2gateway_con_create_and_delete_in_use_without_seg_id(self):
         """Test l2 gateway connection create without seg id when use."""
         name = "l2gw_con2"
@@ -283,6 +289,22 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         self._create_l2gateway_connection(data_con)
         self.assertRaises(exceptions.L2GatewayInUse,
                           self._validate_l2_gateway_for_delete, l2gw_id)
+
+    def test_l2gateway_con_create_with_invalid_net_id(self):
+        """Test l2 gateway connection create with invalid net id."""
+        name = "l2gw_con2"
+        device_name = "device_name2"
+        data_l2gw = self._get_l2_gateway_data(name,
+                                              device_name)
+        gw = self._create_l2gateway(data_l2gw)
+        net_id = 'invalid_net_id'
+        l2gw_id = gw['id']
+        data_con = {self.con_resource: {'l2_gateway_id': l2gw_id,
+                                        'network_id': net_id}}
+        directory.add_plugin('CORE', self.plugin)
+        self.assertRaises(exc.NetworkNotFound,
+                          self._validate_l2_gateway_connection_for_create,
+                          data_con)
 
     def _delete_l2gateway(self, l2gw_id):
         """Delete l2 gateway helper method."""
