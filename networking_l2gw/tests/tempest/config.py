@@ -42,9 +42,5 @@ L2GW_OPTS = [
 ]
 
 
-def register_options():
-    cfg.CONF.register_opts(L2GW_OPTS, "L2GW")
-
-
 l2gw_group = cfg.OptGroup(name='l2gw',
                           title='Neutron L2GW Options')
