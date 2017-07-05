@@ -13,26 +13,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import eventlet
-
 import os.path
 import socket
 import ssl
 import time
 
+import eventlet
 import mock
-from oslo_serialization import jsonutils
-
 from neutron.tests import base
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
 
 from networking_l2gw.services.l2gateway.agent import l2gateway_config as conf
 from networking_l2gw.services.l2gateway.agent.ovsdb import base_connection
 from networking_l2gw.services.l2gateway.agent.ovsdb import manager
 from networking_l2gw.services.l2gateway.common import config
 from networking_l2gw.services.l2gateway.common import constants as n_const
-
-from oslo_config import cfg
-from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

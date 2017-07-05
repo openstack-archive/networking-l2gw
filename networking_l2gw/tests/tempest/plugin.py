@@ -13,8 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import networking_l2gw
 import os
+
+import networking_l2gw
 from tempest.test_discover import plugins
 
 from networking_l2gw.tests.tempest import config as l2gw_config

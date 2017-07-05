@@ -13,13 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from contextlib import contextmanager
 import os.path
 
 import eventlet
-
-from contextlib import contextmanager
 from neutron_lib import context as ctx
-
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall

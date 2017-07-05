@@ -13,11 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import sys
+
 from neutron.common import config as common_config
 from neutron.common import rpc as n_rpc
 from neutron.conf.agent import common as agent_config
-import sys
-
 from oslo_config import cfg
 from oslo_service import service
 

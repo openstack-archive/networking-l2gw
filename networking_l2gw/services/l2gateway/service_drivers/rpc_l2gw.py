@@ -14,6 +14,7 @@
 #    under the License.
 
 import abc
+
 from neutron.common import constants as nc_const
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db

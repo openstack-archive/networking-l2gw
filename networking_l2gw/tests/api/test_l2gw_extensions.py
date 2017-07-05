@@ -15,12 +15,11 @@
 
 import random
 
+from neutron.tests.tempest.api import base
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest import test
-
-from neutron.tests.tempest.api import base
 
 from networking_l2gw.tests.api import base_l2gw
 

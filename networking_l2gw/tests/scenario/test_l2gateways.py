@@ -14,22 +14,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from networking_l2gw.tests.api import base_l2gw
-from networking_l2gw.tests.scenario import ovsdb_connections
-from networking_l2gw.tests.tempest import config
+import json
+import time
 
 from neutron.tests.api import base
 from neutron.tests.tempest import exceptions
 from neutron.tests.tempest import manager
-
 from oslo_log import log
 from tempest.lib.common import rest_client
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
-import json
-import time
+from networking_l2gw.tests.api import base_l2gw
+from networking_l2gw.tests.scenario import ovsdb_connections
+from networking_l2gw.tests.tempest import config
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
