@@ -34,6 +34,15 @@ function configure_l2gw_plugin {
     neutron_server_config_add $L2GW_PLUGIN_CONF_FILE
 }
 
+function configure_tempest_for_l2gw {
+    if is_service_enabled tempest; then
+       iniset $TEMPEST_CONFIG l2gw l2gw_switch "cell08-5930-01::FortyGigE1/0/1|100"
+       source /opt/stack/new/tempest/.tox/tempest/bin/activate
+       pip install -r $L2GW_DIR/test-requirements.txt
+       deactivate
+    fi
+}
+
 # main loop
 if is_service_enabled l2gw-plugin; then
     if [[ "$1" == "source" ]]; then
@@ -43,6 +52,8 @@ if is_service_enabled l2gw-plugin; then
         install_l2gw
     elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         _neutron_service_plugin_class_add $L2GW_PLUGIN
+    elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
+        configure_tempest_for_l2gw
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         configure_l2gw_plugin
         run_l2gw_alembic_migration
