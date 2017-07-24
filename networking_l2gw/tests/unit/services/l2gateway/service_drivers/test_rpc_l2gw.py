@@ -995,6 +995,8 @@ class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
         fake_port_list = [{'network_id': 'fake_network_id',
                            'device_owner': 'fake_owner',
                            'mac_address': 'fake_mac',
+                           'allowed_address_pairs': [{'mac_address':
+                                                      'fake_pairs'}],
                            'ovsdb_identifier': 'fake_ovsdb_id'}]
         fake_logical_switch_dict = {'uuid': 'fake_uuid',
                                     'ovsdb_identifier': 'fake_ovsdb_id'}
@@ -1012,7 +1014,8 @@ class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
             get_ls.assert_called_with(self.context, lg_dict)
             get_mac.assert_called_with(self.context, fake_dict)
             delete_rpc.assert_called_with(
-                self.context, 'fake_ovsdb_id', 'fake_uuid', ['fake_mac'])
+                self.context, 'fake_ovsdb_id', 'fake_uuid',
+                ['fake_pairs', 'fake_mac'])
 
     @mock.patch.object(db,
                        'get_all_logical_switches_by_name')
@@ -1215,6 +1218,8 @@ class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
                      'network_id': 'fake_network_id',
                      'mac_address': 'fake_mac',
                      'ip_address': 'fake_ip2',
+                     'allowed_address_pairs': [{'ip_address': 'fake_ip2',
+                                                'mac_address': 'fake_mac2'}],
                      }
         fake_port_list = [fake_port]
         fake_conn_dict = fake_l2gw_conn_dict.get('l2_gateway_connection')
@@ -1270,7 +1275,7 @@ class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
             get_port.assert_called_with(self.db_context, 'fake_network_id')
             self.assertTrue(get_ip.called)
             self.assertTrue(get_dict.called)
-            self.assertTrue(get_ucast_mac.called)
+            self.assertEqual(get_ucast_mac.call_count, 2)
             self.assertTrue(get_pl.called)
             self.assertTrue(update_rpc.called)
 

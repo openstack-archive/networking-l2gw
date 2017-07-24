@@ -236,17 +236,20 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                 if logical_switches:
                     for logical_switch in logical_switches:
                         logical_switch_uuid = logical_switch.get('uuid')
-                        mac = port_dict.get("mac_address")
+                        macs = []
+                        if isinstance(port_dict.get("allowed_address_pairs"),
+                                      list):
+                            for address_pair in port_dict[
+                                    'allowed_address_pairs']:
+                                mac = address_pair['mac_address']
+                                macs.append(mac)
+                        macs.append(port_dict.get("mac_address"))
                         if port_dict.get('ovsdb_identifier', None):
                             ovsdb_identifier = port_dict.get(
                                 'ovsdb_identifier')
                         else:
                             ovsdb_identifier = logical_switch.get(
                                 'ovsdb_identifier')
-                        record_dict = {'mac': mac,
-                                       'logical_switch_uuid':
-                                       logical_switch_uuid,
-                                       'ovsdb_identifier': ovsdb_identifier}
 
                         if from_l2gw_plugin:
                             ls = logical_switch.get('name')
@@ -257,26 +260,33 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                                     filters={'network_id': [ls]}))
                             if len(l2gateway_connections) > 1:
                                 continue
-                        ucast_mac_remote = (
-                            db.get_ucast_mac_remote_by_mac_and_ls(
-                                context, record_dict))
-                        del_count = 0
-                        if not ucast_mac_remote:
-                            LOG.debug("delete_port_mac: MAC %s does"
-                                      " not exist", mac)
-                            # It is possible that this MAC is present
-                            # in the pending_ucast_mac_remote table.
-                            # Delete this MAC as it was not inserted
-                            # into the OVSDB server earlier.
-                            del_count = db.delete_pending_ucast_mac_remote(
-                                context, 'insert',
-                                ovsdb_identifier,
-                                logical_switch_uuid,
-                                mac)
-                        if not del_count:
-                            mac_list = ls_dict.get(logical_switch_uuid, [])
-                            mac_list.append(mac)
-                            ls_dict[logical_switch_uuid] = mac_list
+                        for mac in macs:
+                            record_dict = {'mac': mac,
+                                           'logical_switch_uuid':
+                                           logical_switch_uuid,
+                                           'ovsdb_identifier':
+                                           ovsdb_identifier}
+
+                            ucast_mac_remote = (
+                                db.get_ucast_mac_remote_by_mac_and_ls(
+                                    context, record_dict))
+                            del_count = 0
+                            if not ucast_mac_remote:
+                                LOG.debug("delete_port_mac: MAC %s does"
+                                          " not exist", mac)
+                                # It is possible that this MAC is present
+                                # in the pending_ucast_mac_remote table.
+                                # Delete this MAC as it was not inserted
+                                # into the OVSDB server earlier.
+                                del_count = db.delete_pending_ucast_mac_remote(
+                                    context, 'insert',
+                                    ovsdb_identifier,
+                                    logical_switch_uuid,
+                                    mac)
+                            if not del_count:
+                                mac_list = ls_dict.get(logical_switch_uuid, [])
+                                mac_list.append(mac)
+                                ls_dict[logical_switch_uuid] = mac_list
                 else:
                     LOG.debug("delete_port_mac:Logical Switch %s "
                               "does not exist ", port_dict.get('network_id'))
@@ -644,27 +654,35 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             for port in ports:
                 mac_list = []
                 if port['device_owner']:
-                    dst_ip, ip_address = self._get_ip_details(context,
-                                                              port)
-                    mac_remote = self._get_dict(
-                        ovsdb_schema.UcastMacsRemote(
-                            uuid=None,
-                            mac=port.get('mac_address'),
-                            logical_switch_id=None,
-                            physical_locator_id=None,
-                            ip_address=ip_address))
-                    if logical_switch:
-                        u_mac_dict['mac'] = port.get('mac_address')
-                        u_mac_dict['ovsdb_identifier'] = ovsdb_identifier
-                        u_mac_dict['logical_switch_uuid'] = (
-                            logical_switch.get('uuid'))
-                        ucast_mac_remote = (
-                            db.get_ucast_mac_remote_by_mac_and_ls(
-                                context, u_mac_dict))
-                        if not ucast_mac_remote:
+                    dst_ip, ip_address = self._get_ip_details(context, port)
+                    mac_ip_pairs = []
+                    if isinstance(port.get("allowed_address_pairs"), list):
+                        for address_pair in port['allowed_address_pairs']:
+                            mac = address_pair['mac_address']
+                            mac_ip_pairs.append((mac,
+                                                 address_pair['ip_address']))
+                    mac_ip_pairs.append((port.get('mac_address'), ip_address))
+
+                    for mac, ip in mac_ip_pairs:
+                        mac_remote = self._get_dict(
+                            ovsdb_schema.UcastMacsRemote(
+                                uuid=None,
+                                mac=mac,
+                                logical_switch_id=None,
+                                physical_locator_id=None,
+                                ip_address=ip))
+                        if logical_switch:
+                            u_mac_dict['mac'] = mac
+                            u_mac_dict['ovsdb_identifier'] = ovsdb_identifier
+                            u_mac_dict['logical_switch_uuid'] = (
+                                logical_switch.get('uuid'))
+                            ucast_mac_remote = (
+                                db.get_ucast_mac_remote_by_mac_and_ls(
+                                    context, u_mac_dict))
+                            if not ucast_mac_remote:
+                                mac_list.append(mac_remote)
+                        else:
                             mac_list.append(mac_remote)
-                    else:
-                        mac_list.append(mac_remote)
                     locator_list = self._get_locator_list(
                         context, dst_ip, ovsdb_identifier, mac_list,
                         locator_list)
