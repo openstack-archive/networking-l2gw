@@ -42,7 +42,7 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('b301d83d-3af3-4712-86dc-a6824e9b14e5')
     def test_create_l2gateway_non_admin_user(self):
         gw_name = data_utils.rand_name('l2gw')
@@ -51,13 +51,13 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           self.client.create_l2_gateway,
                           name=gw_name, devices=devices)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('68451dfe-b3b5-4eb1-b03f-9935d4a2dbe7')
     def test_list_l2gateway_non_admin_user(self):
         self.assertRaises(lib_exc.Forbidden,
                           self.client.list_l2_gateways)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('f8589452-7aff-4992-b865-5bb5c41fa755')
     def test_update_l2gateway_non_admin_user(self):
         non_exist_id = data_utils.rand_name('l2gw')
@@ -65,7 +65,7 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           self.client.update_l2_gateway,
                           non_exist_id, name="updated_name")
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('d9f57800-6cae-4770-a2d7-ab60cf7417bf')
     def test_delete_l2gateway_non_admin_user(self):
         non_exist_id = data_utils.rand_name('l2gw')
@@ -73,7 +73,7 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           self.client.delete_l2_gateway,
                           non_exist_id)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('c6b61a8d-8c82-497d-9fad-9929c9acf035')
     def test_create_l2gateway_connection_non_admin_user(self):
         non_exist_id = data_utils.rand_name('network')
@@ -81,13 +81,13 @@ class L2GatewaysNegativeTestJSON(base.BaseNetworkTest):
                           self.client.create_l2_gateway_connection,
                           network_id=non_exist_id, l2_gateway_id=non_exist_id)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('a56a0180-7d98-414c-9a44-fe47a30fe436')
     def test_list_l2gateway_connection_non_admin_user(self):
         self.assertRaises(lib_exc.Forbidden,
                           self.client.list_l2_gateway_connections)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('ce42c68d-5c41-4988-8912-233e3fe5c8fd')
     def test_delete_l2gateway_connection_non_admin_user(self):
         non_exist_id = data_utils.rand_name('l2gwconnection')
@@ -110,7 +110,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     @decorators.idempotent_id('42067b44-3aff-4428-8305-d0496bd38179')
     def test_delete_l2gw_associated_l2gw_connection(self):
         # Create a network
@@ -135,7 +135,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
                           self.admin_client.delete_l2_gateway,
                           l2_gateway['id'])
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_create_l2gw_with_empty_device_name(self):
         # Create an L2Gateway
         seg_id = randint(2, 4094)
@@ -150,7 +150,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
                           name=gw_name, devices=device
                           )
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_create_l2gw_connection_with_invalid_segmentation_id(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
@@ -176,7 +176,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
                               l2_gateway_id=l2_gw_id, network_id=net_id,
                               segmentation_id=seg_id)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_create_l2gw_with_invalid_segmentation_id(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
@@ -191,7 +191,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
                               name=gw_name, devices=device
                               )
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_create_l2gw_with_empty_interface_name(self):
         # Create an L2Gateway
         seg_id = randint(2, 4094)
@@ -206,21 +206,21 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
                           name=gw_name, devices=device
                           )
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_delete_non_existent_l2gateway(self):
         non_exist_id = data_utils.rand_name('l2gw')
         self.assertRaises(lib_exc.NotFound,
                           self.admin_client.delete_l2_gateway,
                           non_exist_id)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_delete_non_existent_l2gateway_connection(self):
         non_exist_id = data_utils.rand_name('l2gwConnection')
         self.assertRaises(lib_exc.NotFound,
                           self.admin_client.delete_l2_gateway_connection,
                           non_exist_id)
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_create_l2gw_connection_with_invalid_network_name(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
@@ -238,7 +238,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
                           l2_gateway_id=l2_gw_id, network_id=net_id
                           )
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_update_gateway_with_invalid_device_name(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
@@ -255,7 +255,7 @@ class L2GatewaysNegativeAdminTestJSON(base.BaseAdminNetworkTest):
                           gw_name, devices=device_1
                           )
 
-    @test.attr(type=['negative', 'smoke'])
+    @decorators.attr(type=['negative', 'smoke'])
     def test_create_l2gw_and_l2gw_connection_both_without_seg_id(self):
         # Create an L2Gateway
         gw_name = data_utils.rand_name('l2gw')
