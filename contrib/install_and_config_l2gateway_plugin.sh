@@ -85,7 +85,7 @@ echo installing $pck_name\_$pck_ver\_$architecture.deb
 dpkg -i  $pck_name\_$pck_ver\_$architecture.deb
 echo enter neutron.conf file path
 read neutron_conf
-l2gw_plugin=", networking_l2gw.services.l2gateway.plugin.L2GatewayPlugin"
+l2gw_plugin=", l2gw"
 while read line
 do
 if [[ $line == *"service_plugins"* ]]

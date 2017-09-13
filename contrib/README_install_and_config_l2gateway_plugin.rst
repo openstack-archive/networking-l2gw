@@ -55,4 +55,4 @@ sudo service neutron-server status
 neutron-server start/running, process 17876
 
 and also check service_plugins in neutron.conf file whether 
-networking_l2gw.services.l2gateway.plugin.L2GatewayPlugin is enabled or not.
+l2gw is enabled or not.
