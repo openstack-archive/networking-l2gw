@@ -22,6 +22,7 @@ from oslo_config import cfg
 from oslo_service import loopingcall
 from oslo_utils import timeutils
 
+from neutron.agent.common import utils
 from neutron.common import topics
 from neutron.db import agents_db
 from neutron import manager
@@ -148,7 +149,7 @@ class TestAgentScheduler(base.BaseTestCase):
                 mock.patch.object(
                     self.plugin, 'get_agents',
                     return_value=fake_all_agent_list) as get_agent_list, \
-                mock.patch.object(self.agentsch, 'is_agent_down',
+                mock.patch.object(utils, 'is_agent_down',
                                   return_value=False) as is_agt:
             self.agentsch.monitor_agent_state()
             self.assertTrue(get_agent_list.called)

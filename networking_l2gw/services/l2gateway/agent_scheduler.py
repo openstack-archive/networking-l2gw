@@ -20,6 +20,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import loopingcall
 
+from neutron.agent.common import utils
 from neutron.db import agents_db
 from neutron_lib import context as neutron_context
 
@@ -128,7 +129,7 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
         # Monitor agent
         agents_to_process = []
         for agent in all_agents:
-            if not self.is_agent_down(agent['heartbeat_timestamp']):
+            if not utils.is_agent_down(agent['heartbeat_timestamp']):
                 agents_to_process.append(agent)
         if agents_to_process:
             self._select_agent_type(context, agents_to_process)
