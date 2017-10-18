@@ -13,8 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from neutron.api.v2 import base
-
+from neutron_lib.api import faults
 from neutron_lib import exceptions
 from webob import exc as web_exc
 
@@ -126,17 +125,18 @@ class InvalidMethod(exceptions.NeutronException):
     message = _("invalid method '%(op_method)s'")
 
 
-base.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
-                       L2GatewayPortInUse: web_exc.HTTPConflict,
-                       L2GatewayConnectionExists: web_exc.HTTPConflict,
-                       L2GatewayConnectionNotFound: web_exc.HTTPNotFound,
-                       MultipleVxlanSegmentsFound: web_exc.HTTPConflict,
-                       VxlanSegmentationIDNotFound: web_exc.HTTPNotFound,
-                       L2GatewaySegmentationRequired: web_exc.HTTPConflict,
-                       L2MultipleGatewayConnections: web_exc.HTTPConflict,
-                       L2GatewayDuplicateSegmentationID: web_exc.HTTPConflict,
-                       L2AgentNotFoundByHost: web_exc.HTTPNotFound,
-                       OVSDBError: web_exc.HTTPConflict})
+faults.FAULT_MAP.update({L2GatewayInUse: web_exc.HTTPConflict,
+                         L2GatewayPortInUse: web_exc.HTTPConflict,
+                         L2GatewayConnectionExists: web_exc.HTTPConflict,
+                         L2GatewayConnectionNotFound: web_exc.HTTPNotFound,
+                         MultipleVxlanSegmentsFound: web_exc.HTTPConflict,
+                         VxlanSegmentationIDNotFound: web_exc.HTTPNotFound,
+                         L2GatewaySegmentationRequired: web_exc.HTTPConflict,
+                         L2MultipleGatewayConnections: web_exc.HTTPConflict,
+                         L2GatewayDuplicateSegmentationID:
+                             web_exc.HTTPConflict,
+                         L2AgentNotFoundByHost: web_exc.HTTPNotFound,
+                         OVSDBError: web_exc.HTTPConflict})
 
 
 class L3DvrAgentNotFound(exceptions.NotFound):
