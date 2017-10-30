@@ -92,6 +92,15 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                  "device_name": device_name}]}}
         return data
 
+    def _get_l2_gw_multiple_interface_without_seg_id_data(self, name,
+                                                          device_name):
+        """Get l2 gateway data helper method with partial seg id."""
+        return {"l2_gateway": {"name": name,
+                               "devices":
+                               [{"interfaces": [{"name": "port1"},
+                                                {"name": "port2"}],
+                                 "device_name": device_name}]}}
+
     def _get_l2_gw_invalid_seg_id_data(self, name,
                                        device_name):
         """Get l2 gateway data helper method with invalid seg id."""
@@ -342,6 +351,38 @@ class L2GWTestCase(testlib_api.SqlTestCase):
                                                                       dev_name)
         self.assertRaises(exceptions.L2GatewaySegmentationRequired,
                           self._validate_l2_gateway_for_create, data)
+
+    def test_l2_gateway_update_with_mul_interfaces_inconsistent_seg_id(self):
+        """Test l2 gateway update with multiple interfaces."""
+        name = "l2gw_1"
+        dev_name = "device1"
+        data_orig = self._get_l2_gateway_multiple_interface_data(name,
+                                                                 dev_name)
+        data = self._get_l2_gw_multiple_interface_partial_seg_id_data(name,
+                                                                      dev_name)
+        gw_org = self._create_l2gateway(data_orig)
+        l2gw_id = gw_org['id']
+        self.assertRaises(exceptions.L2GatewaySegmentationRequired,
+                          self._validate_l2_gateway_for_update, l2gw_id, data)
+
+    def test_l2_gateway_update_with_mul_interfaces_without_seg_id(self):
+        """Test l2 gateway update with multiple interfaces without seg_id."""
+        name = "l2gw_1"
+        dev_name = "device1"
+        data1 = self._get_l2_gateway_multiple_interface_data(
+            name, dev_name)
+        data2 = self._get_l2_gw_multiple_interface_without_seg_id_data(
+            name, dev_name)
+        gw_org1 = self._create_l2gateway(data1)
+        l2gw_id1 = gw_org1['id']
+        gw_org2 = self._create_l2gateway(data2)
+        l2gw_id2 = gw_org2['id']
+        self.assertRaises(exceptions.L2GatewaySegmentationIDExists,
+                          self._validate_l2_gateway_for_update,
+                          l2gw_id1, data2)
+        self.assertRaises(exceptions.L2GatewaySegmentationIDNotExists,
+                          self._validate_l2_gateway_for_update,
+                          l2gw_id2, data1)
 
     def test_l2_gateway_create_with_invalid_seg_id(self):
         """Test l2 gateway create with invalid seg-id."""

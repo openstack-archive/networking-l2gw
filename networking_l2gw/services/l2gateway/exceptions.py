@@ -65,6 +65,11 @@ class L2GatewayInterfaceNotFound(exceptions.NeutronException):
     message = _("L2 Gateway interface '%(interface_id)s' not found.")
 
 
+class L2GatewayPhysicalPortNotFound(exceptions.NeutronException):
+    message = _("Physical Port '%(int_name)s' in Physical switch "
+                "'%(device_name)s' could not be found")
+
+
 class L2GatewayPhysicalPortFaultStatus(exceptions.NeutronException):
     message = _("Physical Port '%(int_name)s' in Physical switch "
                 "'%(device_name)s' port_fault_status is '%(fault_status)s'")
@@ -98,9 +103,14 @@ class L2GatewayInterfaceRequired(exceptions.NeutronException):
     message = _("L2 Gateway Interface required")
 
 
-class L2GatewaySegmentationIDExists(exceptions.InUse):
+class L2GatewaySegmentationIDExists(exceptions.NeutronException):
     message = _("The segmentation id is already specified in "
-                "gateway interface '%(interface_id)s'.")
+                "existing gateway interfaces.")
+
+
+class L2GatewaySegmentationIDNotExists(exceptions.NeutronException):
+    message = _("The segmentation id is not specified in "
+                "existing gateway interfaces.")
 
 
 class L2GatewaySegmentationRequired(exceptions.NeutronException):
