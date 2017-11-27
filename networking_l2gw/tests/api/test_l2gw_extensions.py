@@ -16,10 +16,10 @@
 import random
 
 from neutron.tests.tempest.api import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
-from tempest import test
 
 from networking_l2gw.tests.api import base_l2gw
 
@@ -50,7 +50,7 @@ class L2GatewayExtensionTestJSON(base.BaseAdminNetworkTest):
         if (len(CONF.l2gw.l2gw_switch) <= 0):
             msg = ('At least one switch detail must be defined.')
             raise cls.skipException(msg)
-        if not test.is_extension_enabled('l2-gateway', 'network'):
+        if not utils.is_extension_enabled('l2-gateway', 'network'):
             msg = "L2Gateway Extension not enabled."
             raise cls.skipException(msg)
 
