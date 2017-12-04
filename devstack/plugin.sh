@@ -37,7 +37,7 @@ function configure_l2gw_plugin {
 function configure_tempest_for_l2gw {
     if is_service_enabled tempest; then
        iniset $TEMPEST_CONFIG l2gw l2gw_switch "cell08-5930-01::FortyGigE1/0/1|100"
-       source /opt/stack/new/tempest/.tox/tempest/bin/activate
+       source $TEMPEST_DIR/.tox/tempest/bin/activate
        pip install -r $L2GW_DIR/test-requirements.txt
        deactivate
     fi
