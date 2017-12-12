@@ -12,6 +12,7 @@
         # failures, please reach us on #tripleo IRC channel.
         - tripleo-ci-centos-7-scenario004-multinode-oooq
         - tripleo-ci-centos-7-scenario004-multinode-oooq-container
+        - networking-l2gw-tempest-dummy
     gate:
       jobs:
         - tripleo-ci-centos-7-scenario004-multinode-oooq
