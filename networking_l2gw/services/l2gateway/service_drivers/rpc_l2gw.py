@@ -70,6 +70,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         self.gateway_resource = constants.GATEWAY_RESOURCE_NAME
         self.l2gateway_db = l2_gw_db.L2GatewayMixin()
         self.type_manager = managers.TypeManager()
+        self.port_dict_before_update = []
 
     @property
     def service_type(self):

@@ -1339,3 +1339,296 @@ class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
             self.assertRaises(l2gw_exc.L2GatewayInterfaceNotFound,
                               self.plugin.create_l2_gateway_connection,
                               self.db_context, fake_l2gw_conn_dict)
+
+    def test_validate_gateway_for_update_with_invalid_device(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_dict = {"l2_gateway": {"name": "fake_name",
+                                         "devices":
+                                         [{"interfaces":
+                                           [{"name": "port1",
+                                             "segmentation_id": [
+                                                 "111"]}],
+                                           "device_name": "device_name"}]}}
+        with mock.patch.object(db,
+                               'get_physical_switch_by_name',
+                               return_value=None):
+            self.assertRaises(l2gw_exc.L2GatewayDeviceNotFound,
+                              self.plugin._validate_gateway_for_update,
+                              self.db_context, fake_l2gw_dict)
+
+    def test_validate_gateway_for_update_with_invalid_port(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_dict = {"l2_gateway": {"name": "fake_name",
+                                         "devices":
+                                         [{"interfaces":
+                                           [{"name": "port1",
+                                             "segmentation_id": [
+                                                 "111"]}],
+                                           "device_name": "device_name"}]}}
+        fake_physical_switch = {'uuid': 'fake_id',
+                                'name': 'fake_device_name',
+                                'tunnel_ip': 'fake_tunnel_ip',
+                                'ovsdb_identifier': 'fake_ovsdb_id',
+                                'switch_fault_status': None}
+        with mock.patch.object(db,
+                               'get_physical_switch_by_name',
+                               return_value=fake_physical_switch), \
+            mock.patch.object(db,
+                              'get_physical_port_by_name_and_ps',
+                              return_value=None):
+            self.assertRaises(l2gw_exc.L2GatewayPhysicalPortNotFound,
+                              self.plugin._validate_gateway_for_update,
+                              self.db_context, fake_l2gw_dict)
+
+    def test_update_l2_gateway(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_dict = {'id': 'fake_l2gw_id',
+                          'tenant_id': 'fake_tenant_id',
+                          "name": "fake_l2gw_name",
+                          "devices":
+                                [{"interfaces": [{"name": "port1",
+                                                  "segmentation_id": ["111"]}],
+                                  "device_name": "fake_device_name",
+                                  'id': 'fake_device_id'}]}
+        fake_l2gw_id = 'fake_l2gw_id'
+        fake_device_dict = {'devices':
+                            [{'device_name': 'fake_device',
+                              'interfaces': [{'name': 'fake_interface'}]}]}
+        fake_device_list = [fake_device_dict]
+        fake_conn_dict = {'l2_gateway_id': 'fake_l2gw_id',
+                          'ovsdb_identifier': 'fake_ovsdb_id',
+                          'network_id': 'fake_network_id'}
+        fake_conn_list = [fake_conn_dict]
+        fake_vlan_dict = {'vlan': 100,
+                          'logical_switch_uuid': 'fake_uuid'}
+        fake_physical_port = ovsdb_schema.PhysicalPort(
+            uuid='fake_uuid',
+            name='fake_interface_name',
+            phys_switch_id='fake_uuid',
+            vlan_binding_dicts=None,
+            port_fault_status=None)
+        fake_phys_port_dict = fake_physical_port.__dict__
+        fake_phys_port_dict['vlan_bindings'] = [fake_vlan_dict]
+        fake_port_list = [fake_phys_port_dict]
+        ovsdb_id = 'fake_ovsdb_id'
+        logical_switch = {'uuid': 'fake_id'}
+        with mock.patch.object(self.service_plugin,
+                               '_admin_check',
+                               return_value=True) as admin_check, \
+            mock.patch.object(self.plugin,
+                              '_validate_gateway_for_update') as validate_gateway, \
+            mock.patch.object(self.service_plugin,
+                              'get_l2gateway_devices_by_gateway_id',
+                              return_value=fake_device_list) as device_list, \
+            mock.patch.object(self.service_plugin,
+                              '_get_l2_gateway_connections',
+                              return_value=fake_conn_list) as conn_list, \
+            mock.patch.object(self.plugin,
+                              '_process_port_list',
+                              return_value=(ovsdb_id,
+                                            logical_switch,
+                                            fake_port_list)) as port_list:
+            self.plugin.update_l2_gateway(
+                self.db_context, fake_l2gw_id, fake_l2gw_dict)
+            admin_check.assert_called_with(self.db_context, 'UPDATE')
+            self.assertTrue(validate_gateway.called)
+            device_list.assert_called_with(self.db_context, 'fake_l2gw_id')
+            conn_list.assert_called_with(self.db_context)
+            port_list.assert_called_with(
+                self.db_context, fake_device_dict,
+                fake_conn_dict, "UPDATE")
+            self.assertEqual(self.plugin.port_dict_before_update,
+                             fake_port_list)
+
+    def test_update_l2_gateway_postcommit_with_add_port(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_dict = {'id': 'fake_l2gw_id',
+                          'tenant_id': 'fake_tenant_id',
+                          "name": "fake_l2gw_name",
+                          "devices":
+                                [{"interfaces": [{"name": "port1",
+                                                  "segmentation_id": ["111"]}],
+                                  "device_name": "fake_device_name",
+                                  'id': 'fake_device_id'}]}
+        fake_device_dict = {'devices': [{'device_name': 'fake_device_name',
+                                         'interfaces': [{'name': 'port1'}]}]}
+        fake_device_list = [fake_device_dict]
+        fake_conn_dict = {'l2_gateway_id': 'fake_l2gw_id',
+                          'ovsdb_identifier': 'fake_ovsdb_id',
+                          'network_id': 'fake_network_id'}
+        fake_conn_list = [fake_conn_dict]
+        fake_vlan_dict = {'vlan': 100,
+                          'logical_switch_uuid': 'fake_ls_id'}
+        fake_physical_port_1 = ovsdb_schema.PhysicalPort(
+            uuid='fake_uuid_1',
+            name='fake_interface_name_1',
+            phys_switch_id='fake_uuid_1',
+            vlan_binding_dicts=None,
+            port_fault_status=None)
+        fake_physical_port_2 = ovsdb_schema.PhysicalPort(
+            uuid='fake_uuid_2',
+            name='fake_interface_name_2',
+            phys_switch_id='fake_uuid_2',
+            vlan_binding_dicts=None,
+            port_fault_status=None)
+        fake_phys_port_dict_1 = fake_physical_port_1.__dict__
+        fake_phys_port_dict_1['vlan_bindings'] = [fake_vlan_dict]
+        fake_phys_port_dict_2 = fake_physical_port_2.__dict__
+        fake_phys_port_dict_2['vlan_bindings'] = [fake_vlan_dict]
+        fake_port_list_before_update = [fake_phys_port_dict_1]
+        fake_port_list_after_update = [fake_phys_port_dict_1,
+                                       fake_phys_port_dict_2]
+        port_list_add = [fake_phys_port_dict_2]
+        fake_port = {'device_owner': 'fake_owner',
+                     'network_id': 'fake_network_id',
+                     'mac_address': 'fake_mac',
+                     'ip_address': 'fake_ip',
+                     'allowed_address_pairs': [{'ip_address': 'fake_ip',
+                                                'mac_address': 'fake_mac'}]}
+        fake_port_list = [fake_port]
+        ovsdb_id = 'fake_ovsdb_id'
+        logical_switch = {'uuid': 'fake_ls_id'}
+        fake_ls_dict = {'logical_switch_name': 'fake_network_id',
+                        'ovsdb_identifier': 'fake_ovsdb_id'}
+        fake_pl_dict = {'uuid': 'fake_uuid', 'dst_ip': 'fake_ip1',
+                        'ovsdb_identifier': 'fake_ovsdb_id',
+                        'macs': [fake_port]}
+        mac_dict = {'fake_ip1': fake_pl_dict['macs']}
+        fake_pl_list = [fake_pl_dict]
+        with mock.patch.object(self.plugin,
+                               'port_dict_before_update',
+                               fake_port_list_before_update), \
+            mock.patch.object(self.service_plugin,
+                              '_admin_check',
+                              return_value=True) as admin_check, \
+            mock.patch.object(self.service_plugin,
+                              'get_l2gateway_devices_by_gateway_id',
+                              return_value=fake_device_list) as device_list, \
+            mock.patch.object(self.service_plugin,
+                              '_get_l2_gateway_connections',
+                              return_value=fake_conn_list) as conn_list, \
+            mock.patch.object(self.plugin,
+                              '_process_port_list',
+                              return_value=(ovsdb_id,
+                                            logical_switch,
+                                            fake_port_list_after_update)) as port_list, \
+            mock.patch.object(self.plugin,
+                              '_get_logical_switch_dict',
+                              return_value=fake_ls_dict) as get_ls, \
+            mock.patch.object(self.plugin,
+                              '_get_port_details',
+                              return_value=fake_port_list) as get_port, \
+            mock.patch.object(self.plugin,
+                              '_get_ip_details',
+                              return_value=('fake_ip1',
+                                            'fake_ip2')) as get_ip, \
+            mock.patch.object(self.plugin, '_get_dict',
+                              return_value=mock.ANY) as get_dict, \
+            mock.patch.object(db,
+                              'get_ucast_mac_remote_by_mac_and_ls') as get_ucast_mac, \
+            mock.patch.object(self.plugin,
+                              '_get_locator_list',
+                              return_value=fake_pl_list) as get_pl, \
+            mock.patch.object(self.plugin.agent_rpc,
+                              'update_connection_to_gateway') as update_rpc:
+            self.plugin.update_l2_gateway_postcommit(self.db_context,
+                                                     fake_l2gw_dict)
+            admin_check.assert_called_with(self.db_context, 'UPDATE')
+            device_list.assert_called_with(self.db_context, 'fake_l2gw_id')
+            conn_list.assert_called_with(self.db_context)
+            port_list.assert_called_with(
+                self.db_context, fake_device_dict,
+                fake_conn_dict, "UPDATE")
+            get_ls.assert_called_with(self.db_context,
+                                      logical_switch,
+                                      fake_conn_dict)
+            get_port.assert_called_with(self.db_context, 'fake_network_id')
+            self.assertTrue(get_ip.called)
+            self.assertTrue(get_dict.called)
+            self.assertEqual(get_ucast_mac.call_count, 2)
+            self.assertTrue(get_pl.called)
+            update_rpc.assert_called_with(self.db_context, ovsdb_id,
+                                          fake_ls_dict, fake_pl_list, mac_dict,
+                                          port_list_add, 'CREATE')
+
+    def test_update_l2_gateway_postcommit_with_del_port(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_dict = {'id': 'fake_l2gw_id',
+                          'tenant_id': 'fake_tenant_id',
+                          "name": "fake_l2gw_name",
+                          "devices":
+                              [{"interfaces": [{"name": "port1",
+                                                "segmentation_id": ["111"]}],
+                                "device_name": "fake_device_name",
+                                'id': 'fake_device_id'}]}
+        fake_device_dict = {'devices': [{'device_name': 'fake_device_name',
+                                         'interfaces': [{'name': 'port1'}]}]}
+        fake_device_list = [fake_device_dict]
+        fake_conn_dict = {'l2_gateway_id': 'fake_l2gw_id',
+                          'ovsdb_identifier': 'fake_ovsdb_id',
+                          'network_id': 'fake_network_id'}
+        fake_conn_list = [fake_conn_dict]
+        fake_vlan_dict = {'vlan': 100,
+                          'logical_switch_uuid': 'fake_ls_id'}
+        fake_physical_port_1 = ovsdb_schema.PhysicalPort(
+            uuid='fake_uuid_1',
+            name='fake_interface_name_1',
+            phys_switch_id='fake_uuid_1',
+            vlan_binding_dicts=None,
+            port_fault_status=None)
+        fake_physical_port_2 = ovsdb_schema.PhysicalPort(
+            uuid='fake_uuid_2',
+            name='fake_interface_name_2',
+            phys_switch_id='fake_uuid_2',
+            vlan_binding_dicts=None,
+            port_fault_status=None)
+        fake_phys_port_dict_1 = fake_physical_port_1.__dict__
+        fake_phys_port_dict_1['vlan_bindings'] = [fake_vlan_dict]
+        fake_phys_port_dict_2 = fake_physical_port_2.__dict__
+        fake_phys_port_dict_2['vlan_bindings'] = [fake_vlan_dict]
+        fake_port_list_before_update = [fake_phys_port_dict_1,
+                                        fake_phys_port_dict_2]
+        fake_port_list_after_update = [fake_phys_port_dict_1]
+        port_list_del = [fake_phys_port_dict_2]
+        ovsdb_id = 'fake_ovsdb_id'
+        logical_switch = {'uuid': 'fake_ls_id'}
+        fake_ls_dict = {'logical_switch_name': 'fake_network_id',
+                        'ovsdb_identifier': 'fake_ovsdb_id'}
+        mac_dict = {}
+        fake_pl_list = []
+        with mock.patch.object(self.plugin,
+                               'port_dict_before_update',
+                               fake_port_list_before_update), \
+            mock.patch.object(self.service_plugin,
+                              '_admin_check',
+                              return_value=True) as admin_check, \
+            mock.patch.object(self.service_plugin,
+                              'get_l2gateway_devices_by_gateway_id',
+                              return_value=fake_device_list) as device_list, \
+            mock.patch.object(self.service_plugin,
+                              '_get_l2_gateway_connections',
+                              return_value=fake_conn_list) as conn_list, \
+            mock.patch.object(self.plugin,
+                              '_process_port_list',
+                              return_value=(ovsdb_id,
+                                            logical_switch,
+                                            fake_port_list_after_update)) as port_list, \
+            mock.patch.object(self.plugin,
+                              '_get_logical_switch_dict',
+                              return_value=fake_ls_dict) as get_ls, \
+            mock.patch.object(self.plugin.agent_rpc,
+                              'update_connection_to_gateway') as update_rpc:
+            self.plugin.update_l2_gateway_postcommit(self.db_context,
+                                                     fake_l2gw_dict)
+            admin_check.assert_called_with(self.db_context, 'UPDATE')
+            device_list.assert_called_with(self.db_context, 'fake_l2gw_id')
+            conn_list.assert_called_with(self.db_context)
+            port_list.assert_called_with(
+                self.db_context, fake_device_dict,
+                fake_conn_dict, "UPDATE")
+            get_ls.assert_called_with(self.db_context,
+                                      logical_switch,
+                                      fake_conn_dict)
+            update_rpc.assert_called_with(self.db_context, ovsdb_id,
+                                          fake_ls_dict, fake_pl_list, mac_dict,
+                                          port_list_del, 'DELETE')
