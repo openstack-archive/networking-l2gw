@@ -290,24 +290,24 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         with context.session.begin(subtransactions=True):
             gw_db = self._get_l2_gateway(context, l2_gw_id)
             tenant_id = self._get_tenant_id_for_create(context, gw_db)
-            if self._retrieve_gateway_connections(context,
-                                                  l2_gw_id,
-                                                  nw_map):
-                raise l2gw_exc.L2GatewayConnectionExists(mapping=nw_map,
-                                                         gateway_id=l2_gw_id)
             nw_map['tenant_id'] = tenant_id
-            connection_id = uuidutils.generate_uuid()
-            nw_map['id'] = connection_id
             if not segmentation_id:
                 nw_map['segmentation_id'] = "0"
-            gw_db.network_connections.append(
-                models.L2GatewayConnection(**nw_map))
-            gw_db = models.L2GatewayConnection(id=connection_id,
-                                               tenant_id=tenant_id,
-                                               network_id=network_id,
-                                               l2_gateway_id=l2_gw_id,
-                                               segmentation_id=segmentation_id)
-        return self._make_l2gw_connections_dict(gw_db)
+            conn_db = self._retrieve_gateway_connections(context, l2_gw_id,
+                                                         nw_map)
+            if not conn_db:
+                connection_id = uuidutils.generate_uuid()
+                nw_map['id'] = connection_id
+                gw_db.network_connections.append(
+                    models.L2GatewayConnection(**nw_map))
+                gw_db = models.L2GatewayConnection(
+                    id=connection_id,
+                    tenant_id=tenant_id,
+                    network_id=network_id,
+                    l2_gateway_id=l2_gw_id,
+                    segmentation_id=segmentation_id)
+                return self._make_l2gw_connections_dict(gw_db)
+            return self._make_l2gw_connections_dict(conn_db[0])
 
     def get_l2_gateway_connections(self, context, filters=None,
                                    fields=None,
@@ -495,21 +495,41 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         gw = l2_gateway[self.gateway_resource]
         devices = None
         dev_db = None
-        l2gw_db = None
         if 'devices' in gw:
             devices = gw['devices']
+        if not devices:
+            return
         with context.session.begin(subtransactions=True):
-            l2gw_db = self._get_l2_gateway(context, id)
-            if l2gw_db.network_connections:
-                raise l2gw_exc.L2GatewayInUse(gateway_id=id)
+            # Attemp to retrieve l2gw
+            gw_db = self._get_l2_gateway(context, id)
             if devices:
                 for device in devices:
                     dev_name = device['device_name']
-                    dev_db = (self._get_l2gw_devices_by_name_andl2gwid(
-                        context, dev_name, id))
+                    dev_db = self._get_l2gw_devices_by_name_andl2gwid(
+                        context, dev_name, id)
                     if not dev_db:
-                        raise l2gw_exc.L2GatewayDeviceNotFound(device_id="")
+                        raise l2gw_exc.L2GatewayDeviceNotFound(
+                            device_id=dev_name)
                     self.validate_device_name(context, dev_name, id)
+                    interface_list = device['interfaces']
+                    if not interface_list:
+                        raise l2gw_exc.L2GatewayInterfaceRequired()
+                    if constants.SEG_ID in interface_list[0]:
+                        for interfaces in interface_list:
+                            if constants.SEG_ID not in interfaces:
+                                raise l2gw_exc.L2GatewaySegmentationRequired()
+                    if constants.SEG_ID not in interface_list[0]:
+                        for interfaces in interface_list[1:]:
+                            if constants.SEG_ID in interfaces:
+                                raise l2gw_exc.L2GatewaySegmentationRequired()
+                    if gw_db.devices:
+                        if gw_db.devices[0].interfaces[0]['segmentation_id']:
+                            if constants.SEG_ID not in interface_list[0]:
+                                raise l2gw_exc.L2GatewaySegmentationIDExists()
+                        else:
+                            if constants.SEG_ID in interface_list[0]:
+                                raise l2gw_exc.\
+                                    L2GatewaySegmentationIDNotExists()
 
     def validate_l2_gateway_connection_for_create(self, context,
                                                   l2_gateway_connection):

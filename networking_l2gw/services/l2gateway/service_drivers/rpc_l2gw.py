@@ -347,6 +347,32 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                         int_name=int_name, device_name=device_name,
                         fault_status=port_status)
 
+    def _validate_gateway_for_update(self, context, gw):
+        LOG.debug("L2gwRpcDriver._validate_gateway_for_update gw=%s",
+                  gw)
+        devices = gw.get('l2_gateway').get('devices')
+
+        for device in devices:
+            interfaces = device.get('interfaces')
+            device_name = device.get("device_name")
+            for interface in interfaces:
+                interface_name = interface.get('name')
+                physical_switch = db.get_physical_switch_by_name(
+                    context, device.get('device_name'))
+                if not physical_switch:
+                    raise l2gw_exc.L2GatewayDeviceNotFound(
+                        device_id=device_name)
+                ovsdb_identifier = physical_switch.get('ovsdb_identifier')
+                pp_dict = {'interface_name': interface_name,
+                           'ovsdb_identifier': ovsdb_identifier,
+                           'physical_switch_id': physical_switch.get('uuid')}
+
+                ps_port = db.get_physical_port_by_name_and_ps(context, pp_dict)
+                if not ps_port:
+                    raise l2gw_exc.L2GatewayPhysicalPortNotFound(
+                        int_name=interface_name,
+                        device_name=device_name)
+
     def _validate_connection(self, context, gw_connection):
         seg_id = gw_connection.get('segmentation_id', None)
         l2_gw_id = gw_connection.get('l2_gateway_id')
@@ -388,8 +414,12 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         seg_id = gw_connection.get('segmentation_id', None)
         interfaces = self.service_plugin.get_l2gateway_interfaces_by_device_id(
             context, device['id'])
+        LOG.debug("L2gwRpcDriver._process_port_list: ints=%s",
+                  interfaces)
         for interface in interfaces:
             interface_name = interface.get('interface_name')
+            LOG.debug("L2gwRpcDriver._process_port_list: int_name=%s",
+                      interface_name)
             physical_switch = db.get_physical_switch_by_name(
                 context, device.get('device_name'))
             if not physical_switch:
@@ -417,6 +447,8 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
                 raise Exception(msg)
             pp_dict['uuid'] = ps_port.get('uuid')
             pp_dict['name'] = ps_port.get('name')
+            LOG.debug("L2gwRpcDriver._process_port_list: pp_dict.name=%s",
+                      pp_dict['name'])
             port_dict = self._generate_port_list(
                 context, method, seg_id, interface, pp_dict,
                 logical_switch_uuid, gw_connection)
@@ -606,11 +638,115 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
         pass
 
     def update_l2_gateway(self, context, l2_gateway_id, l2_gateway):
-        """Update l2 gateway."""
-        pass
+        """Check the port list for update"""
+        self.service_plugin._admin_check(context, 'UPDATE')
+        self._validate_gateway_for_update(context, l2_gateway)
+        self.port_dict_before_update = []
+        # get l2 gateway devices
+        l2gateway_devices = (
+            self.service_plugin.get_l2gateway_devices_by_gateway_id(
+                context, l2_gateway_id))
+        # get l2 gateway connections
+        gw_connections = self.service_plugin._get_l2_gateway_connections(
+            context)
+
+        for gw_connection in gw_connections:
+            for device in l2gateway_devices:
+                ovsdb_identifier, logical_switch, port_dict \
+                    = (self._process_port_list(context, device,
+                                               gw_connection, "UPDATE"))
+                self.port_dict_before_update.extend(port_dict)
 
     def update_l2_gateway_postcommit(self, context, l2_gateway):
-        pass
+        """Process the call from the CLI and trigger the RPC,
+
+        to update the connection of the gateway.
+        """
+        self.service_plugin._admin_check(context, 'UPDATE')
+
+        # get l2 gateway devices
+        l2gateway_devices = (
+            self.service_plugin.get_l2gateway_devices_by_gateway_id(
+                context, l2_gateway['id']))
+        # get l2 gateway connections
+        gw_connections = self.service_plugin._get_l2_gateway_connections(
+            context)
+
+        for gw_connection in gw_connections:
+            u_mac_dict = {}
+            mac_dict = {}
+            for device in l2gateway_devices:
+                locator_list = []
+                ovsdb_identifier, logical_switch, port_dict = (
+                    self._process_port_list(context, device,
+                                            gw_connection, "UPDATE"))
+                ls_dict = self._get_logical_switch_dict(
+                    context, logical_switch, gw_connection)
+                port_dict_before_update_con = \
+                    [port for port in self.port_dict_before_update
+                     if port['vlan_bindings'][0]['logical_switch_uuid'] ==
+                     logical_switch['uuid']]
+                port_dict_add = \
+                    [port for port in port_dict
+                     if port not in port_dict_before_update_con]
+                port_dict_delete = \
+                    [port for port in port_dict_before_update_con
+                     if port not in port_dict]
+                if port_dict_add:
+                    ports = self._get_port_details(
+                        context, gw_connection.get('network_id'))
+                    LOG.debug("L2gwRpcDriver.update_l2_gw: ports=%s", ports)
+                    for port in ports:
+                        mac_list = []
+                        if port['device_owner']:
+                            dst_ip, ip_address = self._get_ip_details(context,
+                                                                      port)
+                            mac_ip_pairs = []
+                            if isinstance(
+                                    port.get("allowed_address_pairs"), list):
+                                for address_pair in \
+                                        port['allowed_address_pairs']:
+                                    mac = address_pair['mac_address']
+                                    mac_ip_pairs.append(
+                                        (mac, address_pair['ip_address']))
+                            mac_ip_pairs.append((port.get('mac_address'),
+                                                 ip_address))
+
+                            for mac, ip in mac_ip_pairs:
+                                mac_remote = self._get_dict(
+                                    ovsdb_schema.UcastMacsRemote(
+                                        uuid=None,
+                                        mac=mac,
+                                        logical_switch_id=None,
+                                        physical_locator_id=None,
+                                        ip_address=ip))
+                                if logical_switch:
+                                    u_mac_dict['mac'] = mac
+                                    u_mac_dict['ovsdb_identifier'] = \
+                                        ovsdb_identifier
+                                    u_mac_dict['logical_switch_uuid'] = (
+                                        logical_switch.get('uuid'))
+                                    ucast_mac_remote = (
+                                        db.get_ucast_mac_remote_by_mac_and_ls(
+                                            context, u_mac_dict))
+                                    if not ucast_mac_remote:
+                                        mac_list.append(mac_remote)
+                                else:
+                                    mac_list.append(mac_remote)
+                            locator_list = self._get_locator_list(
+                                context, dst_ip, ovsdb_identifier, mac_list,
+                                locator_list)
+                    for locator in locator_list:
+                        mac_dict[locator.get('dst_ip')] = locator.pop('macs')
+                        locator.pop('ovsdb_identifier')
+                    self.agent_rpc.update_connection_to_gateway(
+                        context, ovsdb_identifier, ls_dict, locator_list,
+                        mac_dict, port_dict_add, 'CREATE')
+
+                if port_dict_delete:
+                    self.agent_rpc.update_connection_to_gateway(
+                        context, ovsdb_identifier, ls_dict, locator_list,
+                        mac_dict, port_dict_delete, 'DELETE')
 
     def delete_l2_gateway(self, context, id):
         """delete the l2 gateway by id."""
