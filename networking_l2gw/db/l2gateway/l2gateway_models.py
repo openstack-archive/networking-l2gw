@@ -13,12 +13,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from neutron.db import standard_attr
 from neutron_lib.db import model_base
 import sqlalchemy as sa
 from sqlalchemy import orm
 
 
-class L2GatewayConnection(model_base.BASEV2, model_base.HasProject,
+class L2GatewayConnection(standard_attr.HasStandardAttributes,
+                          model_base.BASEV2, model_base.HasProject,
                           model_base.HasId):
     """Define an l2 gateway connection between a l2 gateway and a network."""
     l2_gateway_id = sa.Column(sa.String(36),
@@ -30,6 +32,7 @@ class L2GatewayConnection(model_base.BASEV2, model_base.HasProject,
     segmentation_id = sa.Column(sa.Integer)
     __table_args__ = (sa.UniqueConstraint(l2_gateway_id,
                                           network_id),)
+    api_collections = ["l2_gateway_connections"]
 
 
 class L2GatewayInterface(model_base.BASEV2, model_base.HasId):
@@ -40,25 +43,35 @@ class L2GatewayInterface(model_base.BASEV2, model_base.HasId):
                                         ondelete='CASCADE'),
                           nullable=False)
     segmentation_id = sa.Column(sa.Integer)
+    revises_on_change = ('devices', )
 
 
-class L2GatewayDevice(model_base.BASEV2, model_base.HasId):
+class L2GatewayDevice(standard_attr.HasStandardAttributes,
+                      model_base.BASEV2, model_base.HasId):
     """Define an l2 gateway device."""
     device_name = sa.Column(sa.String(255), nullable=False)
-    interfaces = orm.relationship(L2GatewayInterface,
-                                  backref='l2gatewaydevices',
-                                  cascade='all,delete')
+    interfaces = orm.relationship(
+        L2GatewayInterface,
+        backref=sa.orm.backref("devices", uselist=False,
+                               lazy='joined', load_on_pending=True),
+        cascade='all,delete')
     l2_gateway_id = sa.Column(sa.String(36),
                               sa.ForeignKey('l2gateways.id',
                                             ondelete='CASCADE'),
                               nullable=False)
+    revises_on_change = ('gateways', )
+    api_collections = ["l2_gateway_devices"]
 
 
-class L2Gateway(model_base.BASEV2, model_base.HasId, model_base.HasProject):
+class L2Gateway(standard_attr.HasStandardAttributes,
+                model_base.BASEV2, model_base.HasId, model_base.HasProject):
     """Define an l2 gateway."""
     name = sa.Column(sa.String(255))
-    devices = orm.relationship(L2GatewayDevice,
-                               backref='l2gateways',
-                               cascade='all,delete')
+    devices = orm.relationship(
+        L2GatewayDevice,
+        backref=sa.orm.backref("gateways", uselist=False,
+                               lazy='joined', load_on_pending=True),
+        cascade='all,delete')
     network_connections = orm.relationship(L2GatewayConnection,
                                            lazy='joined')
+    api_collections = ["l2_gateways"]
