@@ -13,10 +13,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from neutron.callbacks import events
-from neutron.callbacks import registry
-from neutron.callbacks import resources
-
 from networking_l2gw.db.l2gateway import db_query
 from networking_l2gw.db.l2gateway import l2gateway_models as models
 from networking_l2gw.extensions import l2gateway
@@ -26,6 +22,9 @@ from networking_l2gw.services.l2gateway.common import constants
 from networking_l2gw.services.l2gateway.common import l2gw_validators
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 
+from neutron_lib.callbacks import events
+from neutron_lib.callbacks import registry
+from neutron_lib.callbacks import resources
 from neutron_lib import exceptions
 from neutron_lib.plugins import directory
 from oslo_log import log as logging
