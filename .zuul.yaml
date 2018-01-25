@@ -1,5 +1,4 @@
 - project:
-    name: openstack/networking-l2gw
     check:
       jobs:
         # TripleO jobs that deploy networking-l2gw.
