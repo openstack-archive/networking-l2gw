@@ -14,6 +14,9 @@ set +o xtrace
 
 function install_l2gw {
    setup_develop $L2GW_DIR
+   Q_PLUGIN_CONF_PATH=etc/neutron/plugins/ml2
+   Q_PLUGIN_CONF_FILENAME=ml2_conf.ini
+   Q_PLUGIN_CONF_FILE=$Q_PLUGIN_CONF_PATH/$Q_PLUGIN_CONF_FILENAME
 }
 
 function configure_agent_conf {
@@ -50,11 +53,10 @@ if is_service_enabled l2gw-plugin; then
         :
     elif [[ "$1" == "stack" && "$2" == "install" ]]; then
         install_l2gw
-    elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
-        _neutron_service_plugin_class_add $L2GW_PLUGIN
     elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
         configure_tempest_for_l2gw
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+        neutron_service_plugin_class_add $L2GW_PLUGIN
         configure_l2gw_plugin
         run_l2gw_alembic_migration
         if is_service_enabled q-svc; then
