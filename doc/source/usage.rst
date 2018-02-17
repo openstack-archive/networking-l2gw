@@ -64,8 +64,8 @@ Ex:
 ovsdb_hosts = ovsdb1:127.0.0.1:6632
 
 In devstack local.conf will do a trick.(Refer - networking-l2gw/devstack/README.rst)
-L2GW agent will be listed as part of “neutron agent-list”.
-Details of L2GW Agent can be seen using “neutron agent-show <agent-id>” command
+L2GW agent will be listed as part of "neutron agent-list".
+Details of L2GW Agent can be seen using "neutron agent-show <agent-id>" command
 L2 Gateway Agent connects to ovsdb server to configure and fetch L2 Gateways
 
 .. _l2gw_deployment:
