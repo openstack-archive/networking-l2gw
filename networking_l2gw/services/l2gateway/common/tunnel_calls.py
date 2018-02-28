@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from neutron.common import topics as neutron_topics
 from neutron.plugins.ml2.drivers.l2pop import rpc as l2pop_rpc
 from neutron.plugins.ml2 import managers
 from neutron.plugins.ml2 import rpc as rpc
+from neutron_lib.agent import topics
 
 
 class Tunnel_Calls(object):
@@ -25,7 +25,7 @@ class Tunnel_Calls(object):
         self._construct_rpc_stuff()
 
     def _construct_rpc_stuff(self):
-        self.notifier = rpc.AgentNotifierApi(neutron_topics.AGENT)
+        self.notifier = rpc.AgentNotifierApi(topics.AGENT)
         self.type_manager = managers.TypeManager()
         self.tunnel_rpc_obj = rpc.RpcCallbacks(self.notifier,
                                                self.type_manager)
