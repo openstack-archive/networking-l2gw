@@ -7,3 +7,4 @@ Babel!=2.4.0,>=2.3.4 # BSD
 neutron-lib>=1.13.0 # Apache-2.0
 python-neutronclient>=6.7.0 # Apache-2.0
 ovsdbapp>=0.9.1 # Apache-2.0
+neutron>=12.0.0  # Apache-2.0
