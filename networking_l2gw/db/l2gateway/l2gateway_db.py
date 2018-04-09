@@ -308,6 +308,11 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                 return self._make_l2gw_connections_dict(gw_db)
             return self._make_l2gw_connections_dict(conn_db[0])
 
+    def get_l2_gateway_connections_count(self, context, filters=None):
+        return len(self._get_collection(context, models.L2GatewayConnection,
+                                        self._make_l2gw_connections_dict,
+                                        filters=filters))
+
     def get_l2_gateway_connections(self, context, filters=None,
                                    fields=None,
                                    sorts=None, limit=None, marker=None,
