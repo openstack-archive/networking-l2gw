@@ -220,6 +220,11 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         with self.ctx.session.begin(subtransactions=True):
             return self.mixin.get_l2_gateway_connections(self.ctx)
 
+    def _get_no_l2gateway_connections(self):
+        """Create L2 gateway connection resource helper method."""
+        with self.ctx.session.begin(subtransactions=True):
+            return self.mixin.get_l2_gateway_connections_count(self.ctx)
+
     def _delete_l2gw_connection_by_l2gw_id(self, l2gw_id):
         """Delete l2 gateway connection."""
         with self.ctx.session.begin(subtransactions=True):
@@ -257,6 +262,7 @@ class L2GWTestCase(testlib_api.SqlTestCase):
         exp_net_id = gw_con['network_id']
         self.assertEqual(net['id'], exp_net_id)
         list_con = self._list_l2gateway_connection()
+        self.assertEqual(1, self._get_no_l2gateway_connections())
         self.assertIn('id', list_con[0])
         result = self._delete_l2gw_connection_by_l2gw_id(l2gw_id)
         self.assertIsNone(result)
