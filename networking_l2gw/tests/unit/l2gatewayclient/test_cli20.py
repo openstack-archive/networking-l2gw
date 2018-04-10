@@ -11,7 +11,8 @@
 #    under the License.
 #
 
-from mox3 import mox
+import mock
+
 from neutronclient import shell as neutronshell
 from neutronclient.tests.unit import test_cli20 as neutron_test_cli20
 from neutronclient.v2_0 import client as l2gatewayclient
@@ -35,22 +36,44 @@ class MyComparator(neutron_test_cli20.MyComparator):
     pass
 
 
+class ContainsKeyValue(object):
+    """Checks whether key/value pair(s) are included in a dict parameter.
+
+    This class just checks whether specifid key/value pairs passed in
+    __init__() are included in a dict parameter. The comparison does not
+    fail even if other key/value pair(s) exists in a target dict.
+    """
+
+    def __init__(self, expected):
+        self._expected = expected
+
+    def __eq__(self, other):
+        if not isinstance(other, dict):
+            return False
+        for key, value in self._expected.items():
+            if key not in other:
+                return False
+            if other[key] != value:
+                return False
+        return True
+
+    def __repr__(self):
+        return ('<%s (expected: %s)>' %
+                (self.__class__.__name__, self._expected))
+
+
 class CLITestV20Base(neutron_test_cli20.CLITestV20Base):
 
     def setUp(self, plurals=None):
         super(CLITestV20Base, self).setUp()
         self.client = l2gatewayclient.Client(token=TOKEN,
                                              endpoint_url=self.endurl)
-        self.mox = mox.Mox()
 
     def _test_create_resource(self, resource, cmd, name, myid, args,
                               position_names, position_values,
                               tenant_id=None, tags=None, admin_state_up=True,
                               extra_body=None, cmd_resource=None,
                               parent_id=None, **kwargs):
-        self.mox.StubOutWithMock(cmd, "get_client")
-        self.mox.StubOutWithMock(self.client.httpclient, "request")
-        cmd.get_client().MultipleTimes().AndReturn(self.client)
         if not cmd_resource:
             cmd_resource = resource
         body = {resource: {}, }
@@ -66,18 +89,20 @@ class CLITestV20Base(neutron_test_cli20.CLITestV20Base):
         # url method body
         resource_plural = self.client.get_resource_plural(cmd_resource)
         path = getattr(self.client, resource_plural + "_path")
-        mox_body = MyComparator(body, self.client)
-        self.client.httpclient.request(
-            end_url(path), 'POST',
-            body=mox_body,
-            headers=mox.ContainsKeyValue(
-                'X-Auth-Token', TOKEN)).AndReturn((MyResp(200), resstr))
-        self.mox.ReplayAll()
-        cmd_parser = cmd.get_parser('create_' + resource)
-        neutronshell.run_command(cmd, cmd_parser, args)
-        self.mox.VerifyAll()
-        self.mox.UnsetStubs()
-        _str = self.fake_stdout.make_string()
-        self.assertIn(myid, _str)
-        if name:
-            self.assertIn(name, _str)
+        mock_body = MyComparator(body, self.client)
+        resp = (MyResp(200), resstr)
+        with mock.patch.object(cmd, "get_client",
+                               return_value=self.client), \
+                mock.patch.object(self.client.httpclient, "request",
+                                  return_value=resp):
+            self.client.httpclient.request(
+                end_url(path), 'POST',
+                body=mock_body,
+                headers=ContainsKeyValue(
+                    {'X-Auth-Token': TOKEN}))
+            cmd_parser = cmd.get_parser('create_' + resource)
+            neutronshell.run_command(cmd, cmd_parser, args)
+            _str = self.fake_stdout.make_string()
+            self.assertIn(myid, _str)
+            if name:
+                self.assertIn(name, _str)
