@@ -117,7 +117,8 @@ class TestOVSDBWriter(base.BaseTestCase):
                                           'foo_value'})) as recv_data, \
             mock.patch.object(ovsdb_writer.OVSDBWriter,
                               '_process_response',
-                              return_value=(ret_value, None)) as proc_response, \
+                              return_value=(ret_value, None)
+                              ) as proc_response, \
             mock.patch.object(ovsdb_writer.LOG,
                               'debug'):
             self.l2gw_ovsdb._get_reply(self.op_id, mock.ANY)
@@ -178,7 +179,8 @@ class TestOVSDBWriter(base.BaseTestCase):
     def test_insert_ucast_macs_remote(self):
         """Test case to test insert ucast_macs_remote."""
         with mock.patch.object(ovsdb_writer.OVSDBWriter,
-                               '_get_ucast_macs_remote_dict') as get_ucast_mac_remote, \
+                               '_get_ucast_macs_remote_dict'
+                               ) as get_ucast_mac_remote, \
                 mock.patch.object(random,
                                   'getrandbits',
                                   return_value=self.op_id
@@ -207,11 +209,14 @@ class TestOVSDBWriter(base.BaseTestCase):
            without locator_id and logical_switch_id.
         """
         with mock.patch.object(ovsdb_writer.OVSDBWriter,
-                               '_get_ucast_macs_remote_dict') as get_ucast_mac_remote, \
+                               '_get_ucast_macs_remote_dict'
+                               ) as get_ucast_mac_remote, \
                 mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                  '_get_physical_locator_dict') as get_physical_locator_dict, \
+                                  '_get_physical_locator_dict'
+                                  ) as get_physical_locator_dict, \
                 mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                  '_get_logical_switch_dict') as get_logical_switch_dict, \
+                                  '_get_logical_switch_dict'
+                                  ) as get_logical_switch_dict, \
                 mock.patch.object(random,
                                   'getrandbits',
                                   return_value=self.op_id
@@ -221,9 +226,12 @@ class TestOVSDBWriter(base.BaseTestCase):
                                   ), \
                 mock.patch.object(ovsdb_writer.LOG,
                                   'debug'), \
-                mock.patch.object(ovsdb_schema, 'LogicalSwitch') as mock_ls, \
-                mock.patch.object(ovsdb_schema, 'PhysicalLocator') as mock_pl, \
-                mock.patch.object(ovsdb_schema, 'UcastMacsRemote'):
+                mock.patch.object(ovsdb_schema,
+                                  'LogicalSwitch') as mock_ls, \
+                mock.patch.object(ovsdb_schema,
+                                  'PhysicalLocator') as mock_pl, \
+                mock.patch.object(ovsdb_schema,
+                                  'UcastMacsRemote'):
             locator = mock_pl.return_value
             locator.uuid = None
             ls = mock_ls.return_value
@@ -240,7 +248,8 @@ class TestOVSDBWriter(base.BaseTestCase):
     def test_update_ucast_macs_remote(self):
         """Test case to test update ucast_macs_remote."""
         with mock.patch.object(ovsdb_writer.OVSDBWriter,
-                               '_get_dict_for_update_ucast_mac_remote') as get_update_ucast_mac_remote, \
+                               '_get_dict_for_update_ucast_mac_remote'
+                               ) as get_update_ucast_mac_remote, \
                 mock.patch.object(random,
                                   'getrandbits',
                                   return_value=self.op_id
@@ -267,9 +276,11 @@ class TestOVSDBWriter(base.BaseTestCase):
            without locator_id and logical_switch_id.
         """
         with mock.patch.object(ovsdb_writer.OVSDBWriter,
-                               '_get_dict_for_update_ucast_mac_remote') as get_update_ucast_mac_remote, \
+                               '_get_dict_for_update_ucast_mac_remote'
+                               ) as get_update_ucast_mac_remote, \
                 mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                  '_get_physical_locator_dict') as get_physical_locator_dict, \
+                                  '_get_physical_locator_dict'
+                                  ) as get_physical_locator_dict, \
                 mock.patch.object(random,
                                   'getrandbits',
                                   return_value=self.op_id
@@ -279,7 +290,8 @@ class TestOVSDBWriter(base.BaseTestCase):
                                   ), \
                 mock.patch.object(ovsdb_writer.LOG,
                                   'debug'), \
-                mock.patch.object(ovsdb_schema, 'PhysicalLocator') as mock_pl, \
+                mock.patch.object(ovsdb_schema,
+                                  'PhysicalLocator') as mock_pl, \
                 mock.patch.object(ovsdb_schema, 'UcastMacsRemote'):
             locator = mock_pl.return_value
             locator.uuid = None
@@ -295,11 +307,11 @@ class TestOVSDBWriter(base.BaseTestCase):
                                'getrandbits',
                                return_value=self.op_id
                                ) as get_rand, \
-                mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                  '_send_and_receive'
-                                  ) as send_n_receive, \
-                mock.patch.object(ovsdb_writer.LOG,
-                                  'debug'):
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_send_and_receive'
+                              ) as send_n_receive, \
+            mock.patch.object(ovsdb_writer.LOG,
+                              'debug'):
             self.l2gw_ovsdb.delete_ucast_macs_remote(mock.Mock(),
                                                      mock.MagicMock(),
                                                      mock.ANY)
@@ -311,15 +323,15 @@ class TestOVSDBWriter(base.BaseTestCase):
         """Test case to test update_connection_to_gateway."""
         with mock.patch.object(ovsdb_writer.OVSDBWriter,
                                '_get_bindings_to_update') as get_bindings, \
-                mock.patch.object(random,
-                                  'getrandbits',
-                                  return_value=self.op_id
-                                  ) as get_rand, \
-                mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                  '_send_and_receive'
-                                  ) as send_n_receive, \
-                mock.patch.object(ovsdb_writer.LOG,
-                                  'debug'):
+            mock.patch.object(random,
+                              'getrandbits',
+                              return_value=self.op_id
+                              ) as get_rand, \
+            mock.patch.object(ovsdb_writer.OVSDBWriter,
+                              '_send_and_receive'
+                              ) as send_n_receive, \
+            mock.patch.object(ovsdb_writer.LOG,
+                              'debug'):
             self.l2gw_ovsdb.update_connection_to_gateway(
                 mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock(),
                 mock.ANY, mock.ANY)
@@ -331,15 +343,20 @@ class TestOVSDBWriter(base.BaseTestCase):
     def test_get_bindings_to_update1(self):
         """Test case to test _get_bindings_to_update."""
         fake_op_method = 'CREATE'
-        with mock.patch.object(ovsdb_writer.OVSDBWriter,
-                               '_form_logical_switch') as form_ls, \
-                mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                  '_form_physical_locators') as form_pl, \
-                mock.patch.object(ovsdb_writer.OVSDBWriter,
-                                  '_form_ports') as form_pp, \
-                mock.patch.object(ovsdb_schema, 'LogicalSwitch') as mock_ls, \
-                mock.patch.object(ovsdb_schema, 'PhysicalLocator') as mock_pl, \
-                mock.patch.object(ovsdb_schema, 'UcastMacsRemote') as mock_ucmr, \
+        with mock.patch.object(
+                ovsdb_writer.OVSDBWriter,
+                '_form_logical_switch') as form_ls, \
+                mock.patch.object(
+                    ovsdb_writer.OVSDBWriter,
+                    '_form_physical_locators') as form_pl, \
+                mock.patch.object(
+                    ovsdb_writer.OVSDBWriter, '_form_ports') as form_pp, \
+                mock.patch.object(
+                    ovsdb_schema, 'LogicalSwitch') as mock_ls, \
+                mock.patch.object(
+                    ovsdb_schema, 'PhysicalLocator') as mock_pl, \
+                mock.patch.object(
+                    ovsdb_schema, 'UcastMacsRemote') as mock_ucmr, \
                 mock.patch.object(ovsdb_schema, 'PhysicalPort') as mock_pp:
             ls = mock_ls.return_value = ovsdb_schema.LogicalSwitch(
                 'ls_uuid', 'ls_name', 'ls_key', 'ls_desc')

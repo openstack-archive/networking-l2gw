@@ -82,8 +82,8 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
                           cert_path, ca_cert_path)
                 priv_key_file = priv_key_path + "/" + ovsdb_identifier + ".key"
                 cert_file = cert_path + "/" + ovsdb_identifier + ".cert"
-                ca_cert_file = (ca_cert_path + "/" + ovsdb_identifier
-                                + ".ca_cert")
+                ca_cert_file = (ca_cert_path + "/" + ovsdb_identifier +
+                                ".ca_cert")
                 is_priv_key = os.path.isfile(priv_key_file)
                 is_cert_file = os.path.isfile(cert_file)
                 is_ca_cert_file = os.path.isfile(ca_cert_file)

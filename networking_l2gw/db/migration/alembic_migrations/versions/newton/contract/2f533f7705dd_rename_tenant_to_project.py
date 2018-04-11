@@ -20,17 +20,16 @@ Create Date: 2016-07-15 01:53:43.922235
 
 """
 
-# revision identifiers, used by Alembic.
-revision = '2f533f7705dd'
-down_revision = '79919185aa99'
-depends_on = ('49ce408ac349',)
-
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.engine import reflection
 
 from neutron.db import migration
 
+# revision identifiers, used by Alembic.
+revision = '2f533f7705dd'
+down_revision = '79919185aa99'
+depends_on = ('49ce408ac349',)
 
 _INSPECTOR = None
 

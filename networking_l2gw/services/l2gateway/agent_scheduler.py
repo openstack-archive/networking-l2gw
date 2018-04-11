@@ -88,9 +88,10 @@ class L2GatewayAgentScheduler(agents_db.AgentDbMixin):
         #    agent.
 
         # Check if there already exists Monitor agent and it's the only one.
-        monitor_agents = [x for x in agents_to_process
-                          if x['configurations'].get(srv_const.L2GW_AGENT_TYPE)
-                          == srv_const.MONITOR]
+        monitor_agents = [
+            x for x in agents_to_process
+            if x['configurations'].get(srv_const.L2GW_AGENT_TYPE) ==
+            srv_const.MONITOR]
         if len(monitor_agents) == 1:
             return
 

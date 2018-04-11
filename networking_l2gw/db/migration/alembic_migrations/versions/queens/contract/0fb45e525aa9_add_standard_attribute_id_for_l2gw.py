@@ -21,14 +21,13 @@ Create Date: 2017-12-19 07:49:35.418145
 
 """
 
+from alembic import op
+import sqlalchemy as sa
+
 # revision identifiers, used by Alembic.
 revision = '0fb45e525aa9'
 down_revision = '2f533f7705dd'
 depends_on = ('8d7d772eafcf',)
-
-from alembic import op
-import sqlalchemy as sa
-
 
 TABLES = ("l2gateways", "l2gatewayconnections", "l2gatewaydevices")
 

@@ -124,36 +124,65 @@ class TestOVSDBData(base.BaseTestCase):
             'deleted_physical_locators': fake_deleted_physical_locators,
             'deleted_local_macs': fake_deleted_local_macs,
             'deleted_remote_macs': fake_deleted_remote_macs}
-        with mock.patch.object(self.ovsdb_data,
-                               '_process_new_logical_switches') as process_new_logical_switches, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_new_physical_ports') as process_new_physical_ports, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_new_physical_switches') as process_new_physical_switches, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_new_physical_locators') as process_new_physical_locators, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_new_local_macs') as process_new_local_macs, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_new_remote_macs') as process_new_remote_macs, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_modified_remote_macs') as process_modified_remote_macs, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_modified_physical_ports') as process_modified_physical_ports, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_deleted_logical_switches') as process_deleted_logical_switches, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_deleted_physical_switches') as process_deleted_physical_switches, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_deleted_physical_ports') as process_deleted_physical_ports, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_deleted_physical_locators') as process_deleted_physical_locators, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_deleted_local_macs') as process_deleted_local_macs, \
-            mock.patch.object(self.ovsdb_data,
-                              '_process_deleted_remote_macs') as process_deleted_remote_macs, \
-            mock.patch.object(self.ovsdb_data,
-                              '_handle_l2pop') as mock_handle_l2pop:
+        with mock.patch.object(
+                self.ovsdb_data,
+                '_process_new_logical_switches'
+                ) as process_new_logical_switches, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_new_physical_ports'
+                ) as process_new_physical_ports, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_new_physical_switches'
+                ) as process_new_physical_switches, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_new_physical_locators'
+                ) as process_new_physical_locators, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_new_local_macs'
+                ) as process_new_local_macs, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_new_remote_macs'
+                ) as process_new_remote_macs, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_modified_remote_macs'
+                ) as process_modified_remote_macs, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_modified_physical_ports'
+                ) as process_modified_physical_ports, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_deleted_logical_switches'
+                ) as process_deleted_logical_switches, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_deleted_physical_switches'
+                ) as process_deleted_physical_switches, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_deleted_physical_ports'
+                ) as process_deleted_physical_ports, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_deleted_physical_locators'
+                ) as process_deleted_physical_locators, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_deleted_local_macs'
+                ) as process_deleted_local_macs, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_process_deleted_remote_macs'
+                ) as process_deleted_remote_macs, \
+            mock.patch.object(
+                self.ovsdb_data,
+                '_handle_l2pop') as mock_handle_l2pop:
             self.ovsdb_data.entry_table = {
                 'new_logical_switches': process_new_logical_switches,
                 'new_physical_ports': process_new_physical_ports,

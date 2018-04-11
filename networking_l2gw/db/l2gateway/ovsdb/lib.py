@@ -461,8 +461,8 @@ def delete_pending_ucast_mac_remote(context, operation,
     """Delete a pending ucast_mac_remote."""
     session = context.session
     with session.begin(subtransactions=True):
-        if(mac_remote and logical_switch_id
-           and ovsdb_identifier and operation):
+        if(mac_remote and logical_switch_id and
+           ovsdb_identifier and operation):
             query = session.query(models.PendingUcastMacsRemote).filter_by(
                 mac=mac_remote,
                 ovsdb_identifier=ovsdb_identifier,

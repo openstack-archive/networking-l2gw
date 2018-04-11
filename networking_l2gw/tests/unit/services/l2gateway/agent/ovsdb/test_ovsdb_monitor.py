@@ -126,9 +126,11 @@ class TestOVSDBMonitor(base.BaseTestCase):
                                   'send', return_value=True) as send, \
                 mock.patch.object(ovsdb_monitor.OVSDBMonitor,
                                   '_process_response',
-                                  return_value=(mock.ANY, False)) as process_resp, \
+                                  return_value=(mock.ANY, False)
+                                  ) as process_resp, \
                 mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_monitor_msg') as process_monitor_msg, \
+                                  '_process_monitor_msg'
+                                  ) as process_monitor_msg, \
                 mock.patch.object(ovsdb_monitor.LOG, 'warning'):
             self.l2gw_ovsdb.set_monitor_response_handler()
             self.assertTrue(set_handler.called)
@@ -141,15 +143,15 @@ class TestOVSDBMonitor(base.BaseTestCase):
         self.l2gw_ovsdb.connected = True
         with mock.patch.object(ovsdb_monitor.OVSDBMonitor,
                                '_set_handler') as set_handler, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  'send', return_value=False) as send, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_response',
-                                  return_value=(mock.ANY, True)) as process_resp, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_monitor_msg') as process_monitor_msg, \
-                mock.patch.object(ovsdb_monitor.LOG,
-                                  'warning'):
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              'send', return_value=False) as send, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_response',
+                              return_value=(mock.ANY, True)) as process_resp, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_monitor_msg') as process_monitor_msg, \
+            mock.patch.object(ovsdb_monitor.LOG,
+                              'warning'):
             self.l2gw_ovsdb.set_monitor_response_handler()
             self.assertTrue(set_handler.called)
             self.assertTrue(send.called)
@@ -167,22 +169,29 @@ class TestOVSDBMonitor(base.BaseTestCase):
     def test_process_update_event(self):
         """Test case to test _process_update_event."""
         with mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                               '_process_physical_port') as proc_phy_port, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_physical_switch') as proc_phy_switch, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_logical_switch') as proc_logic_switch, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_ucast_macs_local') as proc_ucast_mac, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_physical_locator') as proc_phy_loc, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_ucast_macs_remote') as proc_ucast_mac_remote, \
-                mock.patch.object(ovsdb_monitor.OVSDBMonitor,
-                                  '_process_mcast_macs_local') as proc_mcast_mac_local, \
-                mock.patch.object(
-                    ovsdb_monitor.OVSDBMonitor,
-                    '_process_physical_locator_set') as proc_phys_loc_set:
+                               '_process_physical_port'
+                               ) as proc_phy_port, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_physical_switch'
+                              ) as proc_phy_switch, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_logical_switch'
+                              ) as proc_logic_switch, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_ucast_macs_local'
+                              ) as proc_ucast_mac, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_physical_locator'
+                              ) as proc_phy_loc, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_ucast_macs_remote'
+                              ) as proc_ucast_mac_remote, \
+            mock.patch.object(ovsdb_monitor.OVSDBMonitor,
+                              '_process_mcast_macs_local'
+                              ) as proc_mcast_mac_local, \
+            mock.patch.object(
+                ovsdb_monitor.OVSDBMonitor,
+                '_process_physical_locator_set') as proc_phys_loc_set:
             self.l2gw_ovsdb._setup_dispatch_table()
             self.l2gw_ovsdb._process_update_event(self.msg2, mock.ANY)
             self.assertTrue(proc_phy_port.called)
