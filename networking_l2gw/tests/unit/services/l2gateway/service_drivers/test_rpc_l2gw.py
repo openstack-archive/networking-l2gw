@@ -48,7 +48,7 @@ class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
     @mock.patch.object(agents_db,
                        'AgentExtRpcCallback')
     @mock.patch.object(n_rpc,
-                       'create_connection')
+                       'Connection')
     @mock.patch.object(n_rpc.Connection,
                        'consume_in_threads')
     @mock.patch.object(rpc_l2gw.LOG,
