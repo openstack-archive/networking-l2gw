@@ -15,7 +15,6 @@
 
 import abc
 
-from neutron.common import constants as nc_const
 from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
 
@@ -556,7 +555,7 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
             })
         for agent in agents:
             conf_dict = agent.get("configurations")
-            if conf_dict.get("agent_mode") == nc_const.L3_AGENT_MODE_DVR_SNAT:
+            if conf_dict.get("agent_mode") == n_const.L3_AGENT_MODE_DVR_SNAT:
                 hostname = agent.get('host')
                 for endpoint in endpoints:
                     if endpoint.get('host') == hostname:
