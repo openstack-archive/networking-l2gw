@@ -35,24 +35,61 @@ l2gatewayconnections      represents connection between neutron network and the 
 
 L2GW NB REST API definitions are below,
 
-3.1 Create l2gateway: neutron-l2gw l2-gateway-create <l2gateway-name> --device name="<device_name>",interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
-Note : segid is an optional parameter , if it’s not provided while creating l2gateway , it needs to be provided while creating l2-gateway-connection
+3.1 Openstack CLI
+-----------------
 
-3.2 List l2gateways: neutron-l2gw l2-gateway-list
+OpenStackClient provides
+`the basic network commands <https://docs.openstack.org/python-openstackclient/latest/cli/command-list.html>`__
+and networking-l2gw has an extension for l2gw related commands.
 
-3.3 Show l2gateway: neutron-l2gw l2-gateway-show <l2gateway-id/l2gateway-name>
+* Create l2gateway: **openstack l2gw create** <l2gateway-name> --device name="<device_name>",interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
+  **Note** : segid is an optional parameter , if it’s not provided while creating l2gateway , it needs to be provided while creating l2-gateway-connection
 
-3.4 Delete l2gateway: neutron-l2gw l2-gateway-delete <l2gateway-id/l2gateway-name>
+* List l2gateways: **openstack l2gw list**
 
-3.5 Update l2gateway: neutron-l2gw l2-gateway-update <l2gateway-id/l2gateway-name> --name <new l2gateway-name> --device name=<device_name>,interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
+* Show l2gateway: **openstack l2gw show** <l2gateway-id/l2gateway-name>
 
-3.6 Create l2gateway-connection: neutron-l2gw l2-gateway-connection-create <l2gateway-id > <network-id> --default-segmentation-id [seg-id]
+* Delete l2gateway: **openstack l2gw delete** <l2gateway-id/l2gateway-name>
 
-3.7 List l2gateway-connection: neutron-l2gw l2-gateway-connection-list
+* Update l2gateway: **openstack l2gw update** <l2gateway-id/l2gateway-name> --name <new l2gateway-name> --device name=<device_name>,interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
 
-3.8 Show l2gateway-connection: neutron-l2gw l2-gateway-connection-show <l2gateway-connection-id>
+* Create l2gateway-connection: **openstack l2gw connection create** <l2gateway-id > <network-id> --default-segmentation-id [seg-id]
 
-3.9 Delete l2gateway-connection: neutron-l2gw l2-gateway-connection-delete <l2gateway-connection-id>
+* List l2gateway-connection: **openstack l2gw connection list**
+
+* Show l2gateway-connection: **openstack l2gw connection show** <l2gateway-connection-id>
+
+* Delete l2gateway-connection: **openstack l2gw connection delete** <l2gateway-connection-id>
+
+
+3.2 Neutron CLI
+---------------
+
+.. warning::
+
+   neutron CLI is now deprecated, and will be removed in the future.
+   Use openstack CLI instead.
+
+* Create l2gateway: neutron-l2gw l2-gateway-create <l2gateway-name> --device name="<device_name>",interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
+  **Note** : segid is an optional parameter , if it’s not provided while creating l2gateway , it needs to be provided while creating l2-gateway-connection
+
+* List l2gateways: neutron-l2gw l2-gateway-list
+
+* Show l2gateway: neutron-l2gw l2-gateway-show <l2gateway-id/l2gateway-name>
+
+* Delete l2gateway: neutron-l2gw l2-gateway-delete <l2gateway-id/l2gateway-name>
+
+* Update l2gateway: neutron-l2gw l2-gateway-update <l2gateway-id/l2gateway-name> --name <new l2gateway-name> --device name=<device_name>,interface_names=”<interface_name1>|[<segid1] ; <interface_name2>|[<segid2]”
+
+* Create l2gateway-connection: neutron-l2gw l2-gateway-connection-create <l2gateway-id > <network-id> --default-segmentation-id [seg-id]
+
+* List l2gateway-connection: neutron-l2gw l2-gateway-connection-list
+
+* Show l2gateway-connection: neutron-l2gw l2-gateway-connection-show <l2gateway-connection-id>
+
+* Delete l2gateway-connection: neutron-l2gw l2-gateway-connection-delete <l2gateway-connection-id>
+
+
 
 .. _l2gw_agent:
 
