@@ -2,8 +2,14 @@
     check:
       jobs:
         - networking-l2gw-tempest-dummy
-        - openstack-tox-lower-constraints
+        - l2gw-tox-lower-constraints
     gate:
       jobs:
         - networking-l2gw-tempest-dummy
-        - openstack-tox-lower-constraints
+        - l2gw-tox-lower-constraints
+
+- job:
+    name: l2gw-tox-lower-constraints
+    parent: openstack-tox-lower-constraints
+    required-projects:
+      - openstack/neutron
