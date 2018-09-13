@@ -55,7 +55,7 @@ class SimpleIdlTests(base.BaseTestCase):
         session_mock = mock.patch.object(
             ovs.jsonrpc.Session,
             'open',
-            return_value=ovs.jsonrpc.Session(None, None)
+            return_value=ovs.jsonrpc.Session(None, None, None)
         )
         wait_mock = mock.patch.object(idlutils, 'wait_for_change')
 
