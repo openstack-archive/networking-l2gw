@@ -14,8 +14,8 @@
 # limitations under the License.
 import mock
 
-from neutron.common import rpc as n_rpc
 from neutron.tests import base
+from neutron_lib import rpc as n_rpc
 
 from networking_l2gw.services.l2gateway import exceptions as l2gw_exc
 from networking_l2gw.services.l2gateway.service_drivers import agent_api

@@ -20,10 +20,10 @@ import eventlet
 import mock
 
 from neutron.agent import rpc as agent_rpc
-from neutron.common import rpc
 from neutron.conf.agent import common as agent_config
 from neutron.tests import base
 from neutron_lib import context
+from neutron_lib import rpc
 
 from oslo_config import cfg
 from oslo_service import loopingcall

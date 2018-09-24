@@ -16,8 +16,8 @@
 import sys
 
 from neutron.common import config as common_config
-from neutron.common import rpc as n_rpc
 from neutron.conf.agent import common as agent_config
+from neutron_lib import rpc as n_rpc
 from oslo_config import cfg
 from oslo_service import service
 
