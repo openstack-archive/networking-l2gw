@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from neutron.common import rpc as n_rpc
+from neutron_lib import rpc as n_rpc
 
 from networking_l2gw._i18n import _
 from networking_l2gw.services.l2gateway.common import constants as n_const

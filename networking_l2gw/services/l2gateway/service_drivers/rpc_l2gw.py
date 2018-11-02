@@ -15,8 +15,8 @@
 
 import abc
 
-from neutron.common import rpc as n_rpc
 from neutron.db import agents_db
+from neutron_lib import rpc as n_rpc
 
 from networking_l2gw._i18n import _
 from networking_l2gw.db.l2gateway import l2gateway_db as l2_gw_db
