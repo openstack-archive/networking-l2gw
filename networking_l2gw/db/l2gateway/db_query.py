@@ -15,6 +15,7 @@
 
 from neutron.db import models_v2
 
+from neutron_lib.db import model_query
 from neutron_lib import exceptions
 from neutron_lib.plugins.ml2 import api
 import sqlalchemy as sa
@@ -51,7 +52,7 @@ class L2GatewayCommonDbMixin(object):
                               page_reverse=False):
         """Get collection query for the models."""
         collection = self._model_query(context, model)
-        collection = self._apply_filters_to_query(collection, model, filters)
+        collection = model_query.apply_filters(collection, model, filters)
         return collection
 
     def _get_marker_obj(self, context, resource, limit, marker):
