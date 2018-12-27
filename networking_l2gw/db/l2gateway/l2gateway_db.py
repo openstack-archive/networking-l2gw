@@ -568,7 +568,7 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
                                                 l2_gateway_conn_id)
         if gw_db is None:
             raise l2gw_exc.L2GatewayConnectionNotFound(
-                gateway_id=l2_gateway_conn_id)
+                id=l2_gateway_conn_id)
 
 
 def l2gw_callback(resource, event, trigger, **kwargs):
