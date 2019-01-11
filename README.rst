@@ -30,7 +30,7 @@ More information
 ----------------
 
 For help using or hacking on L2GW, you can send an email to the
-`OpenStack Development Mailing List <mailto:openstack-dev@lists.openstack.org>`;
+`OpenStack Discuss Mailing List <mailto:openstack-discuss@lists.openstack.org>`;
 please use the [L2-Gateway] Tag in the subject. Most folks involved hang out on
 the IRC channel #openstack-neutron.
 
