@@ -5,7 +5,7 @@ networking-l2gw
 API's and implementations to support L2 Gateways in Neutron.
 
 * Free software: Apache license
-* Source: https://git.openstack.org/cgit/openstack/networking-l2gw
+* Source: https://opendev.org/openstack/networking-l2gw
 
 L2 Gateways
 -----------
