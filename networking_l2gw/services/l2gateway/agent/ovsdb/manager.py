@@ -42,14 +42,17 @@ class OVSDBManager(base_agent_manager.BaseAgentManager):
         super(OVSDBManager, self).__init__(conf)
         self._extract_ovsdb_config(conf)
         self.enable_manager = cfg.CONF.ovsdb.enable_manager
+        periodic_interval = self.conf.ovsdb.periodic_interval
         if self.enable_manager:
             self.ovsdb_fd = None
             self._sock_open_connection()
             self.looping_task_ovsdb_states = (
                 loopingcall.FixedIntervalLoopingCall(self._send_ovsdb_states))
+            self.looping_task_ovsdb_states.start(interval=periodic_interval)
         else:
             self.looping_task = loopingcall.FixedIntervalLoopingCall(
                 self._connect_to_ovsdb_server)
+            self.looping_task.start(interval=periodic_interval)
 
     def _extract_ovsdb_config(self, conf):
         self.conf = conf or cfg.CONF
