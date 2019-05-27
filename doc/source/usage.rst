@@ -18,9 +18,9 @@ single broadcast domain. A typical use case is bridging the virtual with the phy
 
 L2GW introduces a various models to describe the relationships between logical and the physical entities.
 
-========================= ====================================================================
+========================= =====================================================================
    Models                       Description
-========================= ====================================================================
+========================= =====================================================================
 l2gateways                logical gateways that represents for the set of physical devices
 l2gatewaydevices          l2 gateway devices that represents for logical gateways.
 l2gatewayinterfaces       it represents the physical ports for the devices
@@ -115,7 +115,7 @@ L2 Gateway Agent connects to ovsdb server to configure and fetch L2 Gateways
            :width:  450px
            :align: center
 
-.. _l2gw_release_management
+.. _l2gw_release_management:
 
 6. L2GW Package Versioning and Release Management
 =================================================
