@@ -17,7 +17,10 @@ import mock
 from mock import MagicMock
 import ovs.jsonrpc
 
+from oslo_config import cfg
+
 from neutron.tests import base
+from neutron_lib import rpc as n_rpc
 from ovsdbapp.backend.ovs_idl import command as cmd
 from ovsdbapp.backend.ovs_idl import idlutils
 
@@ -50,6 +53,7 @@ class Msg(object):
 class SimpleIdlTests(base.BaseTestCase):
     def setUp(self):
         super(SimpleIdlTests, self).setUp()
+        n_rpc.init(cfg.CONF)
 
     def test_list_physical_switches(self):
         session_mock = mock.patch.object(
