@@ -1,4 +1,9 @@
 - project:
+    templates:
+      - check-requirements
+      - openstack-python-jobs-neutron
+      - openstack-python36-jobs-neutron
+      - build-openstack-docs-pti
     check:
       jobs:
         - networking-l2gw-tempest-dummy
