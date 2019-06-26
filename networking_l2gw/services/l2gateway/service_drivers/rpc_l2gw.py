@@ -350,7 +350,9 @@ class L2gwRpcDriver(service_drivers.L2gwDriver):
     def _validate_gateway_for_update(self, context, gw):
         LOG.debug("L2gwRpcDriver._validate_gateway_for_update gw=%s",
                   gw)
-        devices = gw.get('l2_gateway').get('devices')
+        # Note(lajoskatona): If the update is updating other keys than
+        # devices, just return, as the tricky part is updating devices.
+        devices = gw['l2_gateway'].get('devices', [])
 
         for device in devices:
             interfaces = device.get('interfaces')

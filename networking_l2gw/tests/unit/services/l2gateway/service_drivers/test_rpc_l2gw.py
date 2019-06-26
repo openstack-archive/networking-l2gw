@@ -1390,6 +1390,15 @@ class TestL2gwRpcDriver(test_plugin.Ml2PluginV2TestCase):
                               self.plugin._validate_gateway_for_update,
                               self.db_context, fake_l2gw_dict)
 
+    def test_validate_gateway_for_update_without_device(self):
+        self.db_context = ctx.get_admin_context()
+        fake_l2gw_dict = {"l2_gateway": {"name": "fake_name"}}
+        with mock.patch.object(db,
+                               'get_physical_switch_by_name',
+                               return_value=None):
+            self.plugin._validate_gateway_for_update(self.db_context,
+                                                     fake_l2gw_dict)
+
     def test_update_l2_gateway(self):
         self.db_context = ctx.get_admin_context()
         fake_l2gw_dict = {'id': 'fake_l2gw_id',
