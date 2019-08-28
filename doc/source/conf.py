@@ -71,10 +71,19 @@ htmlhelp_basename = '%sdoc' % project
 # [howto/manual]).
 latex_documents = [
     ('index',
-     '%s.tex' % project,
-     u'%s Documentation' % project,
-     u'OpenStack Foundation', 'manual'),
+     'doc-%s.tex' % project,
+     u'Networking L2GW Documentation',
+     u'networking-l2gw developers', 'manual'),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 #intersphinx_mapping = {'http://docs.python.org/': None}
+
+latex_elements = {
+    'makeindex': '',
+    'printindex': '',
+    'preamble': r'\setcounter{tocdepth}{3}',
+    # openany: Skip blank pages in generated PDFs
+    # oneside: Use the same page layout for both even and odd pages
+    'extraclassoptions': 'openany,oneside',
+}

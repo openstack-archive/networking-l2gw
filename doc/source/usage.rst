@@ -1,7 +1,6 @@
-
-========
-Overview
-========
+=====
+Usage
+=====
 
 .. _whatisl2gw:
 
