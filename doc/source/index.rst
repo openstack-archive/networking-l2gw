@@ -6,20 +6,18 @@
 Welcome to networking-l2gw's documentation!
 ========================================================
 
-Contents:
-
 .. toctree::
    :maxdepth: 2
 
-   readme
+   Introduction <readme>
    installation
    usage
    contributing
 
-Indices and tables
-==================
+.. only:: html
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   .. rubric:: Indices:
 
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`
