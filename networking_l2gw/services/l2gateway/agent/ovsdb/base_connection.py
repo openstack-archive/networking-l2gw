@@ -149,7 +149,7 @@ class BaseConnection(object):
                                    'file': ovsdb_id + ".ca_cert"})
             else:
                 LOG.error("you have enabled SSL for ovsdb %s, "
-                          "expecting the ovsdb identifier and ovdb IP "
+                          "expecting the ovsdb identifier and ovsdb IP "
                           "entry in ovsdb_hosts in l2gateway_agent.ini",
                           addr)
         return client_sock
