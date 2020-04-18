@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+from unittest import mock
 
 from neutron.agent import rpc as agent_rpc
 from neutron.conf.agent import common as agent_config

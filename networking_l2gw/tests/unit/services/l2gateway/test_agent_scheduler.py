@@ -16,8 +16,8 @@
 
 import copy
 import datetime
+from unittest import mock
 
-import mock
 from oslo_config import cfg
 from oslo_service import loopingcall
 from oslo_utils import timeutils

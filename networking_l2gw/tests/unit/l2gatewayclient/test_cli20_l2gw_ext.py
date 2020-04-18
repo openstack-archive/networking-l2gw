@@ -15,8 +15,8 @@
 #
 
 import sys
+from unittest import mock
 
-import mock
 
 from networking_l2gw.l2gatewayclient.l2gw_client_ext import (
     _l2_gateway as l2_gateway)

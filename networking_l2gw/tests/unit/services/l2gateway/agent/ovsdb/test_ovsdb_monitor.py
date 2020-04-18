@@ -15,9 +15,9 @@
 
 import socket
 import ssl
+from unittest import mock
 
 import eventlet
-import mock
 
 from neutron.tests import base
 

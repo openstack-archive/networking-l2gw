@@ -11,7 +11,7 @@
 #    under the License.
 #
 
-import mock
+from unittest import mock
 
 from neutronclient import shell as neutronshell
 from neutronclient.tests.unit import test_cli20 as neutron_test_cli20

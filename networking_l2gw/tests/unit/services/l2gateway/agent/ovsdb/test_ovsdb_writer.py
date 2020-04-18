@@ -16,8 +16,8 @@
 import random
 import socket
 import ssl
+from unittest import mock
 
-import mock
 
 from neutron.tests import base
 

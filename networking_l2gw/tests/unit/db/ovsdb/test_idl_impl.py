@@ -13,14 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
-from mock import MagicMock
-import ovs.jsonrpc
-
-from oslo_config import cfg
+from unittest import mock
 
 from neutron.tests import base
 from neutron_lib import rpc as n_rpc
+from oslo_config import cfg
+import ovs.jsonrpc
 from ovsdbapp.backend.ovs_idl import command as cmd
 from ovsdbapp.backend.ovs_idl import idlutils
 
@@ -68,12 +66,13 @@ class SimpleIdlTests(base.BaseTestCase):
             'execute',
             return_value=['ps1'])
         with session_mock, execute_mock, wait_mock:
-            ovs.jsonrpc.Session.run = MagicMock(
-                return_value=MagicMock(return_value='myrun'))
-            ovs.jsonrpc.Session.get_seqno = MagicMock(return_value=None)
-            ovs.jsonrpc.Session.wait = MagicMock(return_value=None)
-            ovs.jsonrpc.Session.is_connected = MagicMock(return_value=True)
-            ovs.jsonrpc.Session.recv = MagicMock(
+            ovs.jsonrpc.Session.run = mock.MagicMock(
+                return_value=mock.MagicMock(return_value='myrun'))
+            ovs.jsonrpc.Session.get_seqno = mock.MagicMock(return_value=None)
+            ovs.jsonrpc.Session.wait = mock.MagicMock(return_value=None)
+            ovs.jsonrpc.Session.is_connected = mock.MagicMock(
+                return_value=True)
+            ovs.jsonrpc.Session.recv = mock.MagicMock(
                 side_effect=[Msg, None, None, None, None])
 
             self.db = impl_idl.OvsdbHardwareVtepIdl(self,

@@ -15,9 +15,9 @@
 
 import os.path
 import socket
+from unittest import mock
 
 import eventlet
-import mock
 
 from neutron.agent import rpc as agent_rpc
 from neutron.conf.agent import common as agent_config
