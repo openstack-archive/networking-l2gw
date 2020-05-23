@@ -26,9 +26,11 @@ extensions = [
 ]
 
 # openstackdocstheme options
-repository_name = 'openstack/networking-l2gw'
-bug_project = 'networking-l2gw'
-bug_tag = ''
+openstackdocs_repo_name = 'openstack/networking-l2gw'
+openstackdocs_pdf_link = True
+openstackdocs_auto_name = False
+openstackdocs_bug_project = 'networking-l2gw'
+openstackdocs_bug_tag = ''
 html_theme = 'openstackdocs'
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
@@ -53,7 +55,7 @@ add_function_parentheses = True
 add_module_names = True
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'native'
 
 # -- Options for HTML output --------------------------------------------------
 
