@@ -452,11 +452,11 @@ class TestOVSDBWriter(base.BaseTestCase):
                                             base_test.FakeDecodeClass(
                                                 jsonutils.dumps(fake_data)))
         with mock.patch.object(socket, 'socket', return_value=fake_socket):
-                ovsdb_conf = base_test.FakeConf()
-                l2gw_obj = ovsdb_writer.OVSDBWriter(
-                    cfg.CONF.ovsdb, ovsdb_conf)
-                result = l2gw_obj._recv_data(mock.ANY)
-                self.assertEqual(jsonutils.dumps(fake_data), result)
+            ovsdb_conf = base_test.FakeConf()
+            l2gw_obj = ovsdb_writer.OVSDBWriter(
+                cfg.CONF.ovsdb, ovsdb_conf)
+            result = l2gw_obj._recv_data(mock.ANY)
+            self.assertEqual(jsonutils.dumps(fake_data), result)
 
     def test_recv_data_with_empty_data(self):
         """Test case to test _recv_data with empty data."""

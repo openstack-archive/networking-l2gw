@@ -83,33 +83,33 @@ def get_interface(interfaces):
 
 
 def _args2body(parsed_args, update=False):
-        if parsed_args.devices:
-            devices = parsed_args.devices
-            interfaces = []
-        else:
-            devices = []
-        device_dict = []
-        for device in devices:
-            if 'interface_names' in device.keys():
-                interface = device['interface_names']
-                if INTERFACE_DELIMITER in interface:
-                    interface_dict = interface.split(INTERFACE_DELIMITER)
-                    interfaces = get_interface(interface_dict)
-                else:
-                    interfaces = get_interface([interface])
-            if 'name' in device.keys():
-                device = {'device_name': device['name'],
-                          'interfaces': interfaces}
+    if parsed_args.devices:
+        devices = parsed_args.devices
+        interfaces = []
+    else:
+        devices = []
+    device_dict = []
+    for device in devices:
+        if 'interface_names' in device.keys():
+            interface = device['interface_names']
+            if INTERFACE_DELIMITER in interface:
+                interface_dict = interface.split(INTERFACE_DELIMITER)
+                interfaces = get_interface(interface_dict)
             else:
-                device = {'interfaces': interfaces}
-            device_dict.append(device)
-        if parsed_args.name:
-            l2gw_name = parsed_args.name
-            body = {L2_GATEWAY: {'name': l2gw_name,
-                                 'devices': device_dict}, }
+                interfaces = get_interface([interface])
+        if 'name' in device.keys():
+            device = {'device_name': device['name'],
+                      'interfaces': interfaces}
         else:
-            body = {L2_GATEWAY: {'devices': device_dict}, }
-        return body
+            device = {'interfaces': interfaces}
+        device_dict.append(device)
+    if parsed_args.name:
+        l2gw_name = parsed_args.name
+        body = {L2_GATEWAY: {'name': l2gw_name,
+                             'devices': device_dict}, }
+    else:
+        body = {L2_GATEWAY: {'devices': device_dict}, }
+    return body
 
 
 class CreateL2gw(command.ShowOne):

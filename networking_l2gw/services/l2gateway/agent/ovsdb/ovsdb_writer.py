@@ -251,7 +251,7 @@ class OVSDBWriter(base_connection.BaseConnection):
                         elif c == '}' and not (prev_char and
                                                prev_char == '\\'):
                             rc += 1
-                        if lc == rc and lc is not 0:
+                        if lc == rc and lc != 0:
                             chunks.append(response[0:i + 1])
                             message = "".join(chunks)
                             return message

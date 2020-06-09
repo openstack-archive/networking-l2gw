@@ -15,11 +15,8 @@
 
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class L2gwDriverBase(object):
+class L2gwDriverBase(object, metaclass=abc.ABCMeta):
 
     def __init__(self, service_plugin, validator=None):
         self.service_plugin = service_plugin
@@ -101,8 +98,7 @@ class L2gwDriverBase(object):
         pass
 
 
-@six.add_metaclass(abc.ABCMeta)
-class L2gwDriver(L2gwDriverBase):
+class L2gwDriver(L2gwDriverBase, metaclass=abc.ABCMeta):
 
     def __init__(self, service_plugin, validator=None):
         super(L2gwDriver, self).__init__(service_plugin)

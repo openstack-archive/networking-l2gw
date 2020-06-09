@@ -144,41 +144,41 @@ class L2GatewayMixin(l2gateway.L2GatewayPluginBase,
         tenant_id = self._get_tenant_id_for_create(context, gw)
         devices = gw['devices']
         with context.session.begin(subtransactions=True):
-                gw_db = models.L2Gateway(
-                    id=gw.get('id', uuidutils.generate_uuid()),
-                    tenant_id=tenant_id,
-                    name=gw.get('name'))
-                context.session.add(gw_db)
-                l2gw_device_dict = {}
-                for device in devices:
-                    l2gw_device_dict['l2_gateway_id'] = id
-                    device_name = device['device_name']
-                    l2gw_device_dict['device_name'] = device_name
-                    l2gw_device_dict['id'] = uuidutils.generate_uuid()
-                    uuid = self._generate_uuid()
-                    dev_db = models.L2GatewayDevice(id=uuid,
-                                                    l2_gateway_id=gw_db.id,
-                                                    device_name=device_name)
-                    context.session.add(dev_db)
-                    for interface_list in device['interfaces']:
-                        int_name = interface_list.get('name')
-                        if constants.SEG_ID in interface_list:
-                            seg_id_list = interface_list.get(constants.SEG_ID)
-                            for seg_ids in seg_id_list:
-                                uuid = self._generate_uuid()
-                                interface_db = self._get_int_model(uuid,
-                                                                   int_name,
-                                                                   dev_db.id,
-                                                                   seg_ids)
-                                context.session.add(interface_db)
-                        else:
+            gw_db = models.L2Gateway(
+                id=gw.get('id', uuidutils.generate_uuid()),
+                tenant_id=tenant_id,
+                name=gw.get('name'))
+            context.session.add(gw_db)
+            l2gw_device_dict = {}
+            for device in devices:
+                l2gw_device_dict['l2_gateway_id'] = id
+                device_name = device['device_name']
+                l2gw_device_dict['device_name'] = device_name
+                l2gw_device_dict['id'] = uuidutils.generate_uuid()
+                uuid = self._generate_uuid()
+                dev_db = models.L2GatewayDevice(id=uuid,
+                                                l2_gateway_id=gw_db.id,
+                                                device_name=device_name)
+                context.session.add(dev_db)
+                for interface_list in device['interfaces']:
+                    int_name = interface_list.get('name')
+                    if constants.SEG_ID in interface_list:
+                        seg_id_list = interface_list.get(constants.SEG_ID)
+                        for seg_ids in seg_id_list:
                             uuid = self._generate_uuid()
                             interface_db = self._get_int_model(uuid,
                                                                int_name,
                                                                dev_db.id,
-                                                               0)
+                                                               seg_ids)
                             context.session.add(interface_db)
-                        context.session.query(models.L2GatewayDevice).all()
+                    else:
+                        uuid = self._generate_uuid()
+                        interface_db = self._get_int_model(uuid,
+                                                           int_name,
+                                                           dev_db.id,
+                                                           0)
+                        context.session.add(interface_db)
+                    context.session.query(models.L2GatewayDevice).all()
         return self._make_l2_gateway_dict(gw_db)
 
     def update_l2_gateway(self, context, id, l2_gateway):

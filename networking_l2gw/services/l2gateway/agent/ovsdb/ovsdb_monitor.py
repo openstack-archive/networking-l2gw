@@ -97,37 +97,37 @@ class OVSDBMonitor(base_connection.BaseConnection):
     def set_monitor_response_handler(self, addr=None):
         """Monitor OVSDB tables to receive events for any changes in OVSDB."""
         if self.connected:
-                op_id = str(random.getrandbits(128))
-                props = {'select': {'initial': True,
-                                    'insert': True,
-                                    'delete': True,
-                                    'modify': True}}
-                monitor_message = {'id': op_id,
-                                   'method': 'monitor',
-                                   'params': [n_const.OVSDB_SCHEMA_NAME,
-                                              None,
-                                              {'Logical_Switch': [props],
-                                               'Physical_Switch': [props],
-                                               'Physical_Port': [props],
-                                               'Ucast_Macs_Local': [props],
-                                               'Ucast_Macs_Remote': [props],
-                                               'Physical_Locator': [props],
-                                               'Mcast_Macs_Local': [props],
-                                               'Physical_Locator_Set': [props]}
-                                              ]}
-                self._set_handler("update", self._update_event_handler)
-                if not self.send(monitor_message, addr=addr):
-                    # Return so that this will retried in the next iteration
-                    return
-                try:
-                    response_result = self._process_response(op_id)
-                except exceptions.OVSDBError:
-                    with excutils.save_and_reraise_exception():
-                        if self.enable_manager:
-                            self.check_monitor_table_thread = False
-                        LOG.exception("Exception while receiving the "
-                                      "response for the monitor message")
-                self._process_monitor_msg(response_result, addr)
+            op_id = str(random.getrandbits(128))
+            props = {'select': {'initial': True,
+                                'insert': True,
+                                'delete': True,
+                                'modify': True}}
+            monitor_message = {'id': op_id,
+                               'method': 'monitor',
+                               'params': [n_const.OVSDB_SCHEMA_NAME,
+                                          None,
+                                          {'Logical_Switch': [props],
+                                           'Physical_Switch': [props],
+                                           'Physical_Port': [props],
+                                           'Ucast_Macs_Local': [props],
+                                           'Ucast_Macs_Remote': [props],
+                                           'Physical_Locator': [props],
+                                           'Mcast_Macs_Local': [props],
+                                           'Physical_Locator_Set': [props]}
+                                          ]}
+            self._set_handler("update", self._update_event_handler)
+            if not self.send(monitor_message, addr=addr):
+                # Return so that this will retried in the next iteration
+                return
+            try:
+                response_result = self._process_response(op_id)
+            except exceptions.OVSDBError:
+                with excutils.save_and_reraise_exception():
+                    if self.enable_manager:
+                        self.check_monitor_table_thread = False
+                    LOG.exception("Exception while receiving the "
+                                  "response for the monitor message")
+            self._process_monitor_msg(response_result, addr)
 
     def _update_event_handler(self, message, addr):
         self._process_update_event(message, addr)
@@ -232,7 +232,7 @@ class OVSDBMonitor(base_connection.BaseConnection):
                             rc += 1
                         if rc > lc:
                             raise Exception("json string not valid")
-                        elif lc == rc and lc is not 0:
+                        elif lc == rc and lc != 0:
                             chunks.append(response[message_mark:i + 1])
                             message = "".join(chunks)
                             eventlet.greenthread.spawn_n(

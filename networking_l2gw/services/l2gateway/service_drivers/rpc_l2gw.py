@@ -39,7 +39,6 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_utils import importutils
-import six
 
 LOG = logging.getLogger(__name__)
 
@@ -48,8 +47,7 @@ L2GW_CALLBACK = ("networking_l2gw.services.l2gateway.ovsdb."
                  "data.L2GatewayOVSDBCallbacks")
 
 
-@six.add_metaclass(abc.ABCMeta)
-class L2gwRpcDriver(service_drivers.L2gwDriver):
+class L2gwRpcDriver(service_drivers.L2gwDriver, metaclass=abc.ABCMeta):
     """L2gw RPC Service Driver class."""
 
     def __init__(self, service_plugin, validator=None):

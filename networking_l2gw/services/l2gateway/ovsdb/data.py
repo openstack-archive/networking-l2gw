@@ -515,7 +515,7 @@ class OVSDBData(object):
         logical_switches = db.get_all_logical_switches_by_ovsdb_id(
             context, self.ovsdb_identifier)
         for logical_switch in logical_switches:
-                logical_switch_ids.add(logical_switch.get('uuid'))
+            logical_switch_ids.add(logical_switch.get('uuid'))
         return list(logical_switch_ids)
 
     def _get_agent_ips(self, context):

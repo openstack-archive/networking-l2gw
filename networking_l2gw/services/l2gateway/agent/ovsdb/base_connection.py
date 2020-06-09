@@ -24,7 +24,6 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
-import six
 
 from networking_l2gw.services.l2gateway.common import constants as n_const
 
@@ -225,7 +224,7 @@ class BaseConnection(object):
                             rc += 1
                         if rc > lc:
                             raise Exception("json string not valid")
-                        elif lc == rc and lc is not 0:
+                        elif lc == rc and lc != 0:
                             chunks.append(response[message_mark:i + 1])
                             message = "".join(chunks)
                             eventlet.greenthread.spawn_n(
@@ -269,7 +268,7 @@ class BaseConnection(object):
         while retry_count <= n_const.MAX_RETRIES:
             try:
                 data = jsonutils.dumps(message)
-                if not isinstance(data, six.binary_type):
+                if not isinstance(data, bytes):
                     data = data.encode()
                 if self.enable_manager:
                     bytes_sent = self.ovsdb_dicts.get(addr).send(data)
