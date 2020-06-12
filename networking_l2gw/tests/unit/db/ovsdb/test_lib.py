@@ -341,6 +341,15 @@ class OvsdbLibTestCase(testlib_api.SqlTestCase):
                        'ovsdb_identifier': 'host1'}
         return record_dict
 
+    def _get_vlan0_binding_dict(self):
+        port_uuid = _uuid()
+        ls_uuid = _uuid()
+        record_dict = {'port_uuid': port_uuid,
+                       'vlan': 0,
+                       'logical_switch_uuid': ls_uuid,
+                       'ovsdb_identifier': 'host1'}
+        return record_dict
+
     def _create_vlan_binding(self, record_dict, port_uuid=None):
         if port_uuid:
             record_dict['port_uuid'] = port_uuid
@@ -377,6 +386,13 @@ class OvsdbLibTestCase(testlib_api.SqlTestCase):
 
     def test_delete_vlan_binding(self):
         record_dict = self._get_vlan_binding_dict()
+        self._create_vlan_binding(record_dict)
+        lib.delete_vlan_binding(self.ctx, record_dict)
+        count = self.ctx.session.query(models.VlanBindings).count()
+        self.assertEqual(count, 0)
+
+    def test_delete_vlan0_binding(self):
+        record_dict = self._get_vlan0_binding_dict()
         self._create_vlan_binding(record_dict)
         lib.delete_vlan_binding(self.ctx, record_dict)
         count = self.ctx.session.query(models.VlanBindings).count()
