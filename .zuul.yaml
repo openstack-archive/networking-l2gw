@@ -1,8 +1,3 @@
 - project:
-    name: openstack/networking-l2gw
-    check:
-      jobs:
-        - networking-l2gw-tempest-dummy
-    gate:
-      jobs:
-        - networking-l2gw-tempest-dummy
+    templates:
+      - openstack-python-jobs-neutron
