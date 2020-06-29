@@ -4,17 +4,4 @@
       - openstack-python-jobs-neutron
       - openstack-python36-jobs-neutron
       - build-openstack-docs-pti
-    check:
-      jobs:
-        - networking-l2gw-tempest-dummy
-        - l2gw-tox-lower-constraints
-    gate:
-      jobs:
-        - networking-l2gw-tempest-dummy
-        - l2gw-tox-lower-constraints
 
-- job:
-    name: l2gw-tox-lower-constraints
-    parent: openstack-tox-lower-constraints
-    required-projects:
-      - openstack/neutron
