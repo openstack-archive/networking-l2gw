@@ -38,7 +38,8 @@ def delete_vlan_binding(context, record_dict):
     """Delete vlan bindings of a given physical port."""
     session = context.session
     with session.begin(subtransactions=True):
-        if(record_dict['vlan'] and record_dict['logical_switch_uuid']):
+        if (record_dict['vlan'] is not None and
+                record_dict['logical_switch_uuid']):
             session.query(models.VlanBindings).filter_by(
                 port_uuid=record_dict['port_uuid'], vlan=record_dict['vlan'],
                 logical_switch_uuid=record_dict['logical_switch_uuid'],
