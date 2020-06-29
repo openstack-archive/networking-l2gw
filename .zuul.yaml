@@ -1,11 +1,9 @@
 - project:
     check:
       jobs:
-        - networking-l2gw-tempest-dummy
         - l2gw-tox-lower-constraints
     gate:
       jobs:
-        - networking-l2gw-tempest-dummy
         - l2gw-tox-lower-constraints
 
 - job:
