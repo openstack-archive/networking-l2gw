@@ -1,6 +1,0 @@
-- project:
-    templates:
-      - check-requirements
-      - openstack-python3-ussuri-jobs-neutron
-      - build-openstack-docs-pti
-
